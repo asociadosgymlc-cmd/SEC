@@ -2,18 +2,19 @@
 
 :root {
   --licita-blue: #0284c7;
+  --licita-ink: #0b1220;
 }
 
 * { -webkit-tap-highlight-color: transparent; }
 
-body { font-family: 'Inter', sans-serif; }
+html, body { font-family: 'Inter', sans-serif; }
 
 /* ---- Navegación lateral ---- */
 .nav-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.625rem 0.75rem;
+  padding: 0.55rem 0.75rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -21,16 +22,16 @@ body { font-family: 'Inter', sans-serif; }
   transition: background-color .15s ease, color .15s ease;
 }
 .nav-link:hover { background: #f1f5f9; color: #0f172a; }
-.nav-link svg { color: #94a3b8; transition: color .15s ease; }
-.nav-link.active { background: #e0f2fe; color: #0369a1; }
+.nav-link svg { color: #94a3b8; transition: color .15s ease; flex-shrink: 0; }
+.nav-link.active { background: #e0f2fe; color: #0369a1; font-weight: 600; }
 .nav-link.active svg { color: #0284c7; }
 
 /* ---- Campos de formulario ---- */
 .field {
   width: 100%;
-  padding: 0.5rem 0.75rem;
+  padding: 0.55rem 0.8rem;
   border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
+  border-radius: 0.55rem;
   font-size: 0.875rem;
   color: #1e293b;
   background: #fff;
@@ -42,6 +43,7 @@ body { font-family: 'Inter', sans-serif; }
   box-shadow: 0 0 0 3px rgba(2,132,199,.12);
 }
 .field::placeholder { color: #94a3b8; }
+.field:disabled { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }
 
 /* ---- Insignia de paso ---- */
 .step-badge {
@@ -73,6 +75,12 @@ body { font-family: 'Inter', sans-serif; }
   to { opacity: 1; transform: scale(1); }
 }
 .animate-pop { animation: pop .2s ease-out both; }
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.fade-out { animation: fadeOut .25s ease-in both; }
 
 /* ---- Spinner de análisis ---- */
 .licita-spinner {
@@ -144,7 +152,66 @@ body { font-family: 'Inter', sans-serif; }
   color: #1e293b;
 }
 
-/* ---- Responsive: oculta sidebar fija en pantallas chicas ---- */
+/* ---- Tabla de clientes ---- */
+.table-action {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #475569;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.4rem;
+  transition: background-color .15s, color .15s;
+}
+.table-action:hover { background: #f1f5f9; color: #0f172a; }
+.table-action.danger:hover { background: #fef2f2; color: #be123c; }
+.table-action.primary:hover { background: #e0f2fe; color: #0369a1; }
+
+/* ---- Switch ---- */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+}
+.switch input { display: none; }
+.switch .slider {
+  position: absolute; inset: 0;
+  background: #cbd5e1;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color .2s;
+}
+.switch .slider::before {
+  content: "";
+  position: absolute;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px; left: 2px;
+  transition: transform .2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.15);
+}
+.switch input:checked + .slider { background: #0284c7; }
+.switch input:checked + .slider::before { transform: translateX(14px); }
+
+/* ---- Etiqueta de rol ---- */
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+}
+.role-chip.admin { background: #fef3c7; color: #92400e; }
+.role-chip.client { background: #e0f2fe; color: #0369a1; }
+
+/* ---- Login: oculta scroll del body cuando está visible ---- */
+body.locked { overflow: hidden; }
+
+/* ---- Responsive ---- */
 @media (max-width: 768px) {
   #sidebar { transform: translateX(-100%); transition: transform .25s ease; }
   #sidebar.open { transform: translateX(0); }

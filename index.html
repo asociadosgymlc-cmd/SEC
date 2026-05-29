@@ -3,214 +3,724 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LICITA · IA para Contratación Pública Colombiana</title>
-  <meta name="description" content="LICITA analiza pliegos de condiciones, detecta riesgos jurídicos y redacta observaciones para procesos de contratación pública en Colombia." />
+  <title>LICITA · Plataforma jurídica para contratación pública</title>
+  <meta name="description" content="LICITA — plataforma jurídica de Asociados GYM LC para el análisis de pliegos y la redacción de observaciones en procesos de contratación pública colombiana." />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/styles.css" />
   <script>
-    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } };
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['"Source Serif 4"', 'Georgia', 'serif']
+          },
+          colors: {
+            ink: { 900: '#0b1220', 800: '#111a2e', 700: '#1c2740' }
+          }
+        }
+      }
+    };
   </script>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
 
-  <!-- ===================== Sidebar ===================== -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 z-50 flex flex-col">
-    <div class="flex items-center h-16 px-6 border-b border-slate-200">
-      <div class="w-9 h-9 bg-gradient-to-br from-sky-500 to-blue-700 rounded-lg flex items-center justify-center mr-3 shadow-sm">
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
-      </div>
-      <div>
-        <span class="text-xl font-extrabold text-slate-900 tracking-tight">LICITA</span>
-        <p class="text-[10px] text-slate-400 -mt-1 font-medium">Contratación pública · IA</p>
-      </div>
-    </div>
-    <nav class="px-4 py-4 space-y-1 flex-1" id="navMenu">
-      <a href="#" data-section="dashboard" class="nav-link">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        Dashboard
-      </a>
-      <a href="#" data-section="analisis" class="nav-link">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        Análisis de Pliego
-      </a>
-      <a href="#" data-section="historial" class="nav-link">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        Historial
-      </a>
-      <a href="#" data-section="marco" class="nav-link">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-        Marco Normativo
-      </a>
-    </nav>
-    <div class="px-4 py-4 border-t border-slate-200">
-      <div class="bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl p-4 border border-sky-100">
-        <p class="text-xs font-semibold text-sky-800">Asistente jurídico</p>
-        <p class="text-[11px] text-sky-700/80 mt-1 leading-snug">Verifica siempre las observaciones con un profesional del derecho.</p>
-      </div>
-    </div>
-  </aside>
-
-  <!-- ===================== Main ===================== -->
-  <div class="ml-64">
-    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
-      <div class="flex items-center justify-between px-8 py-3.5">
-        <div>
-          <h2 id="page-title" class="text-lg font-bold text-slate-900">Dashboard</h2>
-          <p id="page-sub" class="text-xs text-slate-400">Resumen de tu actividad de seguimiento</p>
-        </div>
-        <div class="flex items-center gap-3">
-          <button id="newAnalysisBtn" class="hidden sm:flex items-center gap-2 text-sm font-medium bg-slate-900 text-white px-3.5 py-2 rounded-lg hover:bg-slate-700 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Nuevo análisis
-          </button>
-          <div class="flex items-center gap-3 pl-3 border-l border-slate-200">
-            <div class="text-right hidden sm:block">
-              <p class="text-sm font-medium text-slate-700 leading-tight">Luis Carlos Gómez</p>
-              <p class="text-[11px] text-slate-400 leading-tight">Asociados GYM LC</p>
-            </div>
-            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold">LC</div>
+  <!-- ====================================================================
+       Pantalla de inicio de sesión (oculta cuando hay sesión activa)
+       ==================================================================== -->
+  <!-- ====================================================================
+       LANDING PÚBLICA (la primera pantalla para visitantes)
+       ==================================================================== -->
+  <div id="landingPage" class="bg-white">
+    <!-- Nav -->
+    <header class="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-slate-100">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
+        <a href="#" data-scroll="hero" class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center shadow-sm">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
           </div>
+          <div class="leading-none">
+            <span class="text-xl font-extrabold tracking-tight text-slate-900">LICITA</span>
+            <p class="text-[10px] text-slate-400 font-medium mt-0.5">Asociados GYM LC</p>
+          </div>
+        </a>
+        <nav class="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
+          <a href="#" data-scroll="hero" class="hover:text-slate-900">Inicio</a>
+          <a href="#" data-scroll="features" class="hover:text-slate-900">Funcionalidades</a>
+          <a href="#" data-scroll="pricing" class="hover:text-slate-900">Precios</a>
+          <a href="#" data-scroll="contact" class="hover:text-slate-900">Contacto</a>
+        </nav>
+        <div class="flex items-center gap-2">
+          <button class="hidden sm:inline-flex text-sm font-medium text-slate-700 hover:text-sky-700 px-3 py-2" data-go-login>Iniciar sesión</button>
+          <button class="text-sm font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 px-4 py-2 rounded-lg shadow-sm transition-all" data-scroll="contact">Solicitar acceso</button>
         </div>
       </div>
     </header>
 
-    <!-- ===== Dashboard ===== -->
-    <section id="dashboard-section" class="p-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="statsGrid"></div>
+    <!-- Hero -->
+    <section id="hero" class="relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-slate-50 via-sky-50/40 to-white"></div>
+      <div class="absolute top-20 -right-20 w-96 h-96 bg-sky-200/30 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-0 -left-20 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl"></div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div class="flex items-center justify-between mb-5">
-            <div>
-              <h3 class="text-base font-semibold text-slate-900">Procesos en seguimiento</h3>
-              <p class="text-xs text-slate-400">Haz clic en un proceso para precargarlo en el análisis</p>
+      <div class="relative max-w-7xl mx-auto px-6 lg:px-10 pt-16 pb-20 lg:pt-24 lg:pb-28 grid lg:grid-cols-12 gap-10 items-center">
+        <div class="lg:col-span-6">
+          <span class="inline-flex items-center gap-2 bg-sky-100 text-sky-800 text-xs font-semibold px-3 py-1.5 rounded-full">
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
+            Plataforma jurídica con IA · Colombia
+          </span>
+          <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 mt-5 leading-[1.1]">
+            Gana licitaciones en Colombia con <span class="bg-gradient-to-r from-sky-600 to-blue-700 bg-clip-text text-transparent">inteligencia jurídica.</span>
+          </h1>
+          <p class="text-lg text-slate-600 mt-5 leading-relaxed max-w-xl">
+            Carga un pliego, deja que LICITA detecte los riesgos contra el marco normativo y entrega una observación redactada y lista para radicar — en minutos.
+          </p>
+          <div class="mt-7 flex flex-wrap gap-3">
+            <button class="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-semibold px-5 py-3 rounded-lg shadow-sm transition-all flex items-center gap-2" data-scroll="contact">
+              Empezar
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </button>
+            <button class="border border-slate-300 hover:border-slate-400 text-slate-700 font-medium px-5 py-3 rounded-lg transition-all flex items-center gap-2" data-scroll="features">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><circle stroke-linecap="round" stroke-linejoin="round" stroke-width="2" cx="12" cy="12" r="10"/></svg>
+              Ver cómo funciona
+            </button>
+          </div>
+          <ul class="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-500">
+            <li class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg> Sin instalar nada</li>
+            <li class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg> Listo en 2 minutos</li>
+            <li class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg> Acceso multi-cliente</li>
+          </ul>
+        </div>
+
+        <!-- Mock de la app -->
+        <div class="lg:col-span-6">
+          <div class="relative bg-white rounded-2xl shadow-2xl shadow-slate-300/40 border border-slate-200 overflow-hidden">
+            <div class="bg-slate-50 border-b border-slate-200 px-4 py-2.5 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-300"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-300"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-300"></span>
+              <span class="ml-3 text-xs text-slate-400 font-medium">licita.app · análisis</span>
             </div>
-            <button id="addProcessBtn" class="text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors">+ Agregar</button>
+            <div class="p-5">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Nivel de riesgo</p>
+                  <p class="text-2xl font-bold text-rose-700">Crítico</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Hallazgos</p>
+                  <p class="text-2xl font-bold text-slate-900">4</p>
+                </div>
+              </div>
+              <div class="risk-meter mb-1.5"><div class="needle" style="left:78%"></div></div>
+              <div class="flex justify-between text-[10px] text-slate-400">
+                <span>Bajo</span><span>Medio</span><span>Alto</span><span>Crítico</span>
+              </div>
+              <div class="mt-4 space-y-2">
+                <div class="border border-slate-200 rounded-lg p-3 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-900">Exigencia de vinculación laboral exclusiva</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Art. 5 Ley 1150 de 2007 · Selección objetiva</p>
+                  </div>
+                </div>
+                <div class="border border-slate-200 rounded-lg p-3 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-900">Experiencia habilitante desproporcionada</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Decreto 1082 de 2015 · Proporcionalidad</p>
+                  </div>
+                </div>
+                <div class="border border-slate-200 rounded-lg p-3 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-900">Restricción por domicilio geográfico</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Art. 13 y 209 Constitución Política</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Marco de referencia -->
+    <section class="border-y border-slate-100 bg-white">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10 py-8">
+        <p class="text-center text-[11px] uppercase tracking-widest font-semibold text-slate-400">Análisis fundamentado en el marco normativo colombiano</p>
+        <div class="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-slate-500 font-semibold text-sm">
+          <span>Ley 80 de 1993</span><span class="hidden sm:inline text-slate-300">·</span>
+          <span>Ley 1150 de 2007</span><span class="hidden sm:inline text-slate-300">·</span>
+          <span>Decreto 1082 de 2015</span><span class="hidden sm:inline text-slate-300">·</span>
+          <span>Estatuto Anticorrupción</span><span class="hidden sm:inline text-slate-300">·</span>
+          <span>Colombia Compra Eficiente</span><span class="hidden sm:inline text-slate-300">·</span>
+          <span>Consejo de Estado</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-20 lg:py-24 bg-slate-50">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10">
+        <div class="text-center max-w-2xl mx-auto">
+          <p class="text-[11px] uppercase tracking-widest font-semibold text-sky-700">Cómo te ayudamos</p>
+          <h2 class="font-serif text-3xl lg:text-4xl font-bold text-slate-900 mt-2">Todo lo que necesitas para ganar la licitación</h2>
+          <p class="text-slate-600 mt-3">Desde el monitoreo del proceso hasta la observación redactada con respaldo jurisprudencial.</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 mt-12">
+          <div class="bg-white rounded-2xl p-7 border border-slate-200 shadow-sm card-hover">
+            <div class="w-12 h-12 bg-sky-100 rounded-xl flex items-center justify-center mb-5">
+              <svg class="w-6 h-6 text-sky-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900">Monitorea procesos</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">Mantén bajo seguimiento los procesos de mínima cuantía, selección abreviada, licitación pública o concurso de méritos relevantes para tu firma.</p>
+          </div>
+          <div class="bg-white rounded-2xl p-7 border border-slate-200 shadow-sm card-hover">
+            <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5">
+              <svg class="w-6 h-6 text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900">IA lee tu pliego</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">Sube el pliego en PDF o DOCX y el motor identifica cláusulas restrictivas: marcas, vinculación laboral, experiencia desproporcionada y más.</p>
+          </div>
+          <div class="bg-white rounded-2xl p-7 border border-slate-200 shadow-sm card-hover">
+            <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-5">
+              <svg class="w-6 h-6 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900">Observación redactada</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">Recibe la observación lista para radicar, con fundamento normativo y criterios jurisprudenciales — descargable en Word.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Estadísticas -->
+    <section class="py-16 bg-gradient-to-br from-ink-900 via-ink-800 to-blue-900 text-white">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div>
+            <p class="font-serif text-4xl lg:text-5xl font-bold text-white">8</p>
+            <p class="text-xs uppercase tracking-wider text-sky-200/70 mt-2 font-semibold">Reglas jurídicas activas</p>
+          </div>
+          <div>
+            <p class="font-serif text-4xl lg:text-5xl font-bold text-white">7+</p>
+            <p class="text-xs uppercase tracking-wider text-sky-200/70 mt-2 font-semibold">Normas mapeadas</p>
+          </div>
+          <div>
+            <p class="font-serif text-4xl lg:text-5xl font-bold text-white">5</p>
+            <p class="text-xs uppercase tracking-wider text-sky-200/70 mt-2 font-semibold">Criterios jurisprudenciales</p>
+          </div>
+          <div>
+            <p class="font-serif text-4xl lg:text-5xl font-bold text-white">&lt; 2 min</p>
+            <p class="text-xs uppercase tracking-wider text-sky-200/70 mt-2 font-semibold">Por análisis</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonios (ilustrativos) -->
+    <section class="py-20 bg-white">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10">
+        <div class="text-center max-w-2xl mx-auto">
+          <p class="text-[11px] uppercase tracking-widest font-semibold text-sky-700">Voces del sector</p>
+          <h2 class="font-serif text-3xl lg:text-4xl font-bold text-slate-900 mt-2">Pensado para abogados y oferentes</h2>
+          <p class="text-slate-500 text-xs mt-2">Casos de uso ilustrativos.</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 mt-10">
+          <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+            <svg class="w-7 h-7 text-sky-500" fill="currentColor" viewBox="0 0 24 24"><path d="M9.583 6.667a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5zm10 0a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5z"/></svg>
+            <p class="text-sm text-slate-700 mt-3 leading-relaxed">"LICITA cambió la forma en que revisamos pliegos: lo que tomaba media tarde ahora son minutos, con la observación lista para firmar."</p>
+            <div class="mt-4 pt-4 border-t border-slate-200">
+              <p class="text-sm font-semibold text-slate-900">Equipo legal</p>
+              <p class="text-xs text-slate-500">Constructora colombiana</p>
+            </div>
+          </div>
+          <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+            <svg class="w-7 h-7 text-sky-500" fill="currentColor" viewBox="0 0 24 24"><path d="M9.583 6.667a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5zm10 0a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5z"/></svg>
+            <p class="text-sm text-slate-700 mt-3 leading-relaxed">"Detectamos cláusulas direccionadas en cuestión de segundos. La cita normativa y la observación redactada son un ahorro brutal."</p>
+            <div class="mt-4 pt-4 border-t border-slate-200">
+              <p class="text-sm font-semibold text-slate-900">Gerente comercial</p>
+              <p class="text-xs text-slate-500">Empresa de ingeniería</p>
+            </div>
+          </div>
+          <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+            <svg class="w-7 h-7 text-sky-500" fill="currentColor" viewBox="0 0 24 24"><path d="M9.583 6.667a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5zm10 0a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5z"/></svg>
+            <p class="text-sm text-slate-700 mt-3 leading-relaxed">"Por fin tenemos un panel donde monitorear los procesos de cada cliente y centralizar las observaciones."</p>
+            <div class="mt-4 pt-4 border-t border-slate-200">
+              <p class="text-sm font-semibold text-slate-900">Abogado contratista</p>
+              <p class="text-xs text-slate-500">Despacho jurídico</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-20 lg:py-24 bg-slate-50">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10">
+        <div class="text-center max-w-2xl mx-auto">
+          <p class="text-[11px] uppercase tracking-widest font-semibold text-sky-700">Planes</p>
+          <h2 class="font-serif text-3xl lg:text-4xl font-bold text-slate-900 mt-2">Tarifas claras, sin sorpresas</h2>
+          <p class="text-slate-600 mt-3">Cancela cuando quieras. Incluye actualizaciones del marco normativo.</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 mt-12">
+          <div class="bg-white rounded-2xl p-7 border border-slate-200 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Esencial</p>
+            <p class="font-serif text-4xl font-bold text-slate-900 mt-2">$ 89.000<span class="text-base text-slate-500 font-medium">/mes</span></p>
+            <p class="text-xs text-slate-500 mt-1">Para profesionales independientes</p>
+            <ul class="mt-5 space-y-2.5 text-sm text-slate-700">
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>1 usuario</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>20 análisis al mes</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Exportación Word</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Marco normativo completo</li>
+            </ul>
+            <button class="mt-6 w-full border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium py-2.5 rounded-lg transition-colors" data-scroll="contact">Empezar</button>
+          </div>
+          <div class="bg-gradient-to-br from-sky-600 to-blue-700 text-white rounded-2xl p-7 shadow-xl shadow-blue-200 relative">
+            <span class="absolute top-4 right-4 text-[10px] font-bold uppercase tracking-wider bg-white/15 px-2 py-1 rounded">Más elegido</span>
+            <p class="text-xs font-semibold uppercase tracking-wider text-sky-200">Profesional</p>
+            <p class="font-serif text-4xl font-bold mt-2">$ 249.000<span class="text-base text-sky-200 font-medium">/mes</span></p>
+            <p class="text-xs text-sky-200 mt-1">Para firmas con clientes recurrentes</p>
+            <ul class="mt-5 space-y-2.5 text-sm">
+              <li class="flex gap-2"><svg class="w-4 h-4 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Hasta 10 clientes con acceso</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Análisis ilimitados</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Panel de monitoreo</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Historial por cliente</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Soporte prioritario</li>
+            </ul>
+            <button class="mt-6 w-full bg-white text-blue-700 hover:bg-sky-50 font-semibold py-2.5 rounded-lg transition-colors" data-scroll="contact">Comenzar</button>
+          </div>
+          <div class="bg-white rounded-2xl p-7 border border-slate-200 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Empresarial</p>
+            <p class="font-serif text-4xl font-bold text-slate-900 mt-2">A medida</p>
+            <p class="text-xs text-slate-500 mt-1">Despachos grandes y firmas con SLA</p>
+            <ul class="mt-5 space-y-2.5 text-sm text-slate-700">
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Clientes ilimitados</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Reglas personalizadas</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Capacitación al equipo</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>SLA y dominio propio</li>
+            </ul>
+            <button class="mt-6 w-full border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium py-2.5 rounded-lg transition-colors" data-scroll="contact">Hablemos</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="py-20 bg-white">
+      <div class="max-w-3xl mx-auto px-6 lg:px-10">
+        <div class="text-center">
+          <p class="text-[11px] uppercase tracking-widest font-semibold text-sky-700">Solicitar acceso</p>
+          <h2 class="font-serif text-3xl lg:text-4xl font-bold text-slate-900 mt-2">Cuéntanos de tu firma</h2>
+          <p class="text-slate-600 mt-3">Te responderemos con tus credenciales y un plan a medida.</p>
+        </div>
+        <form id="contactForm" class="mt-10 bg-slate-50 rounded-2xl p-7 border border-slate-200 space-y-4">
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-medium text-slate-600">Nombre</label>
+              <input type="text" id="ct-name" class="field mt-1" placeholder="Tu nombre" required>
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">Empresa</label>
+              <input type="text" id="ct-org" class="field mt-1" placeholder="Empresa o despacho">
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">WhatsApp</label>
+              <input type="tel" id="ct-phone" class="field mt-1" placeholder="+57 ...">
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">Correo</label>
+              <input type="email" id="ct-email" class="field mt-1" placeholder="tucorreo@empresa.com" required>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-slate-600">Asunto</label>
+            <input type="text" id="ct-subject" class="field mt-1" placeholder="Plan, demo, integración...">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-slate-600">Mensaje</label>
+            <textarea id="ct-message" class="field mt-1 h-28 resize-none" placeholder="Cuéntanos de tu firma y los procesos que manejan"></textarea>
+          </div>
+          <button type="submit" class="w-full bg-gradient-to-r from-sky-600 to-blue-700 text-white font-semibold py-3 rounded-lg hover:from-sky-700 hover:to-blue-800 shadow-sm transition-all">Enviar solicitud</button>
+          <p class="text-[11px] text-slate-400 text-center">Al enviar abriremos tu cliente de correo con el mensaje precargado.</p>
+        </form>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-ink-900 text-white">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div class="col-span-2">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0"/></svg>
+            </div>
+            <div>
+              <p class="text-lg font-extrabold tracking-tight">LICITA</p>
+              <p class="text-[10px] text-sky-200/70 font-medium">Asociados GYM LC</p>
+            </div>
+          </div>
+          <p class="text-sm text-sky-200/70 mt-4 max-w-md leading-relaxed">Plataforma jurídica para el análisis de pliegos y la redacción de observaciones en procesos de contratación pública colombiana.</p>
+          <p class="text-xs text-sky-200/50 mt-4">Herramienta de apoyo. Las observaciones deben revisarse por un profesional del derecho antes de su radicación.</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-sky-200/80">Producto</p>
+          <ul class="mt-3 space-y-1.5 text-sm text-sky-100/70">
+            <li><a href="#" data-scroll="hero" class="hover:text-white">Inicio</a></li>
+            <li><a href="#" data-scroll="features" class="hover:text-white">Funcionalidades</a></li>
+            <li><a href="#" data-scroll="pricing" class="hover:text-white">Precios</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-sky-200/80">Cuenta</p>
+          <ul class="mt-3 space-y-1.5 text-sm text-sky-100/70">
+            <li><a href="#" data-go-login class="hover:text-white">Iniciar sesión</a></li>
+            <li><a href="#" data-scroll="contact" class="hover:text-white">Solicitar acceso</a></li>
+            <li><a href="mailto:asociadosgym.lc@gmail.com" class="hover:text-white">Soporte</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-6 lg:px-10 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-sky-200/50">
+          <p>© <span id="footerYear"></span> Asociados GYM LC · Todos los derechos reservados</p>
+          <div class="flex items-center gap-4">
+            <a href="#" class="hover:text-white">Términos</a>
+            <a href="#" class="hover:text-white">Privacidad</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <div id="loginScreen" class="fixed inset-0 z-[80] hidden bg-white">
+    <!-- Lado izquierdo: marca -->
+    <div class="hidden md:flex md:w-1/2 lg:w-3/5 relative bg-gradient-to-br from-ink-900 via-ink-800 to-blue-900 text-white p-12 flex-col justify-between overflow-hidden">
+      <div class="absolute inset-0 opacity-[0.07] bg-[radial-gradient(circle_at_20%_20%,#fff_1px,transparent_1px)] [background-size:24px_24px]"></div>
+      <div class="relative">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-white/10 backdrop-blur border border-white/15 flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+          </div>
+          <div>
+            <p class="text-2xl font-extrabold tracking-tight">LICITA</p>
+            <p class="text-xs text-sky-200/70 font-medium">Plataforma jurídica · Contratación pública</p>
+          </div>
+        </div>
+      </div>
+      <div class="relative max-w-md">
+        <p class="font-serif text-3xl lg:text-4xl leading-tight font-bold">Inteligencia jurídica al servicio de la contratación pública.</p>
+        <p class="mt-4 text-sm text-sky-100/70 leading-relaxed">Carga un pliego, detecta riesgos contra el marco normativo colombiano y redacta tus observaciones con respaldo jurisprudencial.</p>
+        <ul class="mt-6 space-y-1.5 text-sm text-sky-100/80">
+          <li class="flex items-center gap-2"><span class="w-1 h-1 rounded-full bg-sky-300"></span>Ley 80 de 1993 · Ley 1150 de 2007</li>
+          <li class="flex items-center gap-2"><span class="w-1 h-1 rounded-full bg-sky-300"></span>Decreto 1082 de 2015 · Estatuto Anticorrupción</li>
+          <li class="flex items-center gap-2"><span class="w-1 h-1 rounded-full bg-sky-300"></span>Doctrina del Consejo de Estado y Corte Constitucional</li>
+        </ul>
+      </div>
+      <div class="relative text-xs text-sky-200/50">© <span id="brandYear"></span> Asociados GYM LC · Todos los derechos reservados</div>
+    </div>
+
+    <!-- Lado derecho: formulario -->
+    <div class="flex-1 flex items-center justify-center p-6 sm:p-10">
+      <div class="w-full max-w-sm">
+        <div class="md:hidden flex items-center gap-2 mb-6">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9"/></svg>
+          </div>
+          <p class="text-xl font-extrabold tracking-tight text-slate-900">LICITA</p>
+        </div>
+        <button type="button" id="backToLanding" class="text-xs font-medium text-slate-500 hover:text-sky-700 transition-colors mb-4 flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          Volver al inicio
+        </button>
+        <h2 class="text-2xl font-bold text-slate-900">Iniciar sesión</h2>
+        <p class="text-sm text-slate-500 mt-1">Ingresa con las credenciales que te entregó Asociados GYM LC.</p>
+
+        <form id="loginForm" class="mt-7 space-y-4" autocomplete="off">
+          <div>
+            <label class="text-xs font-medium text-slate-600">Usuario</label>
+            <input id="loginUser" type="text" class="field mt-1" placeholder="p. ej. cliente.empresa" autocomplete="username" />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-slate-600">Contraseña</label>
+            <div class="relative mt-1">
+              <input id="loginPass" type="password" class="field pr-10" placeholder="••••••••" autocomplete="current-password" />
+              <button type="button" id="togglePass" class="absolute inset-y-0 right-0 w-10 flex items-center justify-center text-slate-400 hover:text-slate-700">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              </button>
+            </div>
+          </div>
+          <p id="loginError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2"></p>
+          <button type="submit" id="loginBtn" class="w-full bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-semibold py-2.5 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2">
+            <span id="loginBtnLabel">Entrar a la plataforma</span>
+          </button>
+        </form>
+
+        <div class="mt-8 pt-6 border-t border-slate-100">
+          <p class="text-[11px] text-slate-400 text-center leading-relaxed">¿Olvidaste tu contraseña? Contacta a Asociados GYM LC al correo <a class="text-sky-700 hover:underline" href="mailto:asociadosgym.lc@gmail.com">asociadosgym.lc@gmail.com</a>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       Aplicación principal (oculta hasta tener sesión)
+       ==================================================================== -->
+  <div id="appRoot" class="hidden">
+
+    <!-- ============= Sidebar ============= -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 z-50 flex flex-col">
+      <div class="flex items-center h-16 px-6 border-b border-slate-200">
+        <div class="w-9 h-9 bg-gradient-to-br from-sky-500 to-blue-700 rounded-lg flex items-center justify-center mr-3 shadow-sm">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+        </div>
+        <div>
+          <span class="text-xl font-extrabold text-slate-900 tracking-tight">LICITA</span>
+          <p class="text-[10px] text-slate-400 -mt-1 font-medium">Asociados GYM LC</p>
+        </div>
+      </div>
+      <nav class="px-4 py-4 space-y-0.5 flex-1 overflow-y-auto" id="navMenu">
+        <p class="px-3 pt-2 pb-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tu actividad</p>
+        <a href="#" data-section="dashboard" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </a>
+        <a href="#" data-section="analisis" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Análisis de Pliego
+        </a>
+        <a href="#" data-section="historial" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Historial
+        </a>
+        <a href="#" data-section="marco" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          Marco Normativo
+        </a>
+
+        <div data-admin-only class="hidden">
+          <p class="px-3 pt-5 pb-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Administración</p>
+          <a href="#" data-section="clientes" class="nav-link">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            Clientes
+          </a>
+          <a href="#" data-section="monitoreo" class="nav-link">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h12M9 19a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2m0 13a2 2 0 002 2h2a2 2 0 002-2M9 19V6m0 0h12M9 6L9 4"/></svg>
+            Monitoreo
+          </a>
+        </div>
+      </nav>
+      <div class="px-4 py-4 border-t border-slate-200">
+        <div id="sessionCard" class="rounded-xl p-3 bg-slate-50 border border-slate-200 flex items-center gap-3"></div>
+        <button id="logoutBtn" class="mt-3 w-full text-xs font-medium text-slate-500 hover:text-rose-600 transition-colors flex items-center justify-center gap-2 py-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Cerrar sesión
+        </button>
+      </div>
+    </aside>
+
+    <!-- ============= Main ============= -->
+    <div class="ml-64">
+      <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+        <div class="flex items-center justify-between px-8 py-3.5">
+          <div>
+            <h2 id="page-title" class="text-lg font-bold text-slate-900">Dashboard</h2>
+            <p id="page-sub" class="text-xs text-slate-400">Resumen de tu actividad</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="newAnalysisBtn" class="hidden sm:flex items-center gap-2 text-sm font-medium bg-slate-900 text-white px-3.5 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Nuevo análisis
+            </button>
+            <div class="flex items-center gap-3 pl-3 border-l border-slate-200">
+              <div class="text-right hidden sm:block">
+                <p id="headerUserName" class="text-sm font-medium text-slate-700 leading-tight">—</p>
+                <p id="headerUserRole" class="text-[11px] text-slate-400 leading-tight">—</p>
+              </div>
+              <div id="headerAvatar" class="w-9 h-9 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold">·</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ===== Dashboard ===== -->
+      <section id="dashboard-section" class="p-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="statsGrid"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <h3 class="text-base font-semibold text-slate-900">Procesos en seguimiento</h3>
+                <p class="text-xs text-slate-400">Haz clic en un proceso para precargarlo en el análisis</p>
+              </div>
+              <button id="addProcessBtn" data-admin-only class="hidden text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors">+ Agregar</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead><tr class="border-b border-slate-200">
+                  <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Proceso</th>
+                  <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Entidad</th>
+                  <th class="text-right text-[11px] font-semibold text-slate-400 uppercase py-2.5">Cuantía</th>
+                  <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Riesgo</th>
+                </tr></thead>
+                <tbody id="processesBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-1">Distribución de riesgo</h3>
+            <p class="text-xs text-slate-400 mb-4">Procesos monitoreados por nivel</p>
+            <div id="riskChart" class="space-y-3.5"></div>
+          </div>
+        </div>
+
+        <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Accesos rápidos</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="quickActions"></div>
+      </section>
+
+      <!-- ===== Análisis de Pliego ===== -->
+      <section id="analisis-section" class="p-8 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-1 space-y-5">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+              <h3 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2"><span class="step-badge">1</span> Cargar pliego</h3>
+              <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:border-sky-400 hover:bg-sky-50/40 transition-colors">
+                <input type="file" id="fileInput" class="hidden" accept=".pdf,.docx,.txt" />
+                <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                <p class="text-sm text-slate-600" id="fileText">Arrastra o haz clic para cargar PDF, DOCX o TXT</p>
+              </div>
+              <div id="fileMeta" class="hidden mt-3 text-xs bg-slate-50 rounded-lg p-3 border border-slate-200"></div>
+              <button id="scanPliegoBtn" class="hidden mt-3 w-full text-sm font-medium border border-sky-200 text-sky-700 bg-sky-50 hover:bg-sky-100 py-2 rounded-lg transition-colors">Escanear pliego completo</button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
+              <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2"><span class="step-badge">2</span> Datos del proceso</h3>
+              <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="f-proceso" class="field" placeholder="No. de proceso" />
+                <select id="f-modalidad" class="field">
+                  <option value="minima_cuantia">Mínima Cuantía</option>
+                  <option value="seleccion_abreviada">Selección Abreviada</option>
+                  <option value="licitacion">Licitación Pública</option>
+                  <option value="concurso_meritos">Concurso de Méritos</option>
+                  <option value="contratacion_directa">Contratación Directa</option>
+                </select>
+              </div>
+              <input type="text" id="f-entidad" class="field" placeholder="Entidad contratante" />
+              <input type="text" id="f-objeto" class="field" placeholder="Objeto del contrato" />
+              <input type="text" id="f-proponente" class="field" placeholder="Nombre del observante (quien firma)" />
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
+              <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2"><span class="step-badge">3</span> Requisito objetado</h3>
+              <input type="text" id="f-numeral" class="field" placeholder="Numeral, p. ej. 19 del Anexo CTM" />
+              <textarea id="f-texto" class="field h-32 resize-none" placeholder="Pega aquí el texto exacto del requisito que deseas objetar…"></textarea>
+              <button id="analyzeBtn" class="w-full bg-gradient-to-r from-sky-600 to-blue-700 text-white font-semibold py-2.5 rounded-lg hover:from-sky-700 hover:to-blue-800 transition-all shadow-sm flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Analizar con IA
+              </button>
+              <button id="loadSampleBtn" class="w-full text-xs text-slate-500 hover:text-sky-700 transition-colors">Cargar requisito de ejemplo</button>
+            </div>
+          </div>
+
+          <div class="lg:col-span-2">
+            <div id="emptyState" class="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col items-center justify-center py-24 text-center">
+              <div class="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </div>
+              <h3 class="text-lg font-semibold text-slate-900">Listo para analizar</h3>
+              <p class="text-sm text-slate-400 mt-1 max-w-sm">Completa el requisito objetado y la IA detectará riesgos jurídicos, citará el marco normativo y redactará tu observación.</p>
+            </div>
+            <div id="loadingState" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 py-24 flex flex-col items-center justify-center">
+              <div class="licita-spinner mb-5"></div>
+              <p id="loadingText" class="text-sm font-medium text-slate-600">Analizando…</p>
+              <div id="loadingSteps" class="mt-4 space-y-1.5 text-xs text-slate-400"></div>
+            </div>
+            <div id="resultsPanel" class="hidden space-y-5"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Historial ===== -->
+      <section id="historial-section" class="p-8 hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-slate-900">Análisis realizados</h3>
+              <p class="text-xs text-slate-400">Almacenados localmente. Solo tú los ves.</p>
+            </div>
+            <button id="clearHistoryBtn" class="text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-colors">Vaciar historial</button>
+          </div>
+          <div id="historyList" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <!-- ===== Marco Normativo ===== -->
+      <section id="marco-section" class="p-8 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-4">Normas aplicables</h3>
+            <div id="normsList" class="space-y-3"></div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-4">Criterios jurisprudenciales</h3>
+            <div id="jurisList" class="space-y-3"></div>
+          </div>
+        </div>
+        <p id="disclaimerText" class="text-xs text-slate-400 mt-5 text-center max-w-3xl mx-auto"></p>
+      </section>
+
+      <!-- ===== Clientes (admin) ===== -->
+      <section id="clientes-section" class="p-8 hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+            <div>
+              <h3 class="text-base font-semibold text-slate-900">Clientes de la firma</h3>
+              <p class="text-xs text-slate-400">Crea, edita y administra las credenciales de tus clientes.</p>
+            </div>
+            <button id="addClientBtn" class="text-sm font-medium bg-sky-600 hover:bg-sky-700 text-white px-3.5 py-2 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Nuevo cliente
+            </button>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead><tr class="border-b border-slate-200">
-                <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Proceso</th>
-                <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Entidad</th>
-                <th class="text-right text-[11px] font-semibold text-slate-400 uppercase py-2.5">Cuantía</th>
-                <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Riesgo</th>
+                <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Usuario / Cliente</th>
+                <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Contacto</th>
+                <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Rol</th>
+                <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Estado</th>
+                <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Último ingreso</th>
+                <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Análisis</th>
+                <th class="text-right text-[11px] font-semibold text-slate-400 uppercase py-2.5">Acciones</th>
               </tr></thead>
-              <tbody id="processesBody" class="divide-y divide-slate-100"></tbody>
+              <tbody id="clientsBody" class="divide-y divide-slate-100"></tbody>
             </table>
           </div>
         </div>
+      </section>
 
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 class="text-base font-semibold text-slate-900 mb-1">Distribución de riesgo</h3>
-          <p class="text-xs text-slate-400 mb-4">Procesos monitoreados por nivel</p>
-          <div id="riskChart" class="space-y-3.5"></div>
-        </div>
-      </div>
-
-      <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Accesos rápidos</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="quickActions"></div>
-    </section>
-
-    <!-- ===== Análisis de Pliego ===== -->
-    <section id="analisis-section" class="p-8 hidden">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Columna de entrada -->
-        <div class="lg:col-span-1 space-y-5">
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <h3 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2"><span class="step-badge">1</span> Cargar pliego</h3>
-            <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:border-sky-400 hover:bg-sky-50/40 transition-colors">
-              <input type="file" id="fileInput" class="hidden" accept=".pdf,.docx,.txt" />
-              <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-              <p class="text-sm text-slate-600" id="fileText">Arrastra o haz clic para cargar PDF, DOCX o TXT</p>
-            </div>
-            <div id="fileMeta" class="hidden mt-3 text-xs bg-slate-50 rounded-lg p-3 border border-slate-200"></div>
-            <button id="scanPliegoBtn" class="hidden mt-3 w-full text-sm font-medium border border-sky-200 text-sky-700 bg-sky-50 hover:bg-sky-100 py-2 rounded-lg transition-colors">
-              Escanear pliego completo
-            </button>
+      <!-- ===== Monitoreo (admin) ===== -->
+      <section id="monitoreo-section" class="p-8 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" id="monStats"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-1">Actividad reciente</h3>
+            <p class="text-xs text-slate-400 mb-4">Últimos análisis realizados por tus clientes</p>
+            <div id="monFeed" class="space-y-3"></div>
           </div>
-
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
-            <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2"><span class="step-badge">2</span> Datos del proceso</h3>
-            <div class="grid grid-cols-2 gap-2">
-              <input type="text" id="f-proceso" class="field" placeholder="No. de proceso" />
-              <select id="f-modalidad" class="field">
-                <option value="minima_cuantia">Mínima Cuantía</option>
-                <option value="seleccion_abreviada">Selección Abreviada</option>
-                <option value="licitacion">Licitación Pública</option>
-                <option value="concurso_meritos">Concurso de Méritos</option>
-                <option value="contratacion_directa">Contratación Directa</option>
-              </select>
-            </div>
-            <input type="text" id="f-entidad" class="field" placeholder="Entidad contratante" />
-            <input type="text" id="f-objeto" class="field" placeholder="Objeto del contrato" />
-            <input type="text" id="f-proponente" class="field" placeholder="Nombre del observante (quien firma)" />
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
-            <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2"><span class="step-badge">3</span> Requisito objetado</h3>
-            <input type="text" id="f-numeral" class="field" placeholder="Numeral, p. ej. 19 del Anexo CTM" />
-            <textarea id="f-texto" class="field h-32 resize-none" placeholder="Pega aquí el texto exacto del requisito que deseas objetar…"></textarea>
-            <button id="analyzeBtn" class="w-full bg-gradient-to-r from-sky-600 to-blue-700 text-white font-semibold py-2.5 rounded-lg hover:from-sky-700 hover:to-blue-800 transition-all shadow-sm flex items-center justify-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-              Analizar con IA
-            </button>
-            <button id="loadSampleBtn" class="w-full text-xs text-slate-500 hover:text-sky-700 transition-colors">Cargar requisito de ejemplo</button>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-1">Por cliente</h3>
+            <p class="text-xs text-slate-400 mb-4">Total de análisis por usuario</p>
+            <div id="monPerClient" class="space-y-3"></div>
           </div>
         </div>
-
-        <!-- Columna de resultados -->
-        <div class="lg:col-span-2">
-          <div id="emptyState" class="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col items-center justify-center py-24 text-center">
-            <div class="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center mb-4">
-              <svg class="w-8 h-8 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <h3 class="text-lg font-semibold text-slate-900">Listo para analizar</h3>
-            <p class="text-sm text-slate-400 mt-1 max-w-sm">Completa el requisito objetado y la IA detectará riesgos jurídicos, citará el marco normativo y redactará tu observación.</p>
-          </div>
-
-          <div id="loadingState" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 py-24 flex flex-col items-center justify-center">
-            <div class="licita-spinner mb-5"></div>
-            <p id="loadingText" class="text-sm font-medium text-slate-600">Analizando…</p>
-            <div id="loadingSteps" class="mt-4 space-y-1.5 text-xs text-slate-400"></div>
-          </div>
-
-          <div id="resultsPanel" class="hidden space-y-5"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== Historial ===== -->
-    <section id="historial-section" class="p-8 hidden">
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="text-base font-semibold text-slate-900">Análisis realizados</h3>
-            <p class="text-xs text-slate-400">Se guardan localmente en este navegador</p>
-          </div>
-          <button id="clearHistoryBtn" class="text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-colors">Vaciar historial</button>
-        </div>
-        <div id="historyList" class="space-y-3"></div>
-      </div>
-    </section>
-
-    <!-- ===== Marco Normativo ===== -->
-    <section id="marco-section" class="p-8 hidden">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 class="text-base font-semibold text-slate-900 mb-4">Normas aplicables</h3>
-          <div id="normsList" class="space-y-3"></div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 class="text-base font-semibold text-slate-900 mb-4">Criterios jurisprudenciales</h3>
-          <div id="jurisList" class="space-y-3"></div>
-        </div>
-      </div>
-      <p id="disclaimerText" class="text-xs text-slate-400 mt-5 text-center max-w-3xl mx-auto"></p>
-    </section>
+      </section>
+    </div>
   </div>
 
-  <!-- ===================== Modal: agregar proceso ===================== -->
+  <!-- ============= Modales ============= -->
   <div id="processModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/50 p-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-pop">
       <h3 class="text-lg font-semibold text-slate-900 mb-4">Agregar proceso a seguimiento</h3>
@@ -233,6 +743,66 @@
     </div>
   </div>
 
+  <div id="clientModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-pop">
+      <h3 id="clientModalTitle" class="text-lg font-semibold text-slate-900 mb-1">Nuevo cliente</h3>
+      <p class="text-xs text-slate-500 mb-4">Estas serán las credenciales que entregarás a tu cliente.</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-2">
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Nombre del cliente</label>
+          <input type="text" id="c-name" class="field mt-1" placeholder="p. ej. Constructora ABC S.A.S." />
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Usuario</label>
+          <input type="text" id="c-username" class="field mt-1" placeholder="cliente.abc" autocomplete="off" />
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Contraseña</label>
+          <div class="flex gap-1.5 mt-1">
+            <input type="text" id="c-password" class="field" placeholder="Mínimo 6 caracteres" autocomplete="off" />
+            <button type="button" id="c-genpass" class="px-2.5 text-xs font-medium border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 whitespace-nowrap">Generar</button>
+          </div>
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Correo de contacto</label>
+          <input type="email" id="c-email" class="field mt-1" placeholder="cliente@correo.com" />
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Empresa / organización</label>
+          <input type="text" id="c-org" class="field mt-1" placeholder="Empresa del cliente" />
+        </div>
+        <div class="col-span-2">
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Notas internas</label>
+          <textarea id="c-notes" class="field mt-1 h-20 resize-none" placeholder="NIT, persona de contacto, etc."></textarea>
+        </div>
+      </div>
+      <p id="c-error" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2 mt-3"></p>
+      <div class="flex gap-3 mt-5">
+        <button id="c-cancel" class="flex-1 border border-slate-300 text-slate-600 text-sm py-2.5 rounded-lg hover:bg-slate-50 transition-colors">Cancelar</button>
+        <button id="c-save" class="flex-1 bg-sky-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-sky-700 transition-colors">Guardar cliente</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="credentialsModal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-slate-900/60 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-pop">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+          <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">Cliente creado</h3>
+          <p class="text-xs text-slate-500">Entrega estas credenciales a tu cliente.</p>
+        </div>
+      </div>
+      <div id="credentialsBox" class="bg-slate-50 border border-slate-200 rounded-lg p-4 font-mono text-sm space-y-1.5"></div>
+      <div class="flex gap-3 mt-4">
+        <button id="cred-copy" class="flex-1 bg-sky-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-sky-700 transition-colors">Copiar</button>
+        <button id="cred-close" class="flex-1 border border-slate-300 text-slate-600 text-sm py-2.5 rounded-lg hover:bg-slate-50 transition-colors">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toastWrap" class="fixed bottom-6 right-6 z-[70] space-y-2"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -242,11 +812,15 @@
       window.pdfjsLib.GlobalWorkerOptions.workerSrc =
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
+    var yr = new Date().getFullYear();
+    document.getElementById("brandYear").textContent = yr;
+    var fy = document.getElementById("footerYear"); if (fy) fy.textContent = yr;
   </script>
   <script src="assets/js/knowledge.js"></script>
   <script src="assets/js/docs.js"></script>
   <script src="assets/js/analyzer.js"></script>
   <script src="assets/js/parsers.js"></script>
+  <script src="assets/js/auth.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>
