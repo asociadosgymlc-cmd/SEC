@@ -1463,6 +1463,7 @@
     $("#appRoot").classList.add("hidden");
     $("#landingPage").classList.remove("hidden");
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+    initLandingFX();
   }
 
   function showApp() {
@@ -1512,6 +1513,72 @@
   }
 
   function showRegister() { showLogin("register"); }
+
+  /* ------------------ efectos visuales de la landing ------------------ */
+  function animateCounter(el) {
+    const target = parseInt(el.dataset.count, 10) || 0;
+    const dur = 1100;
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * eased);
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(step);
+  }
+
+  let landingFXReady = false;
+  function initLandingFX() {
+    if (landingFXReady) return;
+    landingFXReady = true;
+
+    // Reveal al hacer scroll
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              e.target.classList.add("in");
+              e.target.querySelectorAll("[data-count]").forEach(animateCounter);
+              io.unobserve(e.target);
+            }
+          });
+        },
+        { threshold: 0.16, rootMargin: "0px 0px -8% 0px" }
+      );
+      document.querySelectorAll(".reveal, .reveal-scale").forEach((el) => io.observe(el));
+    } else {
+      document.querySelectorAll(".reveal, .reveal-scale").forEach((el) => el.classList.add("in"));
+      document.querySelectorAll("[data-count]").forEach(animateCounter);
+    }
+
+    // Sombra del nav al scrollear
+    const nav = $("#landingNav");
+    if (nav) {
+      const onScroll = () => nav.classList.toggle("nav-scrolled", window.scrollY > 10);
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    }
+
+    // Inclinación que sigue el cursor sobre el mockup del hero
+    const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const wrap = $(".tilt-wrap");
+    const tilt = wrap ? wrap.querySelector(".tilt") : null;
+    if (wrap && tilt && !prefersReduced && window.matchMedia("(pointer:fine)").matches) {
+      wrap.addEventListener("mousemove", (e) => {
+        const r = wrap.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width - 0.5;
+        const py = (e.clientY - r.top) / r.height - 0.5;
+        tilt.style.transform =
+          "rotateY(" + (-8 - px * 12) + "deg) rotateX(" + (4 + py * 10) + "deg) translateY(-6px)";
+      });
+      wrap.addEventListener("mouseleave", () => {
+        tilt.style.transform = "";
+      });
+    }
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
