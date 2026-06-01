@@ -803,6 +803,7 @@
                 <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Usuario / Cliente</th>
                 <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Contacto</th>
                 <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Rol</th>
+                <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Plan IA</th>
                 <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Estado</th>
                 <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Último ingreso</th>
                 <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Análisis</th>
@@ -913,6 +914,41 @@
         <button id="cred-copy" class="flex-1 bg-sky-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-sky-700 transition-colors">Copiar</button>
         <button id="cred-close" class="flex-1 border border-slate-300 text-slate-600 text-sm py-2.5 rounded-lg hover:bg-slate-50 transition-colors">Cerrar</button>
       </div>
+    </div>
+  </div>
+
+  <div id="premiumModal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-slate-900/60 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-7 animate-pop">
+      <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 mx-auto mb-3 shadow-lg shadow-orange-200">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <h3 class="text-xl font-bold text-slate-900 text-center">Activa IA Premium</h3>
+      <p class="text-sm text-slate-500 text-center mt-1 leading-relaxed">Desbloquea el análisis profundo de pliegos, la competencia histórica y el score detallado de cada proceso.</p>
+
+      <ul class="mt-5 space-y-2 text-sm text-slate-700">
+        <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Análisis profundo del pliego (8 reglas jurídicas)</li>
+        <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Competencia histórica · ¿quién ha ganado contratos similares?</li>
+        <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Score de oportunidad y recomendaciones</li>
+        <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Observaciones redactadas y descargables en Word</li>
+      </ul>
+
+      <div class="grid grid-cols-3 gap-2 mt-5">
+        <button class="text-xs font-semibold border border-slate-200 hover:border-amber-300 hover:bg-amber-50 py-3 rounded-lg transition-colors text-center" data-plan-req="30 días · $49.000">
+          <p class="text-[10px] text-slate-400 uppercase tracking-wider">30 días</p>
+          <p class="text-base font-extrabold text-slate-900 mt-0.5">$49.000</p>
+        </button>
+        <button class="text-xs font-semibold border-2 border-amber-300 bg-amber-50 hover:bg-amber-100 py-3 rounded-lg transition-colors text-center relative" data-plan-req="90 días · $129.000">
+          <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold text-white bg-amber-600 px-2 py-0.5 rounded-full">Recomendado</span>
+          <p class="text-[10px] text-amber-700 uppercase tracking-wider">90 días</p>
+          <p class="text-base font-extrabold text-amber-900 mt-0.5">$129.000</p>
+        </button>
+        <button class="text-xs font-semibold border border-slate-200 hover:border-amber-300 hover:bg-amber-50 py-3 rounded-lg transition-colors text-center" data-plan-req="1 año · $399.000">
+          <p class="text-[10px] text-slate-400 uppercase tracking-wider">1 año</p>
+          <p class="text-base font-extrabold text-slate-900 mt-0.5">$399.000</p>
+        </button>
+      </div>
+      <p class="text-[11px] text-slate-400 text-center mt-3">Cualquier plan se activa en cuanto Asociados GYM LC recibe el pago.</p>
+      <button id="prem-close" class="mt-4 w-full text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors">Ahora no — seguir gratis</button>
     </div>
   </div>
 

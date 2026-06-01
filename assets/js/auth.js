@@ -80,6 +80,8 @@ LICITA.auth = (function () {
       name: "Luis Carlos Gómez",
       email: "asociadosgym.lc@gmail.com",
       organization: "Asociados GYM LC",
+      plan: "premium",
+      planExpira: null,
       active: true,
       createdAt: new Date().toISOString(),
       lastLogin: null,
@@ -134,6 +136,14 @@ LICITA.auth = (function () {
     return !!(current && current.role === "admin");
   }
 
+  function isPremium() {
+    if (!current) return false;
+    if (current.role === "admin") return true;
+    if (current.plan !== "premium") return false;
+    if (current.planExpira && new Date(current.planExpira) < new Date()) return false;
+    return true;
+  }
+
   function listUsers() {
     return users.slice();
   }
@@ -159,6 +169,8 @@ LICITA.auth = (function () {
       name: String(data.name || "").trim() || username,
       email: String(data.email || "").trim(),
       organization: String(data.organization || "").trim(),
+      plan: data.plan === "premium" ? "premium" : "free",
+      planExpira: data.planExpira || null,
       active: true,
       createdAt: new Date().toISOString(),
       lastLogin: null,
@@ -190,6 +202,10 @@ LICITA.auth = (function () {
     });
     if (typeof patch.active === "boolean" && isAdmin()) u.active = patch.active;
     if (patch.role && isAdmin()) u.role = patch.role === "admin" ? "admin" : "client";
+    if (patch.plan && isAdmin()) {
+      u.plan = patch.plan === "premium" ? "premium" : "free";
+      if (typeof patch.planExpira !== "undefined") u.planExpira = patch.planExpira;
+    }
     if (patch.password) {
       const p = String(patch.password).trim();
       if (p.length < 6)
@@ -217,6 +233,7 @@ LICITA.auth = (function () {
     logout,
     currentUser,
     isAdmin,
+    isPremium,
     listUsers,
     getUser,
     createUser,

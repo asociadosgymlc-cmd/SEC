@@ -687,6 +687,8 @@
       .map((u) => {
         const total = loadHistoryFor(u.username).length;
         const isMe = Auth.currentUser() && Auth.currentUser().id === u.id;
+        const planActivo = u.role === "admin" ||
+          (u.plan === "premium" && (!u.planExpira || new Date(u.planExpira) >= new Date()));
         return (
           '<tr class="hover:bg-slate-50">' +
           '<td class="py-3 pr-3"><div class="flex items-center gap-3">' +
@@ -701,6 +703,15 @@
           '<td class="py-3 pr-3 text-center"><span class="role-chip ' + u.role + '">' +
           (u.role === "admin" ? "Admin" : "Cliente") + "</span></td>" +
           '<td class="py-3 pr-3 text-center">' +
+          (u.role === "admin"
+            ? '<span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">Premium ∞</span>'
+            : '<div class="flex items-center gap-2 justify-center"><span class="text-[10px] font-bold uppercase tracking-wider ' +
+              (planActivo ? "text-amber-700 bg-amber-100" : "text-slate-500 bg-slate-100") +
+              ' px-2 py-0.5 rounded-full">' + (planActivo ? "Premium" : "Free") + "</span>" +
+              '<label class="switch"><input type="checkbox" ' + (planActivo ? "checked" : "") +
+              ' data-plan="' + u.id + '"><span class="slider"></span></label></div>') +
+          "</td>" +
+          '<td class="py-3 pr-3 text-center">' +
           '<label class="switch"><input type="checkbox" ' + (u.active ? "checked" : "") +
           (isMe ? " disabled" : "") + ' data-toggle="' + u.id + '"><span class="slider"></span></label></td>' +
           '<td class="py-3 pr-3 text-xs text-slate-500">' + relativeDate(u.lastLogin) + "</td>" +
@@ -712,6 +723,19 @@
         );
       })
       .join("");
+
+    $$("#clientsBody input[data-plan]").forEach((cb) =>
+      cb.addEventListener("change", async () => {
+        try {
+          await Auth.updateUser(cb.dataset.plan, {
+            plan: cb.checked ? "premium" : "free",
+            planExpira: null,
+          });
+          toast(cb.checked ? "Premium activado" : "Premium desactivado", "ok");
+          renderClients(); renderStats();
+        } catch (e) { toast(e.message, "err"); cb.checked = !cb.checked; }
+      })
+    );
 
     $$("#clientsBody input[data-toggle]").forEach((cb) =>
       cb.addEventListener("change", async () => {
@@ -805,6 +829,31 @@
     $("#credentialsModal").classList.remove("flex");
   }
 
+  /* ------------------------- premium modal ---------------------------- */
+  function openPremiumModal() {
+    $("#premiumModal").classList.remove("hidden");
+    $("#premiumModal").classList.add("flex");
+  }
+  function closePremiumModal() {
+    $("#premiumModal").classList.add("hidden");
+    $("#premiumModal").classList.remove("flex");
+  }
+  function requestPlan(planLabel) {
+    const u = Auth.currentUser() || {};
+    const subject = encodeURIComponent("Activar IA Premium · " + planLabel);
+    const body = encodeURIComponent(
+      "Hola Asociados GYM LC,\n\n" +
+      "Quiero activar IA Premium en LICITA.\n\n" +
+      "Usuario: " + (u.username || "") + "\n" +
+      "Nombre: " + (u.name || "") + "\n" +
+      "Plan: " + planLabel + "\n\n" +
+      "Quedo atento al medio de pago.\n"
+    );
+    window.location.href =
+      "mailto:asociadosgym.lc@gmail.com?subject=" + subject + "&body=" + body;
+    toast("Abriendo correo a Asociados GYM LC…", "ok");
+  }
+
   /* ------------------------ monitoreo (admin) ------------------------- */
   function allActivity() {
     const out = [];
@@ -893,6 +942,45 @@
     filters: {},
   };
 
+  /* Score heurístico de oportunidad sobre un proceso normalizado.
+   * No requiere conocer al proponente; estima qué tan atractivo es
+   * el proceso en términos de cuantía, modalidad, estado y tipo. */
+  function opportunityScore(n) {
+    let s = 50;
+    const r = [];
+    const v = Number(n.valor) || 0;
+    if (v >= 50_000_000 && v <= 500_000_000) { s += 18; r.push("Cuantía en rango competitivo (50M–500M)"); }
+    else if (v > 500_000_000 && v <= 2_000_000_000) { s += 6; r.push("Cuantía considerable (mayor concurrencia)"); }
+    else if (v > 0 && v < 10_000_000) { s -= 18; r.push("Cuantía muy baja (margen reducido)"); }
+    else if (v > 2_000_000_000) { s -= 6; r.push("Cuantía muy alta (requisitos exigentes)"); }
+    else if (v === 0) { r.push("Cuantía no informada"); }
+
+    const mod = (n.modalidad || "").toLowerCase();
+    if (mod.includes("mínima cuantía") || mod.includes("minima cuantia")) { s += 12; r.push("Modalidad accesible: mínima cuantía"); }
+    else if (mod.includes("licitación") || mod.includes("licitacion")) { s -= 4; r.push("Licitación pública (requisitos altos)"); }
+    else if (mod.includes("contratación directa") || mod.includes("contratacion directa")) { s -= 28; r.push("Contratación directa (entrada restringida)"); }
+    else if (mod.includes("selección abreviada") || mod.includes("seleccion abreviada")) { s += 6; r.push("Selección abreviada"); }
+    else if (mod.includes("concurso")) { s += 2; r.push("Concurso de méritos"); }
+
+    if (n.estado === "Presentación de oferta") { s += 16; r.push("Estado: abierto a ofertas"); }
+    else if (n.estado === "Adjudicado") { s = 5; r.push("Ya adjudicado — fuera de competencia"); }
+    else if (n.estado === "Borrador") { s -= 12; r.push("Aún en borrador"); }
+    else if (n.estado === "Descartado" || n.estado === "Terminado Anormalmente") { s = 0; r.push("Proceso cerrado anormalmente"); }
+    else if (n.estado === "Celebrado" || n.estado === "Liquidado") { r.push("Histórico (referencia)"); }
+
+    const tipo = (n.tipoContrato || "").toLowerCase();
+    if (tipo.includes("prestación") || tipo.includes("prestacion")) { s += 4; r.push("Prestación de servicios"); }
+    if (tipo.includes("obra")) { s -= 2; r.push("Obra (suele exigir más experiencia)"); }
+
+    s = Math.max(0, Math.min(100, s));
+    let label, color;
+    if (s >= 70) { label = "Alta"; color = "emerald"; }
+    else if (s >= 50) { label = "Media"; color = "amber"; }
+    else if (s >= 30) { label = "Baja"; color = "orange"; }
+    else { label = "Muy baja"; color = "rose"; }
+    return { score: s, label, color, reasons: r };
+  }
+
   function estadoChip(estado) {
     const map = {
       "Presentación de oferta": "sky",
@@ -916,8 +1004,12 @@
     const fecha = n.fecha ? n.fecha.slice(0, 10) : "—";
     const isHist = secopState.dataset === "contratos";
     const labelFecha = isHist ? "Firmado" : "Publicado";
-    return (
-      '<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">' +
+    const cardId = "sc_" + Math.random().toString(36).slice(2, 10);
+    const sc = opportunityScore(n);
+    const isPro = Auth.isPremium();
+    const payload = escapeHtml(JSON.stringify(n));
+
+    const headerBlock =
       '<div class="flex items-start justify-between gap-4 flex-wrap">' +
       '<div class="min-w-0 flex-1">' +
       '<div class="flex items-center gap-2 flex-wrap mb-1">' +
@@ -925,6 +1017,7 @@
       (n.estado ? estadoChip(n.estado) : "") +
       (n.modalidad ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">' + escapeHtml(n.modalidad) + "</span>" : "") +
       (isHist ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Histórico</span>' : "") +
+      '<span class="ml-auto text-[10px] font-bold tracking-wider uppercase text-' + sc.color + '-700 bg-' + sc.color + '-50 border border-' + sc.color + '-100 px-2 py-0.5 rounded-full">Oportunidad ' + sc.label + " · " + sc.score + "</span>" +
       "</div>" +
       '<p class="text-sm text-slate-800 font-medium leading-snug">' + escapeHtml(n.entidad || "Entidad no informada") + "</p>" +
       '<p class="text-xs text-slate-600 mt-1 leading-relaxed">' +
@@ -943,16 +1036,14 @@
       (n.departamento ? '<span><span class="font-semibold text-slate-700">Ubicación:</span> ' + escapeHtml(n.departamento) + (n.ciudad ? " · " + escapeHtml(n.ciudad) : "") + "</span>" : "") +
       '<span><span class="font-semibold text-slate-700">' + labelFecha + ":</span> " + fecha + "</span>" +
       (n.duracion ? '<span><span class="font-semibold text-slate-700">Duración:</span> ' + escapeHtml(n.duracion + " " + (n.unidadDuracion || "")) + "</span>" : "") +
-      "</div></div></div>" +
+      "</div></div></div>";
+
+    const footer =
       '<div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">' +
-      (isHist ? "" :
-        '<button class="text-xs font-medium text-white bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-load=\'' +
-        escapeHtml(JSON.stringify(n)) + "'>" +
-        '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' +
-        "Cargar en análisis</button>"
-      ) +
-      '<button class="text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-follow=\'' +
-      escapeHtml(JSON.stringify(n)) + "'>" +
+      '<button class="text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-ia="' + cardId + '">' +
+      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.989-2.386l-.548-.547z"/></svg>' +
+      "Resumen IA</button>" +
+      '<button class="text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-follow=\'' + payload + "'>" +
       '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
       (isHist ? "Marcar como referencia" : "Seguir") + "</button>" +
       (isHist && n.proveedor
@@ -965,11 +1056,77 @@
           '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>' +
           "Abrir en SECOP</a>"
         : "") +
-      "</div></div>"
+      "</div>";
+
+    const reasonsHtml = sc.reasons
+      .map((x) => '<li class="text-[11px] text-slate-600 leading-relaxed">' + escapeHtml(x) + "</li>")
+      .join("");
+
+    const proActions =
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">' +
+      (isHist ? "" :
+        '<button class="text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1" data-sec-load=\'' + payload + "'>" +
+        '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' +
+        "Análisis profundo de pliego</button>"
+      ) +
+      '<button class="text-xs font-semibold text-emerald-700 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1" data-sec-history=\'' + payload + "'>" +
+      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2"/></svg>' +
+      "Competencia histórica</button>" +
+      "</div>";
+
+    const lockedActions =
+      '<div class="mt-3 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-3 text-center">' +
+      '<p class="text-xs font-semibold text-amber-900">🔒 Análisis profundo · Competencia histórica · Score detallado</p>' +
+      '<p class="text-[11px] text-amber-700/80 mt-1">Activa IA Premium para desbloquearlo en este y todos tus procesos.</p>' +
+      '<button data-premium class="mt-2 w-full text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 px-3 py-2 rounded-lg transition-all shadow-sm">⚡ Activar IA Premium</button>' +
+      "</div>";
+
+    const iaPanel =
+      '<div id="iap_' + cardId + '" class="hidden mt-3 bg-amber-50/50 border border-amber-200 rounded-lg p-4">' +
+      '<div class="flex items-center justify-between gap-3 flex-wrap">' +
+      '<p class="text-xs font-bold uppercase tracking-wider text-amber-800">🤖 Resumen IA</p>' +
+      '<span class="text-[10px] font-semibold uppercase tracking-wider ' +
+      (isPro ? "text-emerald-700 bg-emerald-100" : "text-slate-500 bg-slate-100") +
+      ' px-2 py-0.5 rounded-full">' + (isPro ? "Plan Premium" : "Vista previa gratis") + "</span></div>" +
+      '<div class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">' +
+      '<div class="bg-white rounded-md border border-amber-100 p-2"><p class="text-slate-400 text-[10px] uppercase font-bold">Modalidad</p><p class="text-slate-800 font-medium leading-tight">' + escapeHtml(n.modalidad || "N/D") + "</p></div>" +
+      '<div class="bg-white rounded-md border border-amber-100 p-2"><p class="text-slate-400 text-[10px] uppercase font-bold">Presupuesto</p><p class="text-slate-800 font-medium leading-tight">' + formatCOP(n.valor) + "</p></div>" +
+      '<div class="bg-white rounded-md border border-amber-100 p-2"><p class="text-slate-400 text-[10px] uppercase font-bold">Ubicación</p><p class="text-slate-800 font-medium leading-tight">' + escapeHtml(n.departamento || "N/D") + (n.ciudad ? " · " + escapeHtml(n.ciudad) : "") + "</p></div>" +
+      '<div class="bg-white rounded-md border border-amber-100 p-2"><p class="text-slate-400 text-[10px] uppercase font-bold">Duración</p><p class="text-slate-800 font-medium leading-tight">' + escapeHtml((n.duracion || "—") + " " + (n.unidadDuracion || "")) + "</p></div>" +
+      '<div class="bg-white rounded-md border border-amber-100 p-2"><p class="text-slate-400 text-[10px] uppercase font-bold">Tipo</p><p class="text-slate-800 font-medium leading-tight">' + escapeHtml(n.tipoContrato || "N/D") + "</p></div>" +
+      '<div class="bg-white rounded-md border border-amber-100 p-2"><p class="text-slate-400 text-[10px] uppercase font-bold">Estado</p><p class="text-slate-800 font-medium leading-tight">' + escapeHtml(n.estado || "N/D") + "</p></div>" +
+      "</div>" +
+      '<div class="mt-3">' +
+      '<div class="flex items-center justify-between text-[11px] mb-1">' +
+      '<span class="font-semibold text-slate-700">Score de oportunidad</span>' +
+      '<span class="font-bold text-' + sc.color + '-700">' + sc.score + "/100 · " + sc.label + "</span></div>" +
+      '<div class="bar-track"><div class="bar-fill bg-' + sc.color + '-500" style="width:' + sc.score + '%"></div></div>' +
+      '<ul class="mt-2 list-disc pl-5 space-y-0.5">' + reasonsHtml + "</ul>" +
+      "</div>" +
+      (isPro ? proActions : lockedActions) +
+      "</div>";
+
+    return (
+      '<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">' +
+      headerBlock +
+      footer +
+      iaPanel +
+      "</div>"
     );
   }
 
   function bindSecopCardActions() {
+    $$("#sec-results [data-sec-ia]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const panel = document.getElementById("iap_" + b.dataset.secIa);
+        if (!panel) return;
+        const open = panel.classList.toggle("hidden") === false;
+        b.textContent = "";
+        b.innerHTML =
+          '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.989-2.386l-.548-.547z"/></svg>' +
+          (open ? "Cerrar resumen" : "Resumen IA");
+      })
+    );
     $$("#sec-results [data-sec-load]").forEach((b) =>
       b.addEventListener("click", () => {
         const n = JSON.parse(b.dataset.secLoad);
@@ -987,6 +1144,20 @@
         $("#f-modalidad").value = map[mod] || "minima_cuantia";
         showSection("analisis");
         toast("Proceso " + n.id + " cargado en el análisis", "ok");
+      })
+    );
+    $$("#sec-results [data-sec-history]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const n = JSON.parse(b.dataset.secHistory);
+        // Salta al dataset contratos buscando el objeto + entidad
+        switchDataset("contratos");
+        // Tomar primeras 3 palabras significativas del objeto para buscar
+        const keywords = (n.objeto || "")
+          .split(/\s+/).filter((w) => w.length > 4)
+          .slice(0, 3).join(" ");
+        $("#sec-q").value = keywords;
+        $("#sec-entidad").value = "";
+        runSecopSearch(true);
       })
     );
     $$("#sec-results [data-sec-follow]").forEach((b) =>
@@ -1017,6 +1188,9 @@
         $("#sec-proveedor").value = b.dataset.secProvider;
         runSecopSearch(true);
       })
+    );
+    $$("#sec-results [data-premium]").forEach((b) =>
+      b.addEventListener("click", openPremiumModal)
     );
   }
 
@@ -1218,16 +1392,26 @@
   function renderSessionCard() {
     const u = Auth.currentUser();
     if (!u) return;
+    const premium = Auth.isPremium();
+    const planChip = u.role === "admin"
+      ? '<span class="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Premium ∞</span>'
+      : (premium
+          ? '<span class="text-[9px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Premium</span>'
+          : '<button id="sessionUpgradeBtn" class="text-[9px] font-bold uppercase tracking-wider text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 px-1.5 py-0.5 rounded">Activar</button>');
     $("#sessionCard").innerHTML =
       '<div class="w-9 h-9 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">' +
       initials(u.name) + "</div>" +
       '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-slate-800 truncate">' +
       escapeHtml(u.name) + "</p>" +
-      '<p class="text-[11px] text-slate-500">@' + escapeHtml(u.username) +
+      '<p class="text-[11px] text-slate-500 flex items-center gap-1 flex-wrap">@' + escapeHtml(u.username) +
       ' · <span class="role-chip ' + u.role + '">' +
-      (u.role === "admin" ? "Admin" : "Cliente") + "</span></p></div>";
+      (u.role === "admin" ? "Admin" : "Cliente") + "</span> " + planChip + "</p></div>";
+    const upBtn = $("#sessionUpgradeBtn");
+    if (upBtn) upBtn.addEventListener("click", openPremiumModal);
     $("#headerUserName").textContent = u.name;
-    $("#headerUserRole").textContent = u.role === "admin" ? "Administrador · " + (u.organization || "") : (u.organization || "Cliente");
+    $("#headerUserRole").textContent = u.role === "admin"
+      ? "Administrador · " + (u.organization || "")
+      : (premium ? "Premium · " : "Plan Free · ") + (u.organization || "Cliente");
     $("#headerAvatar").textContent = initials(u.name);
   }
 
@@ -1433,6 +1617,15 @@
       const txt = $("#credentialsModal").dataset.payload || "";
       navigator.clipboard.writeText(txt).then(() => toast("Credenciales copiadas", "ok"));
     });
+
+    // premium
+    $("#prem-close").addEventListener("click", closePremiumModal);
+    $("#premiumModal").addEventListener("click", (e) => {
+      if (e.target.id === "premiumModal") closePremiumModal();
+    });
+    $$("#premiumModal [data-plan-req]").forEach((b) =>
+      b.addEventListener("click", () => { requestPlan(b.dataset.planReq); closePremiumModal(); })
+    );
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
