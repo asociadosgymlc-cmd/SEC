@@ -104,6 +104,31 @@ LICITA.secop = (function () {
     "Consultoría", "Interventoría", "Arrendamiento", "Seguros",
   ];
 
+  /* Campos donde el cuadro principal de texto busca con OR. Permite que el
+   * usuario escriba un objeto, un número de proceso, una entidad o un lugar
+   * sin tener que abrir filtros avanzados. */
+  const SEARCH_FIELDS = {
+    procesos: [
+      "descripci_n_del_procedimiento",
+      "nombre_del_procedimiento",
+      "id_del_proceso",
+      "referencia_del_proceso",
+      "entidad",
+      "departamento_entidad",
+      "ciudad_de_la_unidad_de",
+    ],
+    contratos: [
+      "objeto_del_contrato_a_la",
+      "objeto_del_proceso_a_contratar",
+      "nombre_de_la_entidad",
+      "nom_raz_social_contratista",
+      "departamento",
+      "municipio_entrega",
+      "numero_de_proceso",
+      "numero_del_contrato",
+    ],
+  };
+
   function esc(value) { return String(value).replace(/'/g, "''"); }
 
   function buildWhere(dsKey, filters) {
@@ -114,15 +139,9 @@ LICITA.secop = (function () {
 
     if (filters.texto) {
       const t = esc(String(filters.texto).toUpperCase());
-      // En procesos buscamos también en nombre_del_procedimiento si existe.
-      if (dsKey === "procesos") {
-        c.push(
-          "(upper(" + f.objeto + ") like '%" + t + "%' " +
-          "OR upper(" + f.nombre + ") like '%" + t + "%')"
-        );
-      } else {
-        c.push("upper(" + f.objeto + ") like '%" + t + "%'");
-      }
+      const fields = SEARCH_FIELDS[dsKey] || [f.objeto];
+      const ors = fields.map((fld) => "upper(" + fld + ") like '%" + t + "%'");
+      c.push("(" + ors.join(" OR ") + ")");
     }
     if (filters.entidad)
       c.push("upper(" + f.entidad + ") like '%" + esc(filters.entidad.toUpperCase()) + "%'");

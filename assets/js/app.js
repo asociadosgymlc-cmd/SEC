@@ -1061,11 +1061,19 @@
       $("#sec-loading").classList.add("hidden");
       if (!data.length && secopState.page === 0) {
         $("#sec-empty").classList.remove("hidden");
+        const otroDs = secopState.dataset === "procesos" ? "contratos" : "procesos";
+        const otroLabel = secopState.dataset === "procesos" ? "los contratos históricos (SECOP 1)" : "los procesos vigentes (SECOP 2)";
         $("#sec-empty").innerHTML =
           '<div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">' +
           '<svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>' +
           '<h3 class="text-base font-semibold text-slate-900">Sin resultados</h3>' +
-          '<p class="text-sm text-slate-400 mt-1 max-w-md">No encontramos procesos con esos filtros. Prueba a relajar alguno.</p>';
+          '<p class="text-sm text-slate-400 mt-1 max-w-md">No encontramos coincidencias con esos filtros. Pruebá a quitar alguno, escribir solo la palabra clave principal o cambiar a ' + otroLabel + '.</p>' +
+          '<div class="mt-4 flex gap-2 flex-wrap justify-center">' +
+          '<button id="sec-emp-clear" class="text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors">Limpiar filtros</button>' +
+          '<button id="sec-emp-switch" class="text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors">Probar en ' + otroLabel + '</button>' +
+          "</div>";
+        const cb = $("#sec-emp-clear"); if (cb) cb.addEventListener("click", () => { $("#sec-clear").click(); runSecopSearch(true); });
+        const sb = $("#sec-emp-switch"); if (sb) sb.addEventListener("click", () => switchDataset(otroDs));
         return;
       }
       $("#sec-results").innerHTML = data.map(secopCard).join("");
@@ -1149,8 +1157,8 @@
     );
     // Placeholder dinámico
     $("#sec-q").placeholder = secopState.dataset === "procesos"
-      ? "Buscar procesos vigentes por objeto (panadería, vías, software…)"
-      : "Buscar contratos históricos por objeto, entidad o proveedor";
+      ? "Busca por objeto, entidad, departamento, ciudad o número de proceso…"
+      : "Busca por objeto, entidad, contratista, departamento o número…";
   }
 
   function switchDataset(ds) {
