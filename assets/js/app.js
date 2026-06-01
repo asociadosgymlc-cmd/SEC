@@ -122,6 +122,7 @@
   const SECTIONS = {
     dashboard: { title: "Dashboard", sub: "Resumen de tu actividad" },
     analisis: { title: "Análisis de Pliego", sub: "Carga un pliego y detecta riesgos jurídicos con IA" },
+    secop: { title: "Buscar en SECOP 2", sub: "Procesos publicados en vivo · Colombia Compra Eficiente" },
     historial: { title: "Historial", sub: "Tus análisis guardados" },
     marco: { title: "Marco Normativo", sub: "Normas y criterios que aplica el motor" },
     clientes: { title: "Clientes", sub: "Gestiona los accesos de tus clientes" },
@@ -146,6 +147,7 @@
     if (name === "clientes") renderClients();
     if (name === "monitoreo") renderMonitoring();
     if (name === "historial") renderHistory();
+    if (name === "secop") initSecopOnce();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -878,6 +880,246 @@
     requestAnimationFrame(() =>
       $$("#monPerClient .bar-fill").forEach((b) => (b.style.width = b.dataset.w + "%"))
     );
+  }
+
+  /* --------------------- buscar SECOP 2 (en vivo) --------------------- */
+  const SECOP = LICITA.secop;
+  const secopState = {
+    initialized: false,
+    page: 0,
+    pageSize: 25,
+    total: null,
+    filters: {},
+  };
+
+  function estadoChip(estado) {
+    const map = {
+      "Presentación de oferta": "sky",
+      Adjudicado: "emerald",
+      Celebrado: "indigo",
+      Liquidado: "slate",
+      Seleccionado: "violet",
+      Borrador: "amber",
+      Descartado: "rose",
+      "Terminado Anormalmente": "rose",
+    };
+    const tone = map[estado] || "slate";
+    return (
+      '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-' +
+      tone + "-100 text-" + tone + '-700">' + escapeHtml(estado || "—") + "</span>"
+    );
+  }
+
+  function secopCard(p) {
+    const n = SECOP.normalize(p);
+    const fecha = n.fechaPublicacion ? n.fechaPublicacion.slice(0, 10) : "—";
+    return (
+      '<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">' +
+      '<div class="flex items-start justify-between gap-4 flex-wrap">' +
+      '<div class="min-w-0 flex-1">' +
+      '<div class="flex items-center gap-2 flex-wrap mb-1">' +
+      '<p class="text-sm font-bold text-slate-900">' + escapeHtml(n.id || n.referencia || "Sin ID") + "</p>" +
+      estadoChip(n.estado) +
+      (n.modalidad ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">' + escapeHtml(n.modalidad) + "</span>" : "") +
+      "</div>" +
+      '<p class="text-sm text-slate-800 font-medium leading-snug">' + escapeHtml(n.entidad || "Entidad no informada") + "</p>" +
+      '<p class="text-xs text-slate-600 mt-1 leading-relaxed">' +
+      escapeHtml((n.objeto || "").slice(0, 220)) + (n.objeto && n.objeto.length > 220 ? "…" : "") + "</p>" +
+      '<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">' +
+      '<span><span class="font-semibold text-slate-700">Cuantía:</span> ' + formatCOP(n.precio) + "</span>" +
+      (n.tipoContrato ? '<span><span class="font-semibold text-slate-700">Tipo:</span> ' + escapeHtml(n.tipoContrato) + "</span>" : "") +
+      (n.departamento ? '<span><span class="font-semibold text-slate-700">Ubicación:</span> ' + escapeHtml(n.departamento) + (n.ciudad ? " · " + escapeHtml(n.ciudad) : "") + "</span>" : "") +
+      '<span><span class="font-semibold text-slate-700">Publicado:</span> ' + fecha + "</span>" +
+      (n.duracion ? '<span><span class="font-semibold text-slate-700">Duración:</span> ' + escapeHtml(n.duracion + " " + (n.unidadDuracion || "")) + "</span>" : "") +
+      "</div></div></div>" +
+      '<div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">' +
+      '<button class="text-xs font-medium text-white bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-load=\'' +
+      escapeHtml(JSON.stringify(n)) + "'>" +
+      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' +
+      "Cargar en análisis</button>" +
+      '<button class="text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-follow=\'' +
+      escapeHtml(JSON.stringify(n)) + "'>" +
+      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+      "Seguir</button>" +
+      (n.url
+        ? '<a href="' + escapeHtml(n.url) + '" target="_blank" rel="noopener" class="text-xs font-medium text-slate-700 border border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">' +
+          '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>' +
+          "Abrir en SECOP</a>"
+        : "") +
+      "</div></div>"
+    );
+  }
+
+  function bindSecopCardActions() {
+    $$("#sec-results [data-sec-load]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const n = JSON.parse(b.dataset.secLoad);
+        const mod = (n.modalidad || "").toLowerCase();
+        const map = {
+          "mínima cuantía": "minima_cuantia",
+          "selección abreviada": "seleccion_abreviada",
+          "licitación pública": "licitacion",
+          "concurso de méritos abierto": "concurso_meritos",
+          "contratación directa": "contratacion_directa",
+        };
+        $("#f-proceso").value = n.id || n.referencia || "";
+        $("#f-entidad").value = n.entidad || "";
+        $("#f-objeto").value = n.objeto || "";
+        $("#f-modalidad").value = map[mod] || "minima_cuantia";
+        showSection("analisis");
+        toast("Proceso " + (n.id || n.referencia) + " cargado en el análisis", "ok");
+      })
+    );
+    $$("#sec-results [data-sec-follow]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const n = JSON.parse(b.dataset.secFollow);
+        if (state.processes.some((p) => p.id === (n.id || n.referencia))) {
+          toast("El proceso ya está en seguimiento", "err");
+          return;
+        }
+        state.processes.unshift({
+          id: n.id || n.referencia || "Sin ID",
+          objeto: n.objeto || "Sin descripción",
+          entidad: n.entidad || "Entidad no especificada",
+          cuantia: n.precio || 0,
+          riesgo: "Medio",
+          modalidad: "minima_cuantia",
+          fecha: (n.fechaPublicacion || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+        });
+        save(LS_PROC, state.processes);
+        renderDashboard();
+        toast("Proceso agregado a seguimiento", "ok");
+      })
+    );
+  }
+
+  function collectSecopFilters() {
+    return {
+      texto: $("#sec-q").value.trim(),
+      entidad: $("#sec-entidad").value.trim(),
+      departamento: $("#sec-departamento").value,
+      ciudad: $("#sec-ciudad").value.trim(),
+      modalidad: $("#sec-modalidad").value,
+      tipoContrato: $("#sec-tipo").value,
+      estado: $("#sec-estado").value,
+      precioMin: $("#sec-pmin").value.trim(),
+      precioMax: $("#sec-pmax").value.trim(),
+      fechaDesde: $("#sec-fdesde").value,
+      fechaHasta: $("#sec-fhasta").value,
+      orden: $("#sec-orden").value,
+    };
+  }
+
+  async function runSecopSearch(reset) {
+    if (reset) secopState.page = 0;
+    secopState.filters = collectSecopFilters();
+    const f = Object.assign({}, secopState.filters, {
+      limite: secopState.pageSize,
+      offset: secopState.page * secopState.pageSize,
+    });
+    $("#sec-error").classList.add("hidden");
+    $("#sec-empty").classList.add("hidden");
+    $("#sec-results").classList.add("hidden");
+    $("#sec-pagination").classList.add("hidden");
+    $("#sec-status").classList.add("hidden");
+    $("#sec-loading").classList.remove("hidden");
+    try {
+      const [data, totalMaybe] = await Promise.all([
+        SECOP.search(f),
+        reset ? SECOP.count(f).catch(() => null) : Promise.resolve(secopState.total),
+      ]);
+      if (reset) secopState.total = totalMaybe;
+      $("#sec-loading").classList.add("hidden");
+      if (!data.length && secopState.page === 0) {
+        $("#sec-empty").classList.remove("hidden");
+        $("#sec-empty").innerHTML =
+          '<div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">' +
+          '<svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>' +
+          '<h3 class="text-base font-semibold text-slate-900">Sin resultados</h3>' +
+          '<p class="text-sm text-slate-400 mt-1 max-w-md">No encontramos procesos con esos filtros. Prueba a relajar alguno.</p>';
+        return;
+      }
+      $("#sec-results").innerHTML = data.map(secopCard).join("");
+      $("#sec-results").classList.remove("hidden");
+      bindSecopCardActions();
+      // Estado/paginación
+      const start = secopState.page * secopState.pageSize + 1;
+      const end = start + data.length - 1;
+      $("#sec-pageinfo").textContent =
+        "Mostrando " + start.toLocaleString("es-CO") + "–" + end.toLocaleString("es-CO") +
+        (secopState.total != null ? " de " + secopState.total.toLocaleString("es-CO") + " procesos" : "");
+      $("#sec-prev").disabled = secopState.page === 0;
+      $("#sec-next").disabled =
+        data.length < secopState.pageSize ||
+        (secopState.total != null && end >= secopState.total);
+      $("#sec-pagination").classList.remove("hidden");
+    } catch (err) {
+      $("#sec-loading").classList.add("hidden");
+      $("#sec-error").classList.remove("hidden");
+      $("#sec-error").textContent =
+        "Error consultando SECOP 2: " + (err && err.message ? err.message : err);
+    }
+  }
+
+  function fillSelect(id, items, placeholder) {
+    const sel = $("#" + id);
+    sel.innerHTML = '<option value="">' + (placeholder || "Todos") + "</option>" +
+      items.map((it) => '<option value="' + escapeHtml(it) + '">' + escapeHtml(it) + "</option>").join("");
+  }
+
+  function initSecopOnce() {
+    if (secopState.initialized) return;
+    secopState.initialized = true;
+
+    fillSelect("sec-departamento", SECOP.DEPARTAMENTOS);
+    fillSelect("sec-modalidad", SECOP.MODALIDADES);
+    fillSelect("sec-tipo", SECOP.TIPOS_CONTRATO);
+    fillSelect("sec-estado", SECOP.ESTADOS);
+
+    // Quick chips
+    const chips = [
+      { label: "Abiertos hoy", set: { estado: "Presentación de oferta" } },
+      { label: "Mínima cuantía", set: { modalidad: "Mínima cuantía" } },
+      { label: "Licitación Pública", set: { modalidad: "Licitación Pública" } },
+      { label: "Mayor precio", set: { orden: "precio_base DESC" } },
+    ];
+    $("#sec-quickchips").innerHTML = chips
+      .map((c, i) =>
+        '<button data-chip="' + i + '" class="text-[11px] font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 px-2.5 py-1 rounded-full transition-colors">' +
+        escapeHtml(c.label) + "</button>"
+      )
+      .join("");
+    $$("#sec-quickchips [data-chip]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const c = chips[Number(b.dataset.chip)];
+        if (c.set.estado) $("#sec-estado").value = c.set.estado;
+        if (c.set.modalidad) $("#sec-modalidad").value = c.set.modalidad;
+        if (c.set.orden) $("#sec-orden").value = c.set.orden;
+        $("#sec-filters").classList.remove("hidden");
+        runSecopSearch(true);
+      })
+    );
+
+    $("#sec-toggle-filters").addEventListener("click", () =>
+      $("#sec-filters").classList.toggle("hidden")
+    );
+    $("#sec-search").addEventListener("click", () => runSecopSearch(true));
+    $("#sec-q").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") runSecopSearch(true);
+    });
+    $("#sec-clear").addEventListener("click", () => {
+      ["sec-q","sec-entidad","sec-ciudad","sec-pmin","sec-pmax","sec-fdesde","sec-fhasta"]
+        .forEach((id) => ($("#" + id).value = ""));
+      ["sec-departamento","sec-modalidad","sec-tipo","sec-estado"]
+        .forEach((id) => ($("#" + id).value = ""));
+      $("#sec-orden").value = "fecha_de_publicacion_del DESC";
+    });
+    $("#sec-prev").addEventListener("click", () => {
+      if (secopState.page > 0) { secopState.page--; runSecopSearch(false); }
+    });
+    $("#sec-next").addEventListener("click", () => {
+      secopState.page++; runSecopSearch(false);
+    });
   }
 
   /* ----------------------------- sesión ------------------------------- */

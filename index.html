@@ -489,6 +489,10 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           Análisis de Pliego
         </a>
+        <a href="#" data-section="secop" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Buscar SECOP 2
+        </a>
         <a href="#" data-section="historial" class="nav-link">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           Historial
@@ -638,6 +642,106 @@
               <div id="loadingSteps" class="mt-4 space-y-1.5 text-xs text-slate-400"></div>
             </div>
             <div id="resultsPanel" class="hidden space-y-5"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Buscar SECOP 2 ===== -->
+      <section id="secop-section" class="p-8 hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="relative flex-1 min-w-[220px]">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="sec-q" type="text" class="field pl-9" placeholder="Buscar por objeto del contrato (panadería, vías, software…)" />
+            </div>
+            <button id="sec-toggle-filters" class="text-sm font-medium text-slate-600 hover:text-sky-700 px-3 py-2 rounded-lg border border-slate-200 hover:border-sky-300 transition-colors flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+              Filtros
+            </button>
+            <button id="sec-search" class="text-sm font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 px-4 py-2 rounded-lg shadow-sm transition-all">Buscar</button>
+          </div>
+
+          <div id="sec-filters" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Entidad</label>
+              <input id="sec-entidad" type="text" class="field mt-1" placeholder="p. ej. Alcaldía" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Departamento</label>
+              <select id="sec-departamento" class="field mt-1"><option value="">Todos</option></select>
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Ciudad</label>
+              <input id="sec-ciudad" type="text" class="field mt-1" placeholder="p. ej. Ibagué" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Modalidad</label>
+              <select id="sec-modalidad" class="field mt-1"><option value="">Todas</option></select>
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Tipo de contrato</label>
+              <select id="sec-tipo" class="field mt-1"><option value="">Todos</option></select>
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Estado</label>
+              <select id="sec-estado" class="field mt-1"><option value="">Todos</option></select>
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Precio mín. (COP)</label>
+              <input id="sec-pmin" type="number" class="field mt-1" placeholder="0" min="0" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Precio máx. (COP)</label>
+              <input id="sec-pmax" type="number" class="field mt-1" placeholder="Sin tope" min="0" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Publicado desde</label>
+              <input id="sec-fdesde" type="date" class="field mt-1" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Publicado hasta</label>
+              <input id="sec-fhasta" type="date" class="field mt-1" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Ordenar por</label>
+              <select id="sec-orden" class="field mt-1">
+                <option value="fecha_de_publicacion_del DESC">Más recientes</option>
+                <option value="fecha_de_publicacion_del ASC">Más antiguos</option>
+                <option value="precio_base DESC">Mayor precio</option>
+                <option value="precio_base ASC">Menor precio</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button id="sec-clear" class="text-xs text-slate-500 hover:text-rose-600 transition-colors">Limpiar filtros</button>
+            </div>
+          </div>
+
+          <div class="mt-3 flex flex-wrap gap-1.5" id="sec-quickchips"></div>
+        </div>
+
+        <div id="sec-status" class="hidden text-sm text-slate-500 mb-3"></div>
+        <div id="sec-error" class="hidden bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-3 mb-3"></div>
+
+        <div id="sec-loading" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center">
+          <div class="licita-spinner mb-4"></div>
+          <p class="text-sm font-medium text-slate-600">Consultando SECOP 2…</p>
+        </div>
+
+        <div id="sec-empty" class="bg-white rounded-xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center text-center">
+          <div class="w-14 h-14 rounded-2xl bg-sky-50 flex items-center justify-center mb-3">
+            <svg class="w-7 h-7 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+          <h3 class="text-base font-semibold text-slate-900">Buscar en SECOP 2 en vivo</h3>
+          <p class="text-sm text-slate-400 mt-1 max-w-md">Conectado al dataset oficial de Colombia Compra Eficiente (datos.gov.co). Escribe un objeto, ajusta filtros y presiona Buscar.</p>
+        </div>
+
+        <div id="sec-results" class="hidden space-y-3"></div>
+
+        <div id="sec-pagination" class="hidden mt-5 flex items-center justify-between flex-wrap gap-3">
+          <p id="sec-pageinfo" class="text-xs text-slate-500"></p>
+          <div class="flex gap-2">
+            <button id="sec-prev" class="text-sm font-medium border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">← Anterior</button>
+            <button id="sec-next" class="text-sm font-medium border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Siguiente →</button>
           </div>
         </div>
       </section>
@@ -820,6 +924,7 @@
   <script src="assets/js/docs.js"></script>
   <script src="assets/js/analyzer.js"></script>
   <script src="assets/js/parsers.js"></script>
+  <script src="assets/js/secop.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
