@@ -1,36 +1,95 @@
-/* LICITA · Cliente de la API SECOP 2 (datos.gov.co · dataset p6dx-8zbt)
+/* LICITA · Cliente Socrata para SECOP 1 y SECOP 2
  *
- * Búsqueda en vivo de procesos de contratación pública colombianos.
- * Replica la lógica del cliente Python compartido, en navegador.
+ * Conecta en vivo con el portal de datos abiertos del Gobierno
+ * (datos.gov.co). No requiere autenticación ni captcha.
  *
- * Socrata expone CORS, por lo que no se requiere backend.
+ *   PROCESOS  · SECOP 2 (procesos vigentes) → p6dx-8zbt
+ *   CONTRATOS · SECOP 1 (contratos históricos / quién ganó) → rpmr-utcd
  */
 window.LICITA = window.LICITA || {};
 
 LICITA.secop = (function () {
   "use strict";
 
-  const ENDPOINT = "https://www.datos.gov.co/resource/p6dx-8zbt.json";
+  const BASE = "https://www.datos.gov.co/resource/";
 
-  const ESTADOS = [
-    "Presentación de oferta",
-    "Adjudicado",
-    "Celebrado",
-    "Liquidado",
-    "Seleccionado",
-    "Borrador",
-    "Descartado",
-    "Terminado Anormalmente",
-  ];
+  /* Mapeo de campos por dataset. Permite usar una sola UI para ambos. */
+  const DATASETS = {
+    procesos: {
+      key: "procesos",
+      label: "Procesos · SECOP 2",
+      sub: "Procesos de contratación vigentes",
+      endpoint: BASE + "p6dx-8zbt.json",
+      f: {
+        id: "id_del_proceso",
+        objeto: "descripci_n_del_procedimiento",
+        nombre: "nombre_del_procedimiento",
+        entidad: "entidad",
+        nitEntidad: "nit_entidad",
+        departamento: "departamento_entidad",
+        ciudad: "ciudad_de_la_unidad_de",
+        modalidad: "modalidad_de_contratacion",
+        tipoContrato: "tipo_de_contrato",
+        estado: "estado_resumen",
+        valor: "precio_base",
+        valorAdjudicado: "valor_total_adjudicacion",
+        proveedor: "nombre_del_proveedor",
+        nitProveedor: "nit_del_proveedor_adjudicado",
+        fecha: "fecha_de_publicacion_del",
+        url: "urlproceso",
+        duracion: "duracion",
+        unidadDuracion: "unidad_de_duracion",
+      },
+      ordenDefault: "fecha_de_publicacion_del DESC",
+      ordenOptions: [
+        { v: "fecha_de_publicacion_del DESC", t: "Más recientes" },
+        { v: "fecha_de_publicacion_del ASC", t: "Más antiguos" },
+        { v: "precio_base DESC", t: "Mayor precio" },
+        { v: "precio_base ASC", t: "Menor precio" },
+      ],
+      estados: [
+        "Presentación de oferta", "Adjudicado", "Celebrado", "Liquidado",
+        "Seleccionado", "Borrador", "Descartado", "Terminado Anormalmente",
+      ],
+      modalidades: [
+        "Mínima cuantía", "Selección abreviada", "Licitación Pública",
+        "Concurso de méritos abierto", "Contratación directa", "Régimen Especial",
+      ],
+    },
 
-  const MODALIDADES = [
-    "Mínima cuantía",
-    "Selección abreviada",
-    "Licitación Pública",
-    "Concurso de méritos abierto",
-    "Contratación directa",
-    "Régimen Especial",
-  ];
+    contratos: {
+      key: "contratos",
+      label: "Contratos · SECOP 1",
+      sub: "Histórico — quién ganó, cuánto y cuándo",
+      endpoint: BASE + "rpmr-utcd.json",
+      f: {
+        id: "uid",
+        objeto: "objeto_del_contrato_a_la",
+        nombre: "objeto_del_proceso_a_contratar",
+        entidad: "nombre_de_la_entidad",
+        nitEntidad: "nit_de_la_entidad",
+        departamento: "departamento",
+        ciudad: "municipio_entrega",
+        tipoContrato: "tipo_de_contrato",
+        estado: "estado_del_proceso",
+        valor: "cuantia_contrato",
+        valorAdjudicado: "valor_contrato_con_adiciones",
+        proveedor: "nom_raz_social_contratista",
+        nitProveedor: "documento_proveedor",
+        fecha: "fecha_de_firma_del_contrato",
+        url: "ruta_proceso_en_secop",
+      },
+      ordenDefault: "fecha_de_firma_del_contrato DESC",
+      ordenOptions: [
+        { v: "fecha_de_firma_del_contrato DESC", t: "Más recientes" },
+        { v: "fecha_de_firma_del_contrato ASC", t: "Más antiguos" },
+        { v: "cuantia_contrato DESC", t: "Mayor valor" },
+        { v: "cuantia_contrato ASC", t: "Menor valor" },
+      ],
+      estados: [],
+      modalidades: [],
+    },
+  };
 
   const DEPARTAMENTOS = [
     "Amazonas","Antioquia","Arauca","Atlántico","Bogotá D.C.","Bolívar","Boyacá",
@@ -41,119 +100,125 @@ LICITA.secop = (function () {
   ];
 
   const TIPOS_CONTRATO = [
-    "Prestación de servicios",
-    "Suministro",
-    "Obra",
-    "Compraventa",
-    "Consultoría",
-    "Interventoría",
-    "Arrendamiento",
-    "Seguros",
+    "Prestación de servicios", "Suministro", "Obra", "Compraventa",
+    "Consultoría", "Interventoría", "Arrendamiento", "Seguros",
   ];
 
-  function escapeSoql(value) {
-    return String(value).replace(/'/g, "''");
-  }
+  function esc(value) { return String(value).replace(/'/g, "''"); }
 
-  function buildWhere(f) {
-    const conds = [];
-    if (f.texto) {
-      const t = escapeSoql(String(f.texto).toUpperCase());
-      conds.push(
-        "(upper(descripci_n_del_procedimiento) like '%" + t + "%' " +
-        "OR upper(nombre_del_procedimiento) like '%" + t + "%')"
-      );
+  function buildWhere(dsKey, filters) {
+    const ds = DATASETS[dsKey];
+    if (!ds) throw new Error("Dataset desconocido: " + dsKey);
+    const f = ds.f;
+    const c = [];
+
+    if (filters.texto) {
+      const t = esc(String(filters.texto).toUpperCase());
+      // En procesos buscamos también en nombre_del_procedimiento si existe.
+      if (dsKey === "procesos") {
+        c.push(
+          "(upper(" + f.objeto + ") like '%" + t + "%' " +
+          "OR upper(" + f.nombre + ") like '%" + t + "%')"
+        );
+      } else {
+        c.push("upper(" + f.objeto + ") like '%" + t + "%'");
+      }
     }
-    if (f.entidad)
-      conds.push("upper(entidad) like '%" + escapeSoql(f.entidad.toUpperCase()) + "%'");
-    if (f.departamento)
-      conds.push("upper(departamento_entidad) like '%" + escapeSoql(f.departamento.toUpperCase()) + "%'");
-    if (f.ciudad)
-      conds.push("upper(ciudad_de_la_unidad_de) like '%" + escapeSoql(f.ciudad.toUpperCase()) + "%'");
-    if (f.modalidad)
-      conds.push("upper(modalidad_de_contratacion) like '%" + escapeSoql(f.modalidad.toUpperCase()) + "%'");
-    if (f.tipoContrato)
-      conds.push("upper(tipo_de_contrato) like '%" + escapeSoql(f.tipoContrato.toUpperCase()) + "%'");
-    if (f.estado)
-      conds.push("estado_resumen='" + escapeSoql(f.estado) + "'");
-    if (f.precioMin != null && f.precioMin !== "")
-      conds.push("precio_base >= '" + Number(f.precioMin) + "'");
-    if (f.precioMax != null && f.precioMax !== "")
-      conds.push("precio_base <= '" + Number(f.precioMax) + "'");
-    if (f.fechaDesde)
-      conds.push("fecha_de_publicacion_del >= '" + f.fechaDesde + "T00:00:00.000'");
-    if (f.fechaHasta)
-      conds.push("fecha_de_publicacion_del <= '" + f.fechaHasta + "T23:59:59.000'");
-    return conds.join(" AND ");
+    if (filters.entidad)
+      c.push("upper(" + f.entidad + ") like '%" + esc(filters.entidad.toUpperCase()) + "%'");
+    if (filters.departamento && f.departamento)
+      c.push("upper(" + f.departamento + ") like '%" + esc(filters.departamento.toUpperCase()) + "%'");
+    if (filters.ciudad && f.ciudad)
+      c.push("upper(" + f.ciudad + ") like '%" + esc(filters.ciudad.toUpperCase()) + "%'");
+    if (filters.modalidad && f.modalidad)
+      c.push("upper(" + f.modalidad + ") like '%" + esc(filters.modalidad.toUpperCase()) + "%'");
+    if (filters.tipoContrato && f.tipoContrato)
+      c.push("upper(" + f.tipoContrato + ") like '%" + esc(filters.tipoContrato.toUpperCase()) + "%'");
+    if (filters.estado && f.estado)
+      c.push(f.estado + "='" + esc(filters.estado) + "'");
+    if (filters.proveedor && f.proveedor)
+      c.push("upper(" + f.proveedor + ") like '%" + esc(filters.proveedor.toUpperCase()) + "%'");
+    if (filters.precioMin != null && filters.precioMin !== "" && f.valor)
+      c.push(f.valor + " >= '" + Number(filters.precioMin) + "'");
+    if (filters.precioMax != null && filters.precioMax !== "" && f.valor)
+      c.push(f.valor + " <= '" + Number(filters.precioMax) + "'");
+    if (filters.fechaDesde && f.fecha)
+      c.push(f.fecha + " >= '" + filters.fechaDesde + "T00:00:00.000'");
+    if (filters.fechaHasta && f.fecha)
+      c.push(f.fecha + " <= '" + filters.fechaHasta + "T23:59:59.000'");
+    return c.join(" AND ");
   }
 
-  async function search(filters) {
-    const params = new URLSearchParams();
-    params.set("$limit", String(filters.limite || 25));
-    params.set("$offset", String(filters.offset || 0));
-    params.set("$order", filters.orden || "fecha_de_publicacion_del DESC");
-    const where = buildWhere(filters);
-    if (where) params.set("$where", where);
-    const r = await fetch(ENDPOINT + "?" + params.toString(), {
+  async function fetchSoda(endpoint, params) {
+    const r = await fetch(endpoint + "?" + params.toString(), {
       headers: { Accept: "application/json" },
     });
     if (!r.ok) {
       const txt = await r.text().catch(() => "");
       throw new Error(
-        "SECOP 2 (" + r.status + "): " + (txt.slice(0, 200) || r.statusText)
+        "API respondió " + r.status + " · " + (txt.slice(0, 200) || r.statusText)
       );
     }
     return r.json();
   }
 
-  async function count(filters) {
+  async function search(dsKey, filters) {
+    const ds = DATASETS[dsKey];
+    const params = new URLSearchParams();
+    params.set("$limit", String(filters.limite || 25));
+    params.set("$offset", String(filters.offset || 0));
+    params.set("$order", filters.orden || ds.ordenDefault);
+    const w = buildWhere(dsKey, filters);
+    if (w) params.set("$where", w);
+    return fetchSoda(ds.endpoint, params);
+  }
+
+  async function count(dsKey, filters) {
+    const ds = DATASETS[dsKey];
     const params = new URLSearchParams();
     params.set("$select", "count(*)");
-    const where = buildWhere(filters);
-    if (where) params.set("$where", where);
-    const r = await fetch(ENDPOINT + "?" + params.toString(), {
-      headers: { Accept: "application/json" },
-    });
-    if (!r.ok) throw new Error("SECOP 2 (" + r.status + ")");
-    const j = await r.json();
+    const w = buildWhere(dsKey, filters);
+    if (w) params.set("$where", w);
+    const j = await fetchSoda(ds.endpoint, params);
     return parseInt((j[0] || {}).count || "0", 10);
   }
 
-  /* Normaliza un registro para uso en la UI. */
-  function normalize(p) {
-    let url = null;
-    if (p.urlproceso) {
-      if (typeof p.urlproceso === "string") url = p.urlproceso;
-      else if (typeof p.urlproceso === "object") url = p.urlproceso.url || null;
-    }
+  /* Normaliza un registro al modelo común usado por la UI. */
+  function normalize(dsKey, p) {
+    const f = DATASETS[dsKey].f;
+    const url = (() => {
+      const raw = p[f.url];
+      if (!raw) return null;
+      if (typeof raw === "string") return raw;
+      if (typeof raw === "object") return raw.url || null;
+      return null;
+    })();
     return {
-      id: p.id_del_proceso || p.referencia_del_proceso || "",
-      referencia: p.referencia_del_proceso || "",
-      entidad: p.entidad || "",
-      nit: p.nit_entidad || "",
-      departamento: p.departamento_entidad || "",
-      ciudad: p.ciudad_de_la_unidad_de || p.ciudad_entidad || "",
-      objeto: p.descripci_n_del_procedimiento || p.nombre_del_procedimiento || "",
-      nombre: p.nombre_del_procedimiento || "",
-      precio: Number(p.precio_base || 0),
-      valorAdjudicacion: Number(p.valor_total_adjudicacion || 0),
-      modalidad: p.modalidad_de_contratacion || "",
-      tipoContrato: p.tipo_de_contrato || "",
-      subtipo: p.subtipo_de_contrato || "",
-      estado: p.estado_resumen || p.estado_del_procedimiento || "",
-      adjudicado: p.adjudicado || "",
-      proveedor: p.nombre_del_proveedor || "",
-      fechaPublicacion: p.fecha_de_publicacion_del || "",
-      fechaCierre: p.fecha_de_publicacion_fase_3 || "",
-      duracion: p.duracion || "",
-      unidadDuracion: p.unidad_de_duracion || "",
+      dataset: dsKey,
+      id: p[f.id] || "",
+      entidad: p[f.entidad] || "",
+      nitEntidad: p[f.nitEntidad] || "",
+      objeto: p[f.objeto] || p[f.nombre] || "",
+      nombre: p[f.nombre] || "",
+      departamento: p[f.departamento] || "",
+      ciudad: p[f.ciudad] || "",
+      modalidad: p[f.modalidad] || "",
+      tipoContrato: p[f.tipoContrato] || "",
+      estado: p[f.estado] || "",
+      valor: Number(p[f.valor] || 0),
+      valorAdjudicado: Number(p[f.valorAdjudicado] || 0),
+      proveedor: p[f.proveedor] || "",
+      nitProveedor: p[f.nitProveedor] || "",
+      fecha: p[f.fecha] || "",
+      duracion: p[f.duracion] || "",
+      unidadDuracion: p[f.unidadDuracion] || "",
       url,
       raw: p,
     };
   }
 
   return {
-    search, count, normalize,
-    ESTADOS, MODALIDADES, DEPARTAMENTOS, TIPOS_CONTRATO,
+    DATASETS, DEPARTAMENTOS, TIPOS_CONTRATO,
+    search, count, normalize, buildWhere,
   };
 })();

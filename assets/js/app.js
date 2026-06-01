@@ -886,6 +886,7 @@
   const SECOP = LICITA.secop;
   const secopState = {
     initialized: false,
+    dataset: "procesos",
     page: 0,
     pageSize: 25,
     total: null,
@@ -911,36 +912,54 @@
   }
 
   function secopCard(p) {
-    const n = SECOP.normalize(p);
-    const fecha = n.fechaPublicacion ? n.fechaPublicacion.slice(0, 10) : "—";
+    const n = SECOP.normalize(secopState.dataset, p);
+    const fecha = n.fecha ? n.fecha.slice(0, 10) : "—";
+    const isHist = secopState.dataset === "contratos";
+    const labelFecha = isHist ? "Firmado" : "Publicado";
     return (
       '<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">' +
       '<div class="flex items-start justify-between gap-4 flex-wrap">' +
       '<div class="min-w-0 flex-1">' +
       '<div class="flex items-center gap-2 flex-wrap mb-1">' +
-      '<p class="text-sm font-bold text-slate-900">' + escapeHtml(n.id || n.referencia || "Sin ID") + "</p>" +
-      estadoChip(n.estado) +
+      '<p class="text-sm font-bold text-slate-900">' + escapeHtml(n.id || "Sin ID") + "</p>" +
+      (n.estado ? estadoChip(n.estado) : "") +
       (n.modalidad ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">' + escapeHtml(n.modalidad) + "</span>" : "") +
+      (isHist ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Histórico</span>' : "") +
       "</div>" +
       '<p class="text-sm text-slate-800 font-medium leading-snug">' + escapeHtml(n.entidad || "Entidad no informada") + "</p>" +
       '<p class="text-xs text-slate-600 mt-1 leading-relaxed">' +
       escapeHtml((n.objeto || "").slice(0, 220)) + (n.objeto && n.objeto.length > 220 ? "…" : "") + "</p>" +
+      (isHist && n.proveedor
+        ? '<div class="mt-2 bg-emerald-50 border border-emerald-100 rounded p-2">' +
+          '<p class="text-[10px] uppercase font-bold tracking-wider text-emerald-700">Adjudicatario</p>' +
+          '<p class="text-sm font-semibold text-emerald-900 leading-tight mt-0.5">' + escapeHtml(n.proveedor) + "</p>" +
+          (n.nitProveedor ? '<p class="text-[11px] text-emerald-700/80">NIT/Doc: ' + escapeHtml(n.nitProveedor) + "</p>" : "") +
+          "</div>"
+        : "") +
       '<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">' +
-      '<span><span class="font-semibold text-slate-700">Cuantía:</span> ' + formatCOP(n.precio) + "</span>" +
+      '<span><span class="font-semibold text-slate-700">' + (isHist ? "Valor contrato" : "Cuantía") + ":</span> " + formatCOP(n.valor) + "</span>" +
+      (isHist && n.valorAdjudicado ? '<span><span class="font-semibold text-slate-700">Con adiciones:</span> ' + formatCOP(n.valorAdjudicado) + "</span>" : "") +
       (n.tipoContrato ? '<span><span class="font-semibold text-slate-700">Tipo:</span> ' + escapeHtml(n.tipoContrato) + "</span>" : "") +
       (n.departamento ? '<span><span class="font-semibold text-slate-700">Ubicación:</span> ' + escapeHtml(n.departamento) + (n.ciudad ? " · " + escapeHtml(n.ciudad) : "") + "</span>" : "") +
-      '<span><span class="font-semibold text-slate-700">Publicado:</span> ' + fecha + "</span>" +
+      '<span><span class="font-semibold text-slate-700">' + labelFecha + ":</span> " + fecha + "</span>" +
       (n.duracion ? '<span><span class="font-semibold text-slate-700">Duración:</span> ' + escapeHtml(n.duracion + " " + (n.unidadDuracion || "")) + "</span>" : "") +
       "</div></div></div>" +
       '<div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">' +
-      '<button class="text-xs font-medium text-white bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-load=\'' +
-      escapeHtml(JSON.stringify(n)) + "'>" +
-      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' +
-      "Cargar en análisis</button>" +
+      (isHist ? "" :
+        '<button class="text-xs font-medium text-white bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-load=\'' +
+        escapeHtml(JSON.stringify(n)) + "'>" +
+        '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' +
+        "Cargar en análisis</button>"
+      ) +
       '<button class="text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-follow=\'' +
       escapeHtml(JSON.stringify(n)) + "'>" +
       '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
-      "Seguir</button>" +
+      (isHist ? "Marcar como referencia" : "Seguir") + "</button>" +
+      (isHist && n.proveedor
+        ? '<button class="text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-provider="' + escapeHtml(n.proveedor) + '">' +
+          '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>' +
+          "Ver más de este proveedor</button>"
+        : "") +
       (n.url
         ? '<a href="' + escapeHtml(n.url) + '" target="_blank" rel="noopener" class="text-xs font-medium text-slate-700 border border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">' +
           '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>' +
@@ -962,33 +981,41 @@
           "concurso de méritos abierto": "concurso_meritos",
           "contratación directa": "contratacion_directa",
         };
-        $("#f-proceso").value = n.id || n.referencia || "";
+        $("#f-proceso").value = n.id || "";
         $("#f-entidad").value = n.entidad || "";
         $("#f-objeto").value = n.objeto || "";
         $("#f-modalidad").value = map[mod] || "minima_cuantia";
         showSection("analisis");
-        toast("Proceso " + (n.id || n.referencia) + " cargado en el análisis", "ok");
+        toast("Proceso " + n.id + " cargado en el análisis", "ok");
       })
     );
     $$("#sec-results [data-sec-follow]").forEach((b) =>
       b.addEventListener("click", () => {
         const n = JSON.parse(b.dataset.secFollow);
-        if (state.processes.some((p) => p.id === (n.id || n.referencia))) {
-          toast("El proceso ya está en seguimiento", "err");
+        if (state.processes.some((p) => p.id === n.id)) {
+          toast("Ya está en seguimiento", "err");
           return;
         }
         state.processes.unshift({
-          id: n.id || n.referencia || "Sin ID",
+          id: n.id || "Sin ID",
           objeto: n.objeto || "Sin descripción",
           entidad: n.entidad || "Entidad no especificada",
-          cuantia: n.precio || 0,
+          cuantia: n.valor || 0,
           riesgo: "Medio",
           modalidad: "minima_cuantia",
-          fecha: (n.fechaPublicacion || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+          fecha: (n.fecha || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
         });
         save(LS_PROC, state.processes);
         renderDashboard();
-        toast("Proceso agregado a seguimiento", "ok");
+        toast(secopState.dataset === "contratos" ? "Referencia guardada" : "Proceso agregado a seguimiento", "ok");
+      })
+    );
+    $$("#sec-results [data-sec-provider]").forEach((b) =>
+      b.addEventListener("click", () => {
+        $("#sec-filters").classList.remove("hidden");
+        $("#sec-q").value = "";
+        $("#sec-proveedor").value = b.dataset.secProvider;
+        runSecopSearch(true);
       })
     );
   }
@@ -1002,6 +1029,7 @@
       modalidad: $("#sec-modalidad").value,
       tipoContrato: $("#sec-tipo").value,
       estado: $("#sec-estado").value,
+      proveedor: $("#sec-proveedor") ? $("#sec-proveedor").value.trim() : "",
       precioMin: $("#sec-pmin").value.trim(),
       precioMax: $("#sec-pmax").value.trim(),
       fechaDesde: $("#sec-fdesde").value,
@@ -1024,9 +1052,10 @@
     $("#sec-status").classList.add("hidden");
     $("#sec-loading").classList.remove("hidden");
     try {
+      const ds = secopState.dataset;
       const [data, totalMaybe] = await Promise.all([
-        SECOP.search(f),
-        reset ? SECOP.count(f).catch(() => null) : Promise.resolve(secopState.total),
+        SECOP.search(ds, f),
+        reset ? SECOP.count(ds, f).catch(() => null) : Promise.resolve(secopState.total),
       ]);
       if (reset) secopState.total = totalMaybe;
       $("#sec-loading").classList.add("hidden");
@@ -1063,26 +1092,44 @@
 
   function fillSelect(id, items, placeholder) {
     const sel = $("#" + id);
+    if (!sel) return;
     sel.innerHTML = '<option value="">' + (placeholder || "Todos") + "</option>" +
       items.map((it) => '<option value="' + escapeHtml(it) + '">' + escapeHtml(it) + "</option>").join("");
   }
+  function fillOrden(options) {
+    $("#sec-orden").innerHTML = options
+      .map((o) => '<option value="' + escapeHtml(o.v) + '">' + escapeHtml(o.t) + "</option>")
+      .join("");
+  }
 
-  function initSecopOnce() {
-    if (secopState.initialized) return;
-    secopState.initialized = true;
-
-    fillSelect("sec-departamento", SECOP.DEPARTAMENTOS);
-    fillSelect("sec-modalidad", SECOP.MODALIDADES);
-    fillSelect("sec-tipo", SECOP.TIPOS_CONTRATO);
-    fillSelect("sec-estado", SECOP.ESTADOS);
-
-    // Quick chips
-    const chips = [
+  function applyDatasetUI() {
+    const ds = SECOP.DATASETS[secopState.dataset];
+    $$(".sec-tab").forEach((b) =>
+      b.classList.toggle("active", b.dataset.ds === secopState.dataset)
+    );
+    $$("[data-only-procesos]").forEach((el) =>
+      el.classList.toggle("hidden", secopState.dataset !== "procesos")
+    );
+    $$("[data-only-contratos]").forEach((el) =>
+      el.classList.toggle("hidden", secopState.dataset !== "contratos")
+    );
+    fillOrden(ds.ordenOptions);
+    fillSelect("sec-modalidad", ds.modalidades || []);
+    fillSelect("sec-estado", ds.estados || []);
+    // Chips por dataset
+    const procesosChips = [
       { label: "Abiertos hoy", set: { estado: "Presentación de oferta" } },
       { label: "Mínima cuantía", set: { modalidad: "Mínima cuantía" } },
       { label: "Licitación Pública", set: { modalidad: "Licitación Pública" } },
       { label: "Mayor precio", set: { orden: "precio_base DESC" } },
     ];
+    const contratosChips = [
+      { label: "Más recientes", set: { orden: "fecha_de_firma_del_contrato DESC" } },
+      { label: "Mayor valor", set: { orden: "cuantia_contrato DESC" } },
+      { label: "Obras", set: { tipoContrato: "Obra" } },
+      { label: "Prestación de servicios", set: { tipoContrato: "Prestación de servicios" } },
+    ];
+    const chips = secopState.dataset === "procesos" ? procesosChips : contratosChips;
     $("#sec-quickchips").innerHTML = chips
       .map((c, i) =>
         '<button data-chip="' + i + '" class="text-[11px] font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 px-2.5 py-1 rounded-full transition-colors">' +
@@ -1095,9 +1142,40 @@
         if (c.set.estado) $("#sec-estado").value = c.set.estado;
         if (c.set.modalidad) $("#sec-modalidad").value = c.set.modalidad;
         if (c.set.orden) $("#sec-orden").value = c.set.orden;
+        if (c.set.tipoContrato) $("#sec-tipo").value = c.set.tipoContrato;
         $("#sec-filters").classList.remove("hidden");
         runSecopSearch(true);
       })
+    );
+    // Placeholder dinámico
+    $("#sec-q").placeholder = secopState.dataset === "procesos"
+      ? "Buscar procesos vigentes por objeto (panadería, vías, software…)"
+      : "Buscar contratos históricos por objeto, entidad o proveedor";
+  }
+
+  function switchDataset(ds) {
+    if (!SECOP.DATASETS[ds] || ds === secopState.dataset) return;
+    secopState.dataset = ds;
+    secopState.page = 0;
+    secopState.total = null;
+    applyDatasetUI();
+    // Limpiar resultados
+    $("#sec-results").classList.add("hidden");
+    $("#sec-pagination").classList.add("hidden");
+    $("#sec-error").classList.add("hidden");
+    $("#sec-empty").classList.remove("hidden");
+  }
+
+  function initSecopOnce() {
+    if (secopState.initialized) return;
+    secopState.initialized = true;
+
+    fillSelect("sec-departamento", SECOP.DEPARTAMENTOS);
+    fillSelect("sec-tipo", SECOP.TIPOS_CONTRATO);
+    applyDatasetUI();
+
+    $$(".sec-tab").forEach((b) =>
+      b.addEventListener("click", () => switchDataset(b.dataset.ds))
     );
 
     $("#sec-toggle-filters").addEventListener("click", () =>
@@ -1108,11 +1186,12 @@
       if (e.key === "Enter") runSecopSearch(true);
     });
     $("#sec-clear").addEventListener("click", () => {
-      ["sec-q","sec-entidad","sec-ciudad","sec-pmin","sec-pmax","sec-fdesde","sec-fhasta"]
-        .forEach((id) => ($("#" + id).value = ""));
+      ["sec-q","sec-entidad","sec-ciudad","sec-pmin","sec-pmax","sec-fdesde","sec-fhasta","sec-proveedor"]
+        .forEach((id) => { if ($("#" + id)) $("#" + id).value = ""; });
       ["sec-departamento","sec-modalidad","sec-tipo","sec-estado"]
         .forEach((id) => ($("#" + id).value = ""));
-      $("#sec-orden").value = "fecha_de_publicacion_del DESC";
+      const ds = SECOP.DATASETS[secopState.dataset];
+      $("#sec-orden").value = ds.ordenDefault;
     });
     $("#sec-prev").addEventListener("click", () => {
       if (secopState.page > 0) { secopState.page--; runSecopSearch(false); }
