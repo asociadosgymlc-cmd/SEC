@@ -148,6 +148,7 @@
     if (name === "monitoreo") renderMonitoring();
     if (name === "historial") renderHistory();
     if (name === "secop") initSecopOnce();
+    if (name === "analisis") renderQuotaBanner();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -508,6 +509,38 @@
     renderStats();
   }
 
+  function renderQuotaBanner() {
+    const banner = $("#quotaBanner");
+    if (!banner) return;
+    const left = Auth.freeUsesLeft();
+    if (left === Infinity) {
+      banner.classList.add("hidden");
+      banner.innerHTML = "";
+      return;
+    }
+    if (left > 0) {
+      banner.classList.remove("hidden");
+      banner.innerHTML =
+        '<div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">' +
+        '<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center"><svg class="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>' +
+        '<div><p class="text-sm font-semibold text-amber-900">Te quedan ' + left + ' análisis IA gratis</p>' +
+        '<p class="text-xs text-amber-700/80">Cuando se acaben, activa IA Premium para seguir analizando.</p></div></div>' +
+        '<button id="quotaUpgrade" class="text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 px-4 py-2 rounded-lg shadow-sm transition-all">⚡ Activar Premium</button>' +
+        "</div>";
+    } else {
+      banner.classList.remove("hidden");
+      banner.innerHTML =
+        '<div class="bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">' +
+        '<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center"><svg class="w-5 h-5 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>' +
+        '<div><p class="text-sm font-semibold text-rose-900">Has usado tus 3 análisis gratis</p>' +
+        '<p class="text-xs text-rose-700/80">Activa IA Premium para continuar analizando pliegos.</p></div></div>' +
+        '<button id="quotaUpgrade" class="text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 px-4 py-2 rounded-lg shadow-sm transition-all">⚡ Activar Premium</button>' +
+        "</div>";
+    }
+    const btn = $("#quotaUpgrade");
+    if (btn) btn.addEventListener("click", openPremiumModal);
+  }
+
   function doAnalyze() {
     const input = collectInput();
     if (!input.textoRequisito) {
@@ -515,11 +548,19 @@
       $("#f-texto").focus();
       return;
     }
+    if (!Auth.consumeFreeUse()) {
+      openPremiumModal();
+      toast("Has usado tus 3 análisis gratis. Activa Premium.", "err");
+      return;
+    }
     runLoadingAnimation(() => {
       const result = A.analyze(input);
       renderResults(result);
       pushHistory(result);
-      toast("Análisis completado · riesgo " + result.riskLevel, "ok");
+      renderQuotaBanner();
+      const left = Auth.freeUsesLeft();
+      const tail = left === Infinity ? "" : " · te quedan " + left + " gratis";
+      toast("Análisis completado · riesgo " + result.riskLevel + tail, "ok");
     });
   }
 
@@ -1450,17 +1491,27 @@
     }
   }
 
-  function showLogin() {
+  function showLogin(view) {
     document.body.classList.add("locked");
     $("#landingPage").classList.add("hidden");
     $("#appRoot").classList.add("hidden");
     $("#loginScreen").classList.remove("hidden");
     $("#loginScreen").classList.add("flex");
+    const showReg = view === "register";
+    $("#authLoginView").classList.toggle("hidden", showReg);
+    $("#authRegisterView").classList.toggle("hidden", !showReg);
     $("#loginError").classList.add("hidden");
-    $("#loginUser").value = "";
-    $("#loginPass").value = "";
-    setTimeout(() => $("#loginUser").focus(), 100);
+    $("#regError").classList.add("hidden");
+    if (showReg) {
+      setTimeout(() => $("#regEmail").focus(), 100);
+    } else {
+      $("#loginUser").value = "";
+      $("#loginPass").value = "";
+      setTimeout(() => $("#loginUser").focus(), 100);
+    }
   }
+
+  function showRegister() { showLogin("register"); }
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -1485,6 +1536,27 @@
     toast("Bienvenido, " + res.user.name, "ok");
   }
 
+  async function handleRegister(e) {
+    e.preventDefault();
+    const name = $("#regName").value.trim();
+    const email = $("#regEmail").value.trim();
+    const password = $("#regPass").value;
+    $("#registerBtn").disabled = true;
+    $("#registerBtnLabel").textContent = "Creando cuenta…";
+    try {
+      const u = await Auth.publicRegister({ name, email, password });
+      $("#registerBtn").disabled = false;
+      $("#registerBtnLabel").textContent = "Crear cuenta y empezar";
+      showApp();
+      toast("¡Cuenta creada! Tienes 3 análisis gratis · @" + u.username, "ok");
+    } catch (err) {
+      $("#registerBtn").disabled = false;
+      $("#registerBtnLabel").textContent = "Crear cuenta y empezar";
+      $("#regError").textContent = err.message || "No se pudo crear la cuenta.";
+      $("#regError").classList.remove("hidden");
+    }
+  }
+
   function handleLogout() {
     Auth.logout();
     showLanding();
@@ -1494,6 +1566,9 @@
   function bindLanding() {
     document.querySelectorAll("[data-go-login]").forEach((b) =>
       b.addEventListener("click", (e) => { e.preventDefault(); showLogin(); })
+    );
+    document.querySelectorAll("[data-go-register]").forEach((b) =>
+      b.addEventListener("click", (e) => { e.preventDefault(); showRegister(); })
     );
     document.querySelectorAll("[data-scroll]").forEach((b) =>
       b.addEventListener("click", (e) => {
@@ -1538,12 +1613,19 @@
 
   /* ----------------------------- eventos ------------------------------ */
   function bindEvents() {
-    // login
+    // login / registro
     $("#loginForm").addEventListener("submit", handleLogin);
+    $("#registerForm").addEventListener("submit", handleRegister);
     $("#togglePass").addEventListener("click", () => {
       const i = $("#loginPass");
       i.type = i.type === "password" ? "text" : "password";
     });
+    $("#toggleRegPass").addEventListener("click", () => {
+      const i = $("#regPass");
+      i.type = i.type === "password" ? "text" : "password";
+    });
+    $("#goRegisterBtn").addEventListener("click", () => showLogin("register"));
+    $("#goLoginBtn").addEventListener("click", () => showLogin("login"));
     $("#logoutBtn").addEventListener("click", handleLogout);
     $("#backToLanding").addEventListener("click", showLanding);
     bindLanding();

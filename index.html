@@ -53,7 +53,7 @@
         </nav>
         <div class="flex items-center gap-2">
           <button class="hidden sm:inline-flex text-sm font-medium text-slate-700 hover:text-sky-700 px-3 py-2" data-go-login>Iniciar sesión</button>
-          <button class="text-sm font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 px-4 py-2 rounded-lg shadow-sm transition-all" data-scroll="contact">Solicitar acceso</button>
+          <button class="text-sm font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 px-4 py-2 rounded-lg shadow-sm transition-all" data-go-register>Crear cuenta gratis</button>
         </div>
       </div>
     </header>
@@ -77,8 +77,8 @@
             Carga un pliego, deja que LICITA detecte los riesgos contra el marco normativo y entrega una observación redactada y lista para radicar — en minutos.
           </p>
           <div class="mt-7 flex flex-wrap gap-3">
-            <button class="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-semibold px-5 py-3 rounded-lg shadow-sm transition-all flex items-center gap-2" data-scroll="contact">
-              Empezar
+            <button class="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-semibold px-5 py-3 rounded-lg shadow-sm transition-all flex items-center gap-2" data-go-register>
+              Empezar gratis
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </button>
             <button class="border border-slate-300 hover:border-slate-400 text-slate-700 font-medium px-5 py-3 rounded-lg transition-all flex items-center gap-2" data-scroll="features">
@@ -433,31 +433,78 @@
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
           Volver al inicio
         </button>
-        <h2 class="text-2xl font-bold text-slate-900">Iniciar sesión</h2>
-        <p class="text-sm text-slate-500 mt-1">Ingresa con las credenciales que te entregó Asociados GYM LC.</p>
 
-        <form id="loginForm" class="mt-7 space-y-4" autocomplete="off">
-          <div>
-            <label class="text-xs font-medium text-slate-600">Usuario</label>
-            <input id="loginUser" type="text" class="field mt-1" placeholder="p. ej. cliente.empresa" autocomplete="username" />
-          </div>
-          <div>
-            <label class="text-xs font-medium text-slate-600">Contraseña</label>
-            <div class="relative mt-1">
-              <input id="loginPass" type="password" class="field pr-10" placeholder="••••••••" autocomplete="current-password" />
-              <button type="button" id="togglePass" class="absolute inset-y-0 right-0 w-10 flex items-center justify-center text-slate-400 hover:text-slate-700">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-              </button>
+        <!-- Vista de LOGIN -->
+        <div id="authLoginView">
+          <h2 class="text-2xl font-bold text-slate-900">Iniciar sesión</h2>
+          <p class="text-sm text-slate-500 mt-1">Bienvenido de vuelta a LICITA.</p>
+
+          <form id="loginForm" class="mt-7 space-y-4" autocomplete="off">
+            <div>
+              <label class="text-xs font-medium text-slate-600">Usuario o correo</label>
+              <input id="loginUser" type="text" class="field mt-1" placeholder="cliente.empresa o tucorreo@empresa.com" autocomplete="username" />
             </div>
-          </div>
-          <p id="loginError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2"></p>
-          <button type="submit" id="loginBtn" class="w-full bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-semibold py-2.5 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2">
-            <span id="loginBtnLabel">Entrar a la plataforma</span>
-          </button>
-        </form>
+            <div>
+              <label class="text-xs font-medium text-slate-600">Contraseña</label>
+              <div class="relative mt-1">
+                <input id="loginPass" type="password" class="field pr-10" placeholder="••••••••" autocomplete="current-password" />
+                <button type="button" id="togglePass" class="absolute inset-y-0 right-0 w-10 flex items-center justify-center text-slate-400 hover:text-slate-700">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+              </div>
+            </div>
+            <p id="loginError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2"></p>
+            <button type="submit" id="loginBtn" class="w-full bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-semibold py-2.5 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2">
+              <span id="loginBtnLabel">Entrar a la plataforma</span>
+            </button>
+          </form>
 
-        <div class="mt-8 pt-6 border-t border-slate-100">
-          <p class="text-[11px] text-slate-400 text-center leading-relaxed">¿Olvidaste tu contraseña? Contacta a Asociados GYM LC al correo <a class="text-sky-700 hover:underline" href="mailto:asociadosgym.lc@gmail.com">asociadosgym.lc@gmail.com</a>.</p>
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-200"></span></div>
+            <div class="relative flex justify-center"><span class="bg-white px-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400">o</span></div>
+          </div>
+
+          <button type="button" id="goRegisterBtn" class="w-full border-2 border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Crear cuenta gratis · 3 análisis incluidos
+          </button>
+          <p class="text-[11px] text-slate-400 text-center mt-2">Sin tarjeta · Solo correo y contraseña</p>
+
+          <p class="text-[11px] text-slate-400 text-center mt-6 leading-relaxed">¿Problemas para entrar? Escribe a <a class="text-sky-700 hover:underline" href="mailto:asociadosgym.lc@gmail.com">asociadosgym.lc@gmail.com</a>.</p>
+        </div>
+
+        <!-- Vista de REGISTRO -->
+        <div id="authRegisterView" class="hidden">
+          <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">⚡ 3 análisis gratis</span>
+          <h2 class="text-2xl font-bold text-slate-900 mt-3">Crear cuenta gratis</h2>
+          <p class="text-sm text-slate-500 mt-1">Empieza a analizar pliegos con IA sin pagar nada. Solo necesitamos tu correo.</p>
+
+          <form id="registerForm" class="mt-6 space-y-4" autocomplete="off">
+            <div>
+              <label class="text-xs font-medium text-slate-600">Nombre (opcional)</label>
+              <input id="regName" type="text" class="field mt-1" placeholder="Tu nombre" autocomplete="name" />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">Correo electrónico</label>
+              <input id="regEmail" type="email" class="field mt-1" placeholder="tucorreo@empresa.com" autocomplete="email" required />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">Contraseña</label>
+              <div class="relative mt-1">
+                <input id="regPass" type="password" class="field pr-10" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required />
+                <button type="button" id="toggleRegPass" class="absolute inset-y-0 right-0 w-10 flex items-center justify-center text-slate-400 hover:text-slate-700">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+              </div>
+            </div>
+            <p id="regError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2"></p>
+            <button type="submit" id="registerBtn" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-2.5 rounded-lg shadow-sm transition-all">
+              <span id="registerBtnLabel">Crear cuenta y empezar</span>
+            </button>
+            <p class="text-[10px] text-slate-400 text-center leading-relaxed">Al registrarte aceptas las condiciones de uso de la plataforma. Tu cuenta queda guardada en este navegador.</p>
+          </form>
+
+          <button type="button" id="goLoginBtn" class="mt-5 w-full text-xs font-medium text-slate-500 hover:text-sky-700 transition-colors">¿Ya tienes cuenta? Inicia sesión</button>
         </div>
       </div>
     </div>
@@ -586,6 +633,7 @@
 
       <!-- ===== Análisis de Pliego ===== -->
       <section id="analisis-section" class="p-8 hidden">
+        <div id="quotaBanner" class="hidden mb-5"></div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-1 space-y-5">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
