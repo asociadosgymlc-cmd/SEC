@@ -57,6 +57,45 @@ LICITA.secop = (function () {
       ],
     },
 
+    paa: {
+      key: "paa",
+      label: "Plan Anual · PAA",
+      sub: "Qué van a comprar las entidades este año",
+      endpoint: BASE + "crbs-icmf.json",
+      f: {
+        id: "id_de_paa",
+        objeto: "descripcion_del_proceso",
+        nombre: "descripcion_del_proceso",
+        entidad: "entidad",
+        nitEntidad: "nit_entidad",
+        departamento: "ubicaci_n",
+        ciudad: "ubicaci_n",
+        modalidad: "modalidad_de_contrataci_n",
+        tipoContrato: "tipo_de_contrato",
+        estado: "estado_de_suma",
+        valor: "valor_total_estimado",
+        valorAdjudicado: "valor_total_estimado",
+        proveedor: "",
+        nitProveedor: "",
+        fecha: "fecha_estimada_de_inicio",
+        url: "anio",
+        duracion: "duracion_estimada_del",
+        unidadDuracion: "unidad_de_duraci_n_estimada",
+      },
+      ordenDefault: "fecha_estimada_de_inicio ASC",
+      ordenOptions: [
+        { v: "fecha_estimada_de_inicio ASC", t: "Más próximos" },
+        { v: "fecha_estimada_de_inicio DESC", t: "Más lejanos" },
+        { v: "valor_total_estimado DESC", t: "Mayor valor" },
+        { v: "valor_total_estimado ASC", t: "Menor valor" },
+      ],
+      estados: [],
+      modalidades: [
+        "Mínima cuantía", "Selección abreviada", "Licitación pública",
+        "Concurso de méritos", "Contratación directa", "Régimen Especial",
+      ],
+    },
+
     contratos: {
       key: "contratos",
       label: "Contratos · SECOP 1",
@@ -126,6 +165,13 @@ LICITA.secop = (function () {
       "municipio_entrega",
       "numero_de_proceso",
       "numero_del_contrato",
+    ],
+    paa: [
+      "descripcion_del_proceso",
+      "entidad",
+      "ubicaci_n",
+      "modalidad_de_contrataci_n",
+      "tipo_de_contrato",
     ],
   };
 

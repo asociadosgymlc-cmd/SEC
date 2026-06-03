@@ -123,8 +123,10 @@
     dashboard: { title: "Dashboard", sub: "Resumen de tu actividad" },
     analisis: { title: "Análisis de Pliego", sub: "Carga un pliego y detecta riesgos jurídicos con IA" },
     secop: { title: "Buscar en SECOP 2", sub: "Procesos publicados en vivo · Colombia Compra Eficiente" },
+    paa: { title: "Plan Anual de Adquisiciones", sub: "Anticipa lo que las entidades planean comprar este año" },
     historial: { title: "Historial", sub: "Tus análisis guardados" },
     marco: { title: "Marco Normativo", sub: "Normas y criterios que aplica el motor" },
+    formacion: { title: "Formación", sub: "Aprende a ganar licitaciones · cursos cortos y certificados" },
     clientes: { title: "Clientes", sub: "Gestiona los accesos de tus clientes" },
     monitoreo: { title: "Monitoreo", sub: "Actividad de tus clientes en la plataforma" },
   };
@@ -149,6 +151,8 @@
     if (name === "historial") renderHistory();
     if (name === "secop") initSecopOnce();
     if (name === "analisis") renderQuotaBanner();
+    if (name === "paa") initPaaOnce();
+    if (name === "formacion") showCursosCatalog();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1781,6 +1785,494 @@
         closeModal(); closeClientModal(); closeCredentialsModal();
       }
     });
+
+    // formación
+    const cb = $("#curso-back");
+    if (cb) cb.addEventListener("click", showCursosCatalog);
+  }
+
+  /* =====================================================================
+     PLAN ANUAL DE ADQUISICIONES (PAA) · datos.gov.co crbs-icmf
+     Cruza con SECOP 2 (procesos vigentes) y con el analizador de pliegos.
+     ===================================================================== */
+  const paaState = {
+    initialized: false,
+    page: 0,
+    pageSize: 25,
+    total: null,
+    filters: {},
+  };
+
+  function paaCollectFilters() {
+    return {
+      texto: $("#paa-q").value.trim(),
+      entidad: $("#paa-entidad").value.trim(),
+      departamento: $("#paa-departamento").value,
+      modalidad: $("#paa-modalidad").value,
+      precioMin: $("#paa-pmin").value.trim(),
+      orden: "fecha_estimada_de_inicio ASC",
+    };
+  }
+
+  function paaForensicSummary(items) {
+    if (!items.length) return null;
+    const total = items.reduce((s, p) => {
+      const n = SECOP.normalize("paa", p);
+      return s + (Number(n.valor) || 0);
+    }, 0);
+    const byEntity = {};
+    items.forEach((p) => {
+      const n = SECOP.normalize("paa", p);
+      const e = n.entidad || "—";
+      byEntity[e] = (byEntity[e] || 0) + 1;
+    });
+    const topEntity = Object.entries(byEntity).sort((a, b) => b[1] - a[1])[0];
+    const months = {};
+    items.forEach((p) => {
+      const n = SECOP.normalize("paa", p);
+      const m = (n.fecha || "").slice(0, 7);
+      if (m) months[m] = (months[m] || 0) + 1;
+    });
+    const peakMonth = Object.entries(months).sort((a, b) => b[1] - a[1])[0];
+    return {
+      total,
+      avg: total / items.length,
+      entityCount: Object.keys(byEntity).length,
+      topEntity: topEntity ? topEntity[0] : "—",
+      topEntityCount: topEntity ? topEntity[1] : 0,
+      peakMonth: peakMonth ? peakMonth[0] : "—",
+      peakMonthCount: peakMonth ? peakMonth[1] : 0,
+    };
+  }
+
+  function paaRenderForensic(sum) {
+    if (!sum) { $("#paa-forensic").classList.add("hidden"); return; }
+    $("#paa-forensic").classList.remove("hidden");
+    const cards = [
+      { label: "Valor total estimado", value: formatCOP(sum.total), tone: "amber" },
+      { label: "Promedio por proceso", value: formatCOP(Math.round(sum.avg)), tone: "indigo" },
+      { label: "Entidades involucradas", value: sum.entityCount, tone: "sky" },
+      { label: "Entidad con más planes", value: sum.topEntity + " (" + sum.topEntityCount + ")", tone: "emerald" },
+    ];
+    $("#paa-forensic").innerHTML = cards
+      .map((c) =>
+        '<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 card-hover">' +
+        '<p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">' + c.label + "</p>" +
+        '<p class="text-lg font-bold text-' + c.tone + '-700 mt-1 leading-tight">' + escapeHtml(String(c.value)) + "</p></div>"
+      ).join("");
+  }
+
+  function paaCard(p) {
+    const n = SECOP.normalize("paa", p);
+    const fecha = n.fecha ? n.fecha.slice(0, 10) : "—";
+    const payload = escapeHtml(JSON.stringify(n));
+    return (
+      '<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">' +
+      '<div class="flex items-start justify-between gap-4 flex-wrap">' +
+      '<div class="min-w-0 flex-1">' +
+      '<div class="flex items-center gap-2 flex-wrap mb-1">' +
+      '<span class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Planeado</span>' +
+      (n.modalidad ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">' + escapeHtml(n.modalidad) + "</span>" : "") +
+      (n.tipoContrato ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded">' + escapeHtml(n.tipoContrato) + "</span>" : "") +
+      "</div>" +
+      '<p class="text-sm font-bold text-slate-900 leading-snug mt-1">' + escapeHtml(n.entidad || "Entidad no informada") + "</p>" +
+      '<p class="text-xs text-slate-600 mt-1 leading-relaxed">' +
+      escapeHtml((n.objeto || "").slice(0, 240)) + (n.objeto && n.objeto.length > 240 ? "…" : "") + "</p>" +
+      '<div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">' +
+      '<span><span class="font-semibold text-slate-700">Valor estimado:</span> ' + formatCOP(n.valor) + "</span>" +
+      (n.departamento ? '<span><span class="font-semibold text-slate-700">Ubicación:</span> ' + escapeHtml(n.departamento) + "</span>" : "") +
+      '<span><span class="font-semibold text-slate-700">Apertura prevista:</span> ' + fecha + "</span>" +
+      (n.duracion ? '<span><span class="font-semibold text-slate-700">Duración:</span> ' + escapeHtml(n.duracion + " " + (n.unidadDuracion || "")) + "</span>" : "") +
+      "</div></div></div>" +
+      '<div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">' +
+      '<button class="text-xs font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1" data-paa-secop=\'' + payload + "'>" +
+      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>' +
+      "Buscar en SECOP cuando se abra</button>" +
+      '<button class="text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-paa-load=\'' + payload + "'>" +
+      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' +
+      "Preparar análisis</button>" +
+      '<button class="text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-paa-history=\'' + payload + "'>" +
+      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2"/></svg>' +
+      "Ver históricos similares</button>" +
+      "</div></div>"
+    );
+  }
+
+  function bindPaaCardActions() {
+    $$("#paa-results [data-paa-secop]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const n = JSON.parse(b.dataset.paaSecop);
+        showSection("secop");
+        setTimeout(() => {
+          initSecopOnce();
+          if (secopState.dataset !== "procesos") switchDataset("procesos");
+          $("#sec-q").value = (n.objeto || "").split(/\s+/).filter((w) => w.length > 4).slice(0, 3).join(" ");
+          $("#sec-entidad").value = n.entidad || "";
+          runSecopSearch(true);
+        }, 60);
+      })
+    );
+    $$("#paa-results [data-paa-load]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const n = JSON.parse(b.dataset.paaLoad);
+        const map = {
+          "mínima cuantía": "minima_cuantia",
+          "selección abreviada": "seleccion_abreviada",
+          "licitación pública": "licitacion",
+          "concurso de méritos": "concurso_meritos",
+          "contratación directa": "contratacion_directa",
+        };
+        $("#f-proceso").value = n.id || "";
+        $("#f-entidad").value = n.entidad || "";
+        $("#f-objeto").value = n.objeto || "";
+        $("#f-modalidad").value = map[(n.modalidad || "").toLowerCase()] || "minima_cuantia";
+        showSection("analisis");
+        toast("Proceso planeado cargado en el analizador", "ok");
+      })
+    );
+    $$("#paa-results [data-paa-history]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const n = JSON.parse(b.dataset.paaHistory);
+        showSection("secop");
+        setTimeout(() => {
+          initSecopOnce();
+          if (secopState.dataset !== "contratos") switchDataset("contratos");
+          $("#sec-q").value = (n.objeto || "").split(/\s+/).filter((w) => w.length > 4).slice(0, 3).join(" ");
+          runSecopSearch(true);
+        }, 60);
+      })
+    );
+  }
+
+  async function runPaaSearch(reset) {
+    if (reset) paaState.page = 0;
+    paaState.filters = paaCollectFilters();
+    const f = Object.assign({}, paaState.filters, {
+      limite: paaState.pageSize,
+      offset: paaState.page * paaState.pageSize,
+    });
+    $("#paa-error").classList.add("hidden");
+    $("#paa-empty").classList.add("hidden");
+    $("#paa-results").classList.add("hidden");
+    $("#paa-pagination").classList.add("hidden");
+    $("#paa-forensic").classList.add("hidden");
+    $("#paa-loading").classList.remove("hidden");
+    try {
+      const [data, totalMaybe] = await Promise.all([
+        SECOP.search("paa", f),
+        reset ? SECOP.count("paa", f).catch(() => null) : Promise.resolve(paaState.total),
+      ]);
+      if (reset) paaState.total = totalMaybe;
+      $("#paa-loading").classList.add("hidden");
+      if (!data.length && paaState.page === 0) {
+        $("#paa-empty").classList.remove("hidden");
+        $("#paa-empty").innerHTML =
+          '<div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">' +
+          '<svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>' +
+          '<h3 class="text-base font-semibold text-slate-900">Sin resultados en el PAA</h3>' +
+          '<p class="text-sm text-slate-400 mt-1 max-w-md">Las entidades no han publicado planes con esos filtros. Prueba con palabras más amplias o quita filtros.</p>';
+        return;
+      }
+      paaRenderForensic(paaForensicSummary(data));
+      $("#paa-results").innerHTML = data.map(paaCard).join("");
+      $("#paa-results").classList.remove("hidden");
+      bindPaaCardActions();
+      const start = paaState.page * paaState.pageSize + 1;
+      const end = start + data.length - 1;
+      $("#paa-pageinfo").textContent =
+        "Mostrando " + start + "–" + end +
+        (paaState.total != null ? " de " + paaState.total.toLocaleString("es-CO") + " procesos planeados" : "");
+      $("#paa-prev").disabled = paaState.page === 0;
+      $("#paa-next").disabled = data.length < paaState.pageSize ||
+        (paaState.total != null && end >= paaState.total);
+      $("#paa-pagination").classList.remove("hidden");
+    } catch (err) {
+      $("#paa-loading").classList.add("hidden");
+      $("#paa-error").classList.remove("hidden");
+      $("#paa-error").textContent = "Error consultando el PAA: " + (err && err.message ? err.message : err);
+    }
+  }
+
+  function initPaaOnce() {
+    if (paaState.initialized) return;
+    paaState.initialized = true;
+    const ds = SECOP.DATASETS.paa;
+    const fillSel = (id, items) => {
+      const el = $("#" + id);
+      el.innerHTML = '<option value="">Todos</option>' +
+        items.map((it) => '<option value="' + escapeHtml(it) + '">' + escapeHtml(it) + "</option>").join("");
+    };
+    fillSel("paa-departamento", SECOP.DEPARTAMENTOS);
+    fillSel("paa-modalidad", ds.modalidades);
+    const chips = [
+      { label: "Próximos a abrir", set: { orden: "fecha_estimada_de_inicio ASC" } },
+      { label: "Mayor presupuesto", set: { orden: "valor_total_estimado DESC" } },
+      { label: "Mínima cuantía", set: { modalidad: "Mínima cuantía" } },
+      { label: "Licitación pública", set: { modalidad: "Licitación pública" } },
+    ];
+    $("#paa-chips").innerHTML = chips
+      .map((c, i) =>
+        '<button data-paa-chip="' + i + '" class="text-[11px] font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-full transition-colors">' +
+        escapeHtml(c.label) + "</button>"
+      ).join("");
+    $$("#paa-chips [data-paa-chip]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const c = chips[Number(b.dataset.paaChip)];
+        if (c.set.modalidad) $("#paa-modalidad").value = c.set.modalidad;
+        runPaaSearch(true);
+      })
+    );
+    $("#paa-search").addEventListener("click", () => runPaaSearch(true));
+    $("#paa-q").addEventListener("keydown", (e) => { if (e.key === "Enter") runPaaSearch(true); });
+    $("#paa-prev").addEventListener("click", () => {
+      if (paaState.page > 0) { paaState.page--; runPaaSearch(false); }
+    });
+    $("#paa-next").addEventListener("click", () => {
+      paaState.page++; runPaaSearch(false);
+    });
+  }
+
+  /* =====================================================================
+     FORMACIÓN · cursos integrados al ecosistema LICITA
+     Cruza con: analizador (CTAs aplicados), SECOP (citas) y Marco.
+     ===================================================================== */
+  const CURSOS = (LICITA.cursos || { COURSES: [] }).COURSES;
+
+  function progressKey(u) { return "licita.progress." + u.username; }
+  function loadProgress() {
+    const u = Auth.currentUser();
+    if (!u) return {};
+    return load(progressKey(u), {}) || {};
+  }
+  function saveProgress(p) {
+    const u = Auth.currentUser();
+    if (!u) return;
+    save(progressKey(u), p);
+  }
+  function progressPct(courseId) {
+    const p = loadProgress();
+    const c = LICITA.cursos.byId(courseId);
+    if (!c) return 0;
+    const done = (p[courseId] && p[courseId].lessons) ? Object.keys(p[courseId].lessons).length : 0;
+    return Math.round((done / c.lecciones.length) * 100);
+  }
+
+  function showCursosCatalog() {
+    $("#cursoDetail").classList.add("hidden");
+    $("#cursosCatalog").classList.remove("hidden");
+    const grid = $("#cursosGrid");
+    grid.innerHTML = CURSOS.map((c) => {
+      const pct = progressPct(c.id);
+      const done = pct === 100;
+      return (
+        '<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lift cursor-pointer flex flex-col" data-curso="' + c.id + '">' +
+        '<div class="flex items-start justify-between gap-3">' +
+        '<div class="w-12 h-12 bg-gradient-to-br from-' + c.color + '-400 to-' + c.color + '-600 rounded-xl flex items-center justify-center shadow-lg shadow-' + c.color + '-200">' +
+        '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="' + c.icon + '"/></svg></div>' +
+        '<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">' + escapeHtml(c.nivel) + "</span></div>" +
+        '<h3 class="text-base font-bold text-slate-900 mt-4 leading-tight">' + escapeHtml(c.titulo) + "</h3>" +
+        '<p class="text-xs text-slate-500 mt-1.5 leading-relaxed flex-1">' + escapeHtml(c.resumen) + "</p>" +
+        '<div class="mt-4 pt-3 border-t border-slate-100">' +
+        '<div class="flex items-center justify-between text-[11px] text-slate-500 mb-1.5">' +
+        '<span class="font-medium">' + c.lecciones.length + " lecciones · " + escapeHtml(c.duracion) + "</span>" +
+        (done ? '<span class="text-emerald-700 font-bold">✓ Completado</span>' : '<span class="font-bold text-' + c.color + '-700">' + pct + "%</span>") +
+        "</div>" +
+        '<div class="bar-track"><div class="bar-fill bg-' + c.color + '-500" style="width:' + pct + '%"></div></div>' +
+        "</div></div>"
+      );
+    }).join("");
+    $$("#cursosGrid [data-curso]").forEach((el) =>
+      el.addEventListener("click", () => showCurso(el.dataset.curso))
+    );
+  }
+
+  function showCurso(courseId) {
+    const c = LICITA.cursos.byId(courseId);
+    if (!c) return;
+    $("#cursosCatalog").classList.add("hidden");
+    $("#cursoDetail").classList.remove("hidden");
+    const pct = progressPct(c.id);
+    $("#cursoHeader").innerHTML =
+      '<div class="flex items-start gap-4">' +
+      '<div class="w-14 h-14 bg-gradient-to-br from-' + c.color + '-400 to-' + c.color + '-600 rounded-2xl flex items-center justify-center shadow-lg shadow-' + c.color + '-200 flex-shrink-0">' +
+      '<svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="' + c.icon + '"/></svg></div>' +
+      '<div class="min-w-0 flex-1">' +
+      '<p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">' + escapeHtml(c.nivel) + " · " + escapeHtml(c.duracion) + "</p>" +
+      '<h2 class="text-2xl font-extrabold text-slate-900 mt-0.5 leading-tight">' + escapeHtml(c.titulo) + "</h2>" +
+      '<p class="text-sm text-slate-600 mt-1.5 leading-relaxed">' + escapeHtml(c.resumen) + "</p>" +
+      '<div class="mt-4">' +
+      '<div class="flex items-center justify-between text-xs mb-1.5"><span class="font-semibold text-slate-700">Progreso</span><span class="font-bold text-' + c.color + '-700">' + pct + "%</span></div>" +
+      '<div class="bar-track"><div class="bar-fill bg-' + c.color + '-500" style="width:' + pct + '%"></div></div></div></div></div>';
+    renderLeccionesList(c, 0);
+    renderLeccion(c, 0);
+  }
+
+  function renderLeccionesList(c, activeIdx) {
+    const p = loadProgress();
+    const done = (p[c.id] && p[c.id].lessons) ? p[c.id].lessons : {};
+    const list = $("#cursoLeccionesList");
+    list.innerHTML = c.lecciones.map((l, i) => {
+      const isDone = !!done[l.id];
+      const isActive = i === activeIdx;
+      return (
+        '<li><button data-leccion-idx="' + i + '" class="w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 text-sm transition-colors ' +
+        (isActive ? "bg-" + c.color + "-50 text-" + c.color + "-800 font-semibold" : "text-slate-600 hover:bg-slate-50") + '">' +
+        '<span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ' +
+        (isDone ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500") + '">' +
+        (isDone ? "✓" : (i + 1)) + "</span>" +
+        '<span class="truncate">' + escapeHtml(l.titulo) + "</span></button></li>"
+      );
+    }).join("");
+    // entrada de quiz
+    const allDone = c.lecciones.every((l) => done[l.id]);
+    list.innerHTML += '<li class="mt-2 pt-2 border-t border-slate-100"><button data-quiz="1" class="w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold ' +
+      (allDone ? "text-" + c.color + "-700 hover:bg-" + c.color + "-50" : "text-slate-400 cursor-not-allowed") +
+      '"' + (allDone ? "" : " disabled") + ">" +
+      '<span class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">★</span>' +
+      "Quiz final + certificado</button></li>";
+    $$("#cursoLeccionesList [data-leccion-idx]").forEach((b) =>
+      b.addEventListener("click", () => renderLeccion(c, Number(b.dataset.leccionIdx)))
+    );
+    const qb = $("#cursoLeccionesList [data-quiz]");
+    if (qb && allDone) qb.addEventListener("click", () => renderQuiz(c));
+  }
+
+  function renderLeccion(c, idx) {
+    const l = c.lecciones[idx];
+    if (!l) return;
+    renderLeccionesList(c, idx);
+    const p = loadProgress();
+    const isDone = !!(p[c.id] && p[c.id].lessons && p[c.id].lessons[l.id]);
+    const puntos = l.puntos.map((x) => '<li class="flex gap-2.5 text-sm text-slate-700 leading-relaxed"><svg class="w-4 h-4 text-' + c.color + '-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg><span>' + escapeHtml(x) + "</span></li>").join("");
+    $("#cursoContenido").innerHTML =
+      '<p class="text-[10px] font-bold uppercase tracking-wider text-' + c.color + '-700">Lección ' + (idx + 1) + " de " + c.lecciones.length + "</p>" +
+      '<h3 class="text-2xl font-extrabold text-slate-900 mt-1 leading-tight">' + escapeHtml(l.titulo) + "</h3>" +
+      '<p class="text-base text-slate-600 mt-3 leading-relaxed">' + escapeHtml(l.intro) + "</p>" +
+      '<ul class="mt-5 space-y-2.5">' + puntos + "</ul>" +
+      (l.norma ? '<div class="mt-5 bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Fundamento normativo</p><p class="text-sm text-slate-700 mt-1">' + escapeHtml(l.norma) + "</p></div>" : "") +
+      (l.tip ? '<div class="mt-3 bg-' + c.color + '-50 border border-' + c.color + '-100 rounded-lg p-3 flex gap-2.5"><svg class="w-5 h-5 text-' + c.color + '-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg><p class="text-sm text-' + c.color + '-900 leading-relaxed"><span class="font-bold">Tip aplicado a LICITA · </span>' + escapeHtml(l.tip) + "</p></div>" : "") +
+      '<div class="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">' +
+      '<button data-leccion-prev="' + (idx - 1) + '" class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-1 ' + (idx === 0 ? "invisible" : "") + '">' +
+      '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>Anterior</button>' +
+      '<button data-leccion-done="' + l.id + '" class="text-sm font-semibold ' +
+      (isDone
+        ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+        : "text-white bg-gradient-to-r from-" + c.color + "-500 to-" + c.color + "-700 hover:shadow-lg hover:shadow-" + c.color + "-200") +
+      ' px-5 py-2 rounded-lg transition-all flex items-center gap-1.5">' +
+      (isDone ? '✓ Lección completada' : 'Marcar como completada') + "</button>" +
+      '<button data-leccion-next="' + (idx + 1) + '" class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-1 ' + (idx >= c.lecciones.length - 1 ? "invisible" : "") + '">' +
+      'Siguiente<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg></button>' +
+      "</div>";
+
+    $("#cursoContenido [data-leccion-done]").addEventListener("click", () => {
+      const p2 = loadProgress();
+      if (!p2[c.id]) p2[c.id] = { lessons: {} };
+      if (!p2[c.id].lessons) p2[c.id].lessons = {};
+      if (p2[c.id].lessons[l.id]) delete p2[c.id].lessons[l.id];
+      else p2[c.id].lessons[l.id] = new Date().toISOString();
+      saveProgress(p2);
+      renderLeccion(c, idx);
+      // Actualiza barra del header
+      const pct = progressPct(c.id);
+      const bar = $("#cursoHeader .bar-fill");
+      if (bar) bar.style.width = pct + "%";
+      const txt = $("#cursoHeader [class*='font-bold text-" + c.color + "-700']");
+      if (txt) txt.textContent = pct + "%";
+    });
+    const prev = $("#cursoContenido [data-leccion-prev]");
+    if (prev) prev.addEventListener("click", () => renderLeccion(c, idx - 1));
+    const next = $("#cursoContenido [data-leccion-next]");
+    if (next) next.addEventListener("click", () => renderLeccion(c, idx + 1));
+  }
+
+  function renderQuiz(c) {
+    const q = c.quiz || [];
+    if (!q.length) return;
+    $("#cursoContenido").innerHTML =
+      '<p class="text-[10px] font-bold uppercase tracking-wider text-amber-700">Quiz final</p>' +
+      '<h3 class="text-2xl font-extrabold text-slate-900 mt-1">Verifica lo aprendido</h3>' +
+      '<p class="text-sm text-slate-500 mt-2">Necesitas acertar al menos el 70 % para obtener tu certificado.</p>' +
+      '<div id="quizForm" class="mt-6 space-y-5">' +
+      q.map((qq, qi) =>
+        '<div class="border border-slate-200 rounded-xl p-4">' +
+        '<p class="text-sm font-semibold text-slate-900">' + (qi + 1) + ". " + escapeHtml(qq.q) + "</p>" +
+        '<div class="mt-3 space-y-1.5">' +
+        qq.opciones.map((op, oi) =>
+          '<label class="flex items-start gap-2 cursor-pointer text-sm text-slate-700 hover:bg-slate-50 rounded p-2 transition-colors">' +
+          '<input type="radio" name="q' + qi + '" value="' + oi + '" class="mt-1" />' +
+          '<span>' + escapeHtml(op) + "</span></label>"
+        ).join("") +
+        "</div></div>"
+      ).join("") +
+      "</div>" +
+      '<button id="quizSubmit" class="mt-6 w-full sm:w-auto text-sm font-bold text-white bg-gradient-to-r from-' + c.color + '-500 to-' + c.color + '-700 hover:shadow-lg hover:shadow-' + c.color + '-200 px-6 py-3 rounded-lg transition-all">Calificar y emitir certificado</button>';
+    $("#quizSubmit").addEventListener("click", () => evaluateQuiz(c));
+  }
+
+  function evaluateQuiz(c) {
+    const q = c.quiz;
+    let aciertos = 0;
+    q.forEach((qq, qi) => {
+      const sel = document.querySelector('input[name="q' + qi + '"]:checked');
+      if (sel && Number(sel.value) === qq.correcta) aciertos++;
+    });
+    const pct = Math.round((aciertos / q.length) * 100);
+    const p = loadProgress();
+    if (!p[c.id]) p[c.id] = { lessons: {} };
+    p[c.id].quiz = { score: pct, date: new Date().toISOString(), passed: pct >= 70 };
+    saveProgress(p);
+    const passed = pct >= 70;
+    $("#cursoContenido").innerHTML =
+      '<div class="text-center py-6">' +
+      '<div class="w-20 h-20 mx-auto rounded-full bg-' + (passed ? c.color + "-100" : "rose-100") + ' flex items-center justify-center">' +
+      '<span class="text-3xl">' + (passed ? "🏆" : "✏️") + "</span></div>" +
+      '<h3 class="text-2xl font-extrabold text-slate-900 mt-4">' + (passed ? "¡Curso aprobado!" : "Casi lo logras") + "</h3>" +
+      '<p class="text-base text-slate-600 mt-2">Calificación: <span class="font-bold text-' + (passed ? c.color : "rose") + '-700">' + pct + "% (" + aciertos + "/" + q.length + ")</span></p>" +
+      (passed
+        ? '<p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">Descarga tu certificado y consérvalo. Aplica de inmediato lo aprendido analizando un pliego en LICITA.</p>' +
+          '<div class="mt-6 flex flex-wrap gap-3 justify-center">' +
+          '<button id="dlCert" class="text-sm font-bold text-white bg-gradient-to-r from-' + c.color + '-500 to-' + c.color + '-700 hover:shadow-lg px-5 py-2.5 rounded-lg transition-all">Descargar certificado (Word)</button>' +
+          '<button id="goAnalisisCurso" class="text-sm font-medium text-slate-700 border border-slate-300 hover:bg-slate-50 px-5 py-2.5 rounded-lg transition-colors">Aplicarlo en el analizador →</button>' +
+          "</div>"
+        : '<button id="retryQuiz" class="mt-6 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-700 px-5 py-2.5 rounded-lg transition-colors">Volver a intentarlo</button>'
+      ) +
+      "</div>";
+    if (passed) {
+      $("#dlCert").addEventListener("click", () => downloadCertificate(c, pct));
+      $("#goAnalisisCurso").addEventListener("click", () => showSection("analisis"));
+    } else {
+      $("#retryQuiz").addEventListener("click", () => renderQuiz(c));
+    }
+  }
+
+  function downloadCertificate(c, pct) {
+    const u = Auth.currentUser();
+    const fecha = D.fechaLarga(new Date().toISOString());
+    const serial = "LIC-" + Math.random().toString(36).slice(2, 8).toUpperCase() + "-" + Date.now().toString().slice(-5);
+    const html =
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+      '<head><meta charset="utf-8"><title>Certificado LICITA</title></head>' +
+      '<body style="font-family:Georgia,serif;text-align:center;padding:60px 40px;color:#1e293b">' +
+      '<div style="border:6px double #2563eb;padding:60px 40px;border-radius:8px">' +
+      '<p style="font-size:11pt;letter-spacing:3px;color:#64748b">ASOCIADOS GYM LC · LICITA</p>' +
+      '<h1 style="font-size:24pt;color:#0b1220;margin:20px 0 8px">Certificado de Aprobación</h1>' +
+      '<p style="font-size:11pt;color:#64748b">Se hace constar que</p>' +
+      '<h2 style="font-size:20pt;color:#1e3a8a;margin:14px 0">' + (u ? u.name : "Estudiante") + "</h2>" +
+      '<p style="font-size:11pt;color:#64748b">aprobó satisfactoriamente el curso</p>' +
+      '<h3 style="font-size:18pt;color:#0b1220;margin:14px 0">' + c.titulo + "</h3>" +
+      '<p style="font-size:11pt;color:#64748b">con una calificación de <b>' + pct + "%</b></p>" +
+      '<p style="font-size:10pt;color:#64748b;margin-top:30px">' + fecha + "</p>" +
+      '<p style="font-size:9pt;color:#94a3b8;margin-top:6px">Código de verificación: ' + serial + "</p>" +
+      '<p style="font-size:9pt;color:#94a3b8;margin-top:60px">Plataforma jurídica para contratación pública · Asociados GYM LC</p>' +
+      "</div></body></html>";
+    const blob = new Blob(["﻿", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Certificado_LICITA_" + c.id + ".doc";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    toast("Certificado descargado", "ok");
   }
 
   /* ------------------------------ init -------------------------------- */

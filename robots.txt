@@ -1,0 +1,8 @@
+# LICITA · Plataforma jurídica para contratación pública
+# https://asociadosgymlc-cmd.github.io/SEC/
+
+User-agent: *
+Allow: /
+Disallow: /assets/js/auth.js
+
+Sitemap: https://asociadosgymlc-cmd.github.io/SEC/sitemap.xml
