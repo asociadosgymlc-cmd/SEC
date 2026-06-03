@@ -17,6 +17,110 @@
 html { scroll-behavior: smooth; }
 html, body { font-family: 'Inter', sans-serif; }
 
+/* ============================================================
+   DARK MODE · retono global sin tocar cada componente
+   ============================================================ */
+html.dark { color-scheme: dark; }
+html.dark body { background: #0b1220; color: #e2e8f0; }
+
+/* Superficies blancas → slate oscuro */
+html.dark .bg-white { background: #1e293b !important; color: #e2e8f0; }
+html.dark .bg-slate-50 { background: #0f172a !important; }
+html.dark .bg-slate-100 { background: #1e293b !important; }
+html.dark .bg-slate-50\/40, html.dark .bg-slate-50\/60 { background: rgba(15,23,42,.5) !important; }
+html.dark .bg-white\/70, html.dark .bg-white\/80, html.dark .bg-white\/85, html.dark .bg-white\/90 { background: rgba(30,41,59,.85) !important; color: #e2e8f0; }
+
+/* Bordes */
+html.dark .border-slate-100 { border-color: #1e293b !important; }
+html.dark .border-slate-200 { border-color: #334155 !important; }
+html.dark .border-slate-300 { border-color: #475569 !important; }
+
+/* Texto */
+html.dark .text-slate-900 { color: #f1f5f9 !important; }
+html.dark .text-slate-800 { color: #e2e8f0 !important; }
+html.dark .text-slate-700 { color: #cbd5e1 !important; }
+html.dark .text-slate-600 { color: #94a3b8 !important; }
+html.dark .text-slate-500 { color: #94a3b8 !important; }
+html.dark .text-slate-400 { color: #64748b !important; }
+
+/* Acentos pastel → algo más vibrante sobre dark */
+html.dark .bg-sky-50 { background: rgba(56,189,248,.10) !important; }
+html.dark .bg-sky-100 { background: rgba(56,189,248,.18) !important; }
+html.dark .bg-amber-50 { background: rgba(251,191,36,.10) !important; }
+html.dark .bg-amber-100 { background: rgba(251,191,36,.18) !important; }
+html.dark .bg-emerald-50 { background: rgba(16,185,129,.10) !important; }
+html.dark .bg-emerald-100 { background: rgba(16,185,129,.18) !important; }
+html.dark .bg-rose-50 { background: rgba(244,63,94,.10) !important; }
+html.dark .bg-rose-100 { background: rgba(244,63,94,.18) !important; }
+html.dark .bg-indigo-50 { background: rgba(99,102,241,.10) !important; }
+html.dark .bg-violet-50 { background: rgba(139,92,246,.10) !important; }
+html.dark .bg-orange-50 { background: rgba(249,115,22,.10) !important; }
+
+/* Campos */
+html.dark .field { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+html.dark .field:focus { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,.18); }
+html.dark .field::placeholder { color: #64748b; }
+html.dark .field:disabled { background: #1e293b; color: #475569; }
+
+/* Nav lateral */
+html.dark .nav-link { color: #cbd5e1; }
+html.dark .nav-link:hover { background: #1e293b; color: #f1f5f9; }
+html.dark .nav-link.active { background: rgba(56,189,248,.15); color: #7dd3fc; }
+html.dark .nav-link.active svg { color: #38bdf8; }
+
+/* Bar-track e indicadores */
+html.dark .bar-track { background: #1e293b; }
+html.dark .risk-meter { box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+
+/* Scrollbar dark */
+html.dark ::-webkit-scrollbar-thumb { background: #334155; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* Toggle dark/light en el header */
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 0.75rem;
+  background: #f1f5f9; color: #475569;
+  transition: background .15s, color .15s;
+}
+.theme-toggle:hover { background: #e2e8f0; color: #0f172a; }
+html.dark .theme-toggle { background: #1e293b; color: #94a3b8; }
+html.dark .theme-toggle:hover { background: #334155; color: #f1f5f9; }
+
+/* Tarjeta de mapa: celda departamento */
+.dep-cell {
+  position: relative;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+  transition: transform .15s, box-shadow .15s;
+  cursor: pointer;
+  overflow: hidden;
+}
+.dep-cell:hover { transform: translateY(-2px); box-shadow: 0 6px 20px -8px rgba(15,23,42,.25); }
+html.dark .dep-cell { border-color: #334155; }
+.dep-cell .fill {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(0deg, currentColor, transparent);
+  opacity: .18; transition: height .6s var(--ease-spring);
+}
+
+/* Logro · toast especial */
+.toast.achievement {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff; padding: 0.9rem 1.1rem; max-width: 420px;
+}
+.toast.achievement strong { display: block; font-size: 0.95rem; }
+
+/* Streak / flame chip */
+.streak-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.7rem; font-weight: 700;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: #fff; padding: 2px 8px; border-radius: 9999px;
+}
+
 /* ---- Accesibilidad ---- */
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0;

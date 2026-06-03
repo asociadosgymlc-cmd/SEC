@@ -155,7 +155,7 @@
     if (name === "paa") initPaaOnce();
     if (name === "formacion") showCursosCatalog();
     if (name === "alertas") renderAlerts();
-    if (name === "dashboard") renderPulse();
+    if (name === "dashboard") { renderPulse(); renderMap(); }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -568,6 +568,7 @@
       const left = Auth.freeUsesLeft();
       const tail = left === Infinity ? "" : " · te quedan " + left + " gratis";
       toast("Análisis completado · riesgo " + result.riskLevel + tail, "ok");
+      unlockAchievement("first_analysis");
     });
   }
 
@@ -1277,6 +1278,10 @@
   }
 
   async function runSecopSearch(reset) {
+    if (reset) {
+      const n = gamCounter("secop_searches");
+      if (n >= 10) unlockAchievement("explorer_10");
+    }
     if (reset) secopState.page = 0;
     secopState.filters = collectSecopFilters();
     const f = Object.assign({}, secopState.filters, {
@@ -1465,13 +1470,19 @@
     $("#sessionCard").innerHTML =
       '<div class="w-9 h-9 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">' +
       initials(u.name) + "</div>" +
-      '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-slate-800 truncate">' +
+      '<div class="min-w-0 flex-1"><div class="flex items-center gap-1.5"><p class="text-sm font-semibold text-slate-800 truncate">' +
       escapeHtml(u.name) + "</p>" +
+      '<span id="streakChip" class="streak-chip hidden"></span></div>' +
       '<p class="text-[11px] text-slate-500 flex items-center gap-1 flex-wrap">@' + escapeHtml(u.username) +
       ' · <span class="role-chip ' + u.role + '">' +
-      (u.role === "admin" ? "Admin" : "Cliente") + "</span> " + planChip + "</p></div>";
+      (u.role === "admin" ? "Admin" : "Cliente") + "</span> " + planChip + "</p>" +
+      '<button id="openAch" class="text-[10px] text-amber-700 hover:text-amber-900 mt-1 font-semibold flex items-center gap-1">🏆 Mis logros</button>' +
+      "</div>";
     const upBtn = $("#sessionUpgradeBtn");
     if (upBtn) upBtn.addEventListener("click", openPremiumModal);
+    const oa = $("#openAch");
+    if (oa) oa.addEventListener("click", openAchievements);
+    refreshStreakChip();
     $("#headerUserName").textContent = u.name;
     $("#headerUserRole").textContent = u.role === "admin"
       ? "Administrador · " + (u.organization || "")
@@ -1515,6 +1526,10 @@
     }
     maybeStartOnboarding();
     refreshAlertsSilent();
+    unlockAchievement("first_login");
+    bumpStreak();
+    refreshStreakChip();
+    maybeShowDailyBrief();
   }
 
   function showLogin(view) {
@@ -1823,6 +1838,17 @@
     const cc = $("#calc-close"); if (cc) cc.addEventListener("click", closeCalcModal);
     const cm = $("#calcModal");
     if (cm) cm.addEventListener("click", (e) => { if (e.target.id === "calcModal") closeCalcModal(); });
+
+    // tema
+    const tt = $("#themeToggle");
+    if (tt) tt.addEventListener("click", toggleTheme);
+    setTheme(currentTheme());
+
+    // modal logros
+    const ahc = $("#achClose");
+    if (ahc) ahc.addEventListener("click", closeAchievements);
+    const ahm = $("#achModal");
+    if (ahm) ahm.addEventListener("click", (e) => { if (e.target.id === "achModal") closeAchievements(); });
   }
 
   /* =====================================================================
@@ -2203,6 +2229,7 @@
   function initPaaOnce() {
     if (paaState.initialized) return;
     paaState.initialized = true;
+    unlockAchievement("first_paa");
     const ds = SECOP.DATASETS.paa;
     const fillSel = (id, items, placeholder) => {
       const el = $("#" + id);
@@ -2482,6 +2509,7 @@
       renderAlerts();
       refreshAlertsSilent();
       toast("Alerta creada · te avisaremos al volver", "ok");
+      unlockAchievement("first_alert");
     } catch (e) {
       $("#al-error").textContent = e.message;
       $("#al-error").classList.remove("hidden");
@@ -2492,6 +2520,7 @@
      CALCULADORA DE OFERTA · sugiere precio a partir de SECOP 1
      ===================================================================== */
   function openCalcModal(prefill) {
+    unlockAchievement("first_calc");
     $("#calc-result").innerHTML = "";
     $("#calc-base").value = (prefill && prefill.valor) ? prefill.valor : "";
     $("#calc-texto").value = (prefill && prefill.texto) || "";
@@ -2865,6 +2894,7 @@
       ) +
       "</div>";
     if (passed) {
+      unlockAchievement("first_course");
       $("#dlCert").addEventListener("click", () => downloadCertificate(c, pct));
       $("#goAnalisisCurso").addEventListener("click", () => showSection("analisis"));
     } else {
@@ -2900,6 +2930,296 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1500);
     toast("Certificado descargado", "ok");
+  }
+
+  /* =====================================================================
+     TEMA · claro / oscuro
+     ===================================================================== */
+  function currentTheme() {
+    try { return localStorage.getItem("licita.theme") || "light"; }
+    catch (e) { return "light"; }
+  }
+  function setTheme(t) {
+    try { localStorage.setItem("licita.theme", t); } catch (e) {}
+    document.documentElement.classList.toggle("dark", t === "dark");
+    const dark = $("#themeIconDark"), light = $("#themeIconLight");
+    if (dark && light) {
+      dark.classList.toggle("hidden", t === "dark");
+      light.classList.toggle("hidden", t !== "dark");
+    }
+  }
+  function toggleTheme() {
+    setTheme(currentTheme() === "dark" ? "light" : "dark");
+    toast(currentTheme() === "dark" ? "Modo oscuro activado" : "Modo claro activado", "ok");
+  }
+
+  /* =====================================================================
+     ENGAGEMENT · rachas + logros + daily brief
+     ===================================================================== */
+  const ACHIEVEMENTS = [
+    { id: "first_login", name: "Bienvenido a bordo", desc: "Hiciste tu primer inicio de sesión", emoji: "🚀" },
+    { id: "first_analysis", name: "Primer análisis", desc: "Analizaste tu primer pliego con IA", emoji: "🎯" },
+    { id: "first_alert", name: "Cazador de oportunidades", desc: "Creaste tu primera alerta inteligente", emoji: "🔔" },
+    { id: "first_calc", name: "Estratega", desc: "Usaste la calculadora de oferta", emoji: "🧮" },
+    { id: "first_paa", name: "Visionario", desc: "Exploraste el Plan Anual de Adquisiciones", emoji: "🔮" },
+    { id: "first_course", name: "Estudiante", desc: "Completaste tu primer curso", emoji: "📚" },
+    { id: "explorer_10", name: "Explorador", desc: "Hiciste 10 búsquedas en SECOP", emoji: "🔍" },
+    { id: "streak_3", name: "Constancia", desc: "3 días consecutivos en LICITA", emoji: "🔥" },
+    { id: "streak_7", name: "Imparable", desc: "7 días consecutivos en LICITA", emoji: "⚡" },
+    { id: "streak_30", name: "Maestro", desc: "30 días consecutivos en LICITA", emoji: "👑" },
+  ];
+
+  function gamKey(suffix) {
+    const u = Auth.currentUser();
+    return u ? "licita.gam." + suffix + "." + u.username : null;
+  }
+  function gamLoad(suffix, fallback) {
+    const k = gamKey(suffix);
+    if (!k) return fallback;
+    try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }
+    catch (e) { return fallback; }
+  }
+  function gamSave(suffix, value) {
+    const k = gamKey(suffix);
+    if (!k) return;
+    try { localStorage.setItem(k, JSON.stringify(value)); } catch (e) {}
+  }
+  function gamCounter(name, by) {
+    const c = gamLoad("counters", {});
+    c[name] = (c[name] || 0) + (by || 1);
+    gamSave("counters", c);
+    return c[name];
+  }
+
+  function bumpStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const state = gamLoad("streak", { current: 0, longest: 0, lastDay: null });
+    if (state.lastDay === today) return state;
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const ydStr = y.toISOString().slice(0, 10);
+    state.current = state.lastDay === ydStr ? state.current + 1 : 1;
+    state.longest = Math.max(state.longest, state.current);
+    state.lastDay = today;
+    gamSave("streak", state);
+    if (state.current >= 30) unlockAchievement("streak_30");
+    else if (state.current >= 7) unlockAchievement("streak_7");
+    else if (state.current >= 3) unlockAchievement("streak_3");
+    return state;
+  }
+  function currentStreak() { return gamLoad("streak", { current: 0, longest: 0 }); }
+
+  function unlockAchievement(id) {
+    const earned = gamLoad("ach", []);
+    if (earned.some((e) => e.id === id)) return null;
+    const a = ACHIEVEMENTS.find((x) => x.id === id);
+    if (!a) return null;
+    earned.push({ id, at: new Date().toISOString() });
+    gamSave("ach", earned);
+    showAchievementToast(a);
+    refreshStreakChip();
+    return a;
+  }
+  function showAchievementToast(a) {
+    const wrap = $("#toastWrap");
+    const t = document.createElement("div");
+    t.className = "toast achievement";
+    t.innerHTML =
+      '<span style="font-size:1.6rem">' + a.emoji + "</span>" +
+      "<div><strong>¡Logro desbloqueado!</strong>" +
+      "<span style='display:block;font-size:.85rem'>" + escapeHtml(a.name) + " · " + escapeHtml(a.desc) + "</span></div>";
+    wrap.appendChild(t);
+    setTimeout(() => {
+      t.style.transition = "opacity .35s, transform .35s";
+      t.style.opacity = "0";
+      t.style.transform = "translateX(20px)";
+      setTimeout(() => t.remove(), 360);
+    }, 4500);
+  }
+
+  function refreshStreakChip() {
+    const u = Auth.currentUser();
+    if (!u) return;
+    const chip = document.getElementById("streakChip");
+    const s = currentStreak();
+    if (!chip) return;
+    if (s.current >= 2) {
+      chip.classList.remove("hidden");
+      chip.innerHTML = '<span>🔥</span>' + s.current + 'd';
+      chip.title = "Llevas " + s.current + " días seguidos en LICITA";
+    } else {
+      chip.classList.add("hidden");
+    }
+  }
+
+  /* Modal de logros */
+  function openAchievements() {
+    const earned = gamLoad("ach", []);
+    const earnedIds = earned.reduce((m, e) => (m[e.id] = e.at, m), {});
+    $("#achSubtitle").textContent = earned.length + " desbloqueado" + (earned.length === 1 ? "" : "s") + " de " + ACHIEVEMENTS.length;
+    $("#achList").innerHTML = ACHIEVEMENTS.map((a) => {
+      const got = !!earnedIds[a.id];
+      return (
+        '<div class="flex items-center gap-3 p-3 rounded-xl ' + (got ? "bg-amber-50 border border-amber-200" : "bg-slate-50 border border-slate-200 opacity-60") + '">' +
+        '<div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl ' + (got ? "bg-gradient-to-br from-amber-400 to-orange-500 shadow-md shadow-orange-200" : "bg-slate-200") + '">' + a.emoji + "</div>" +
+        '<div class="flex-1 min-w-0">' +
+        '<p class="text-sm font-bold text-slate-900">' + escapeHtml(a.name) + (got ? "" : ' <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider ml-1">bloqueado</span>') + "</p>" +
+        '<p class="text-[11px] text-slate-500">' + escapeHtml(a.desc) + "</p></div>" +
+        (got ? '<svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : "") +
+        "</div>"
+      );
+    }).join("");
+    $("#achModal").classList.remove("hidden");
+    $("#achModal").classList.add("flex");
+  }
+  function closeAchievements() {
+    $("#achModal").classList.add("hidden");
+    $("#achModal").classList.remove("flex");
+  }
+
+  /* =====================================================================
+     DAILY BRIEF · resumen al primer login del día
+     ===================================================================== */
+  function todayKey() { return new Date().toISOString().slice(0, 10); }
+
+  async function maybeShowDailyBrief() {
+    const u = Auth.currentUser();
+    if (!u) return;
+    const lastShown = gamLoad("brief.lastShown", null);
+    if (lastShown === todayKey()) return;
+    gamSave("brief.lastShown", todayKey());
+
+    const s = currentStreak();
+    const alerts = LICITA.intel.listAlerts(u.username);
+    const totalPending = alerts.reduce((a, b) => a + (b.pending || 0), 0);
+    const hour = new Date().getHours();
+    const saludo = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+
+    // Pulso en paralelo (no bloqueamos si falla)
+    let pulseCount = "—";
+    try {
+      const r = await LICITA.intel.pulse();
+      pulseCount = r.items ? r.items.length : "—";
+    } catch (e) {}
+
+    const banner = $("#dailyBriefBanner");
+    if (!banner) return;
+    banner.classList.remove("hidden");
+    banner.innerHTML =
+      '<div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-50 via-indigo-50 to-violet-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 border border-sky-200 p-5 lg:p-6">' +
+      '<div class="absolute -top-12 -right-12 w-64 h-64 bg-sky-200/30 rounded-full blur-3xl"></div>' +
+      '<div class="relative flex items-start gap-4 flex-wrap">' +
+      '<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 flex-shrink-0">' +
+      '<span class="text-2xl">☀️</span></div>' +
+      '<div class="min-w-0 flex-1">' +
+      '<p class="text-[10px] font-bold uppercase tracking-wider text-sky-700">Tu resumen de hoy</p>' +
+      '<h3 class="text-xl font-extrabold text-slate-900 mt-0.5 leading-tight">' + saludo + ", " + escapeHtml(u.name.split(" ")[0]) + "</h3>" +
+      '<div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5">' +
+      '<div class="bg-white/70 backdrop-blur border border-sky-100 rounded-xl p-3"><p class="text-[10px] text-slate-500 uppercase font-bold">Procesos hoy</p><p class="text-xl font-extrabold text-sky-700">' + pulseCount + "</p></div>" +
+      '<div class="bg-white/70 backdrop-blur border border-rose-100 rounded-xl p-3"><p class="text-[10px] text-slate-500 uppercase font-bold">Alertas con novedades</p><p class="text-xl font-extrabold text-rose-700">' + totalPending + "</p></div>" +
+      '<div class="bg-white/70 backdrop-blur border border-orange-100 rounded-xl p-3"><p class="text-[10px] text-slate-500 uppercase font-bold">Racha</p><p class="text-xl font-extrabold text-orange-700">' + s.current + 'd 🔥</p></div>' +
+      '<div class="bg-white/70 backdrop-blur border border-amber-100 rounded-xl p-3"><p class="text-[10px] text-slate-500 uppercase font-bold">Logros</p><p class="text-xl font-extrabold text-amber-700">' + (gamLoad("ach", []).length) + '/' + ACHIEVEMENTS.length + "</p></div>" +
+      "</div>" +
+      '<div class="mt-4 flex flex-wrap gap-2">' +
+      (totalPending > 0 ? '<button data-brief="alertas" class="text-xs font-bold text-white bg-gradient-to-r from-rose-500 to-pink-600 hover:shadow-lg px-3 py-1.5 rounded-lg transition-all">🔔 Ver mis alertas</button>' : "") +
+      (Number(pulseCount) > 0 ? '<button data-brief="secop" class="text-xs font-bold text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:shadow-lg px-3 py-1.5 rounded-lg transition-all">🚀 Ver procesos abiertos</button>' : "") +
+      '<button id="briefClose" class="text-xs font-medium text-slate-500 hover:text-slate-900 px-3 py-1.5 transition-colors">Cerrar</button>' +
+      "</div></div></div></div>";
+    const ba = banner.querySelector('[data-brief="alertas"]');
+    if (ba) ba.addEventListener("click", () => showSection("alertas"));
+    const bs = banner.querySelector('[data-brief="secop"]');
+    if (bs) bs.addEventListener("click", () => showSection("secop"));
+    const bc = $("#briefClose");
+    if (bc) bc.addEventListener("click", () => banner.classList.add("hidden"));
+  }
+
+  /* =====================================================================
+     MAPA DE OPORTUNIDADES · agregado por departamento (SECOP 2)
+     ===================================================================== */
+  const mapState = { lastRunAt: 0, data: null };
+
+  async function renderMap() {
+    const wrap = $("#mapWidget");
+    if (!wrap) return;
+    if (Date.now() - mapState.lastRunAt < 300000 && mapState.data) {
+      paintMap(mapState.data);
+      return;
+    }
+    wrap.classList.remove("hidden");
+    wrap.innerHTML =
+      '<div class="bg-white rounded-3xl border border-slate-200 p-5 lg:p-6">' +
+      '<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-md shadow-blue-200"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg></div>' +
+      '<div><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Mapa de oportunidades</p><h3 class="text-base font-bold text-slate-900">Procesos abiertos por departamento</h3></div></div>' +
+      '<p class="text-sm text-slate-500 mt-3">Consultando datos en vivo…</p></div>';
+    try {
+      const data = await SECOP.aggregate("procesos", {
+        groupBy: "departamento",
+        filters: { estado: "Presentación de oferta" },
+        limit: 50,
+      });
+      mapState.data = data;
+      mapState.lastRunAt = Date.now();
+      paintMap(data);
+    } catch (e) {
+      wrap.innerHTML =
+        '<div class="bg-white rounded-3xl border border-slate-200 p-5 text-sm text-slate-500">No se pudo cargar el mapa: ' +
+        escapeHtml(e.message || String(e)) + "</div>";
+    }
+  }
+
+  function paintMap(rows) {
+    const valid = rows.filter((r) => r.grupo && r.grupo !== "—" && r.total > 0);
+    const max = Math.max(1, ...valid.map((r) => r.total));
+    const totalProcesos = valid.reduce((s, r) => s + r.total, 0);
+    const totalValor = valid.reduce((s, r) => s + r.valor, 0);
+    const top = valid.slice(0, 3);
+
+    const cells = SECOP.DEPARTAMENTOS.map((dep) => {
+      const r = valid.find((x) => x.grupo.toUpperCase().includes(dep.toUpperCase()) ||
+                                  dep.toUpperCase().includes(x.grupo.toUpperCase()));
+      const t = r ? r.total : 0;
+      const v = r ? r.valor : 0;
+      const intensity = Math.round((t / max) * 100);
+      const tone = t === 0 ? "slate" : intensity > 66 ? "rose" : intensity > 33 ? "amber" : "sky";
+      return (
+        '<button class="dep-cell text-' + tone + '-700" data-dep="' + escapeHtml(dep) + '" ' + (t === 0 ? "disabled" : "") + '>' +
+        '<div class="fill" style="height:' + intensity + '%"></div>' +
+        '<div class="relative">' +
+        '<p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate">' + escapeHtml(dep) + "</p>" +
+        '<p class="text-lg font-extrabold ' + (t === 0 ? "text-slate-300" : "text-slate-900") + ' leading-none mt-0.5">' + t + "</p>" +
+        "</div></button>"
+      );
+    }).join("");
+
+    $("#mapWidget").innerHTML =
+      '<div class="bg-white rounded-3xl border border-slate-200 p-5 lg:p-6">' +
+      '<div class="flex items-start justify-between gap-4 flex-wrap">' +
+      '<div class="flex items-center gap-3">' +
+      '<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-md shadow-blue-200"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg></div>' +
+      '<div><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Mapa de oportunidades · SECOP 2</p>' +
+      '<h3 class="text-base font-bold text-slate-900">' + totalProcesos.toLocaleString("es-CO") + " procesos abiertos hoy · " + formatCOP(Math.round(totalValor)) + "</h3></div></div>" +
+      '<div class="flex gap-2 flex-wrap">' +
+      top.map((t, i) => {
+        const labels = ["🥇", "🥈", "🥉"];
+        return '<div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl px-3 py-2"><p class="text-[10px] font-bold uppercase tracking-wider text-amber-700">' + labels[i] + " " + escapeHtml(t.grupo.slice(0, 18)) + '</p><p class="text-sm font-extrabold text-amber-900">' + t.total + ' <span class="text-[10px] font-medium text-amber-600">procesos</span></p></div>';
+      }).join("") +
+      "</div></div>" +
+      '<div class="mt-5 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">' + cells + "</div>" +
+      '<p class="text-[11px] text-slate-400 mt-3">Click en un departamento para filtrar la búsqueda SECOP · Color = densidad de procesos.</p>' +
+      "</div>";
+
+    $$("#mapWidget [data-dep]").forEach((b) =>
+      b.addEventListener("click", () => {
+        showSection("secop");
+        setTimeout(() => {
+          initSecopOnce();
+          if (secopState.dataset !== "procesos") switchDataset("procesos");
+          $("#sec-departamento").value = b.dataset.dep;
+          $("#sec-estado").value = "Presentación de oferta";
+          $("#sec-filters").classList.remove("hidden");
+          runSecopSearch(true);
+        }, 100);
+      })
+    );
   }
 
   /* ------------------------------ init -------------------------------- */

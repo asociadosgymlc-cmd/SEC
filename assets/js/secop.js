@@ -238,6 +238,27 @@ LICITA.secop = (function () {
     return fetchSoda(ds.endpoint, params);
   }
 
+  /* Consulta agrupada para el mapa de oportunidades. */
+  async function aggregate(dsKey, opts) {
+    const ds = DATASETS[dsKey];
+    const f = ds.f;
+    const groupField = opts.groupBy === "departamento" ? f.departamento : f.entidad;
+    const valueField = f.valor || "1";
+    const params = new URLSearchParams();
+    params.set("$select", groupField + " AS grupo, count(*) AS total, sum(" + valueField + ") AS valor");
+    params.set("$group", groupField);
+    params.set("$order", "total DESC");
+    params.set("$limit", String(opts.limit || 50));
+    const w = buildWhere(dsKey, opts.filters || {});
+    if (w) params.set("$where", w);
+    const data = await fetchSoda(ds.endpoint, params);
+    return data.map((r) => ({
+      grupo: (r.grupo || "—").toString().trim(),
+      total: parseInt(r.total || "0", 10),
+      valor: Number(r.valor || 0),
+    }));
+  }
+
   async function count(dsKey, filters) {
     const ds = DATASETS[dsKey];
     const params = new URLSearchParams();
@@ -285,6 +306,6 @@ LICITA.secop = (function () {
 
   return {
     DATASETS, DEPARTAMENTOS, TIPOS_CONTRATO,
-    search, count, normalize, buildWhere,
+    search, count, aggregate, normalize, buildWhere,
   };
 })();
