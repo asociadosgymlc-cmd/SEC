@@ -124,6 +124,7 @@
     analisis: { title: "Análisis de Pliego", sub: "Carga un pliego y detecta riesgos jurídicos con IA" },
     secop: { title: "Buscar en SECOP 2", sub: "Procesos publicados en vivo · Colombia Compra Eficiente" },
     paa: { title: "Plan Anual de Adquisiciones", sub: "Anticipa lo que las entidades planean comprar este año" },
+    alertas: { title: "Alertas inteligentes", sub: "Búsquedas guardadas que te avisan de procesos nuevos" },
     historial: { title: "Historial", sub: "Tus análisis guardados" },
     marco: { title: "Marco Normativo", sub: "Normas y criterios que aplica el motor" },
     formacion: { title: "Formación", sub: "Aprende a ganar licitaciones · cursos cortos y certificados" },
@@ -153,6 +154,8 @@
     if (name === "analisis") renderQuotaBanner();
     if (name === "paa") initPaaOnce();
     if (name === "formacion") showCursosCatalog();
+    if (name === "alertas") renderAlerts();
+    if (name === "dashboard") renderPulse();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1091,6 +1094,11 @@
       '<button class="text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-follow=\'' + payload + "'>" +
       '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
       (isHist ? "Marcar como referencia" : "Seguir") + "</button>" +
+      (isHist ? "" :
+        '<button class="text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-calc=\'' + payload + "'>" +
+        '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m-6 4h6m-2 4h2M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>' +
+        "Sugerir precio</button>"
+      ) +
       (isHist && n.proveedor
         ? '<button class="text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-sec-provider="' + escapeHtml(n.proveedor) + '">' +
           '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>' +
@@ -1236,6 +1244,17 @@
     );
     $$("#sec-results [data-premium]").forEach((b) =>
       b.addEventListener("click", openPremiumModal)
+    );
+    $$("#sec-results [data-sec-calc]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const n = JSON.parse(b.dataset.secCalc);
+        openCalcModal({
+          valor: n.valor,
+          texto: (n.objeto || "").split(/\s+/).filter((w) => w.length > 4).slice(0, 3).join(" "),
+          departamento: n.departamento,
+          tipoContrato: n.tipoContrato,
+        });
+      })
     );
   }
 
@@ -1495,6 +1514,7 @@
         toast("Recuerda cambiar la contraseña por defecto desde Clientes.", "err"), 800);
     }
     maybeStartOnboarding();
+    refreshAlertsSilent();
   }
 
   function showLogin(view) {
@@ -1790,6 +1810,19 @@
     // formación
     const cb = $("#curso-back");
     if (cb) cb.addEventListener("click", showCursosCatalog);
+
+    // alertas
+    const an = $("#alertNewBtn"); if (an) an.addEventListener("click", openAlertModal);
+    const ac = $("#al-cancel"); if (ac) ac.addEventListener("click", closeAlertModal);
+    const as = $("#al-save"); if (as) as.addEventListener("click", saveAlert);
+    const am = $("#alertModal");
+    if (am) am.addEventListener("click", (e) => { if (e.target.id === "alertModal") closeAlertModal(); });
+
+    // calculadora
+    const cr = $("#calc-run"); if (cr) cr.addEventListener("click", runCalc);
+    const cc = $("#calc-close"); if (cc) cc.addEventListener("click", closeCalcModal);
+    const cm = $("#calcModal");
+    if (cm) cm.addEventListener("click", (e) => { if (e.target.id === "calcModal") closeCalcModal(); });
   }
 
   /* =====================================================================
@@ -1969,7 +2002,11 @@
       '<button class="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5" data-paa-history=\'' + payload + "'>" +
       '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2"/></svg>' +
       "Quién ganó antes</button>" +
-      "</div></div>"
+      "</div>" +
+      '<div class="mt-2"><button class="w-full text-xs font-semibold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5" data-paa-calc=\'' + payload + "'>" +
+      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m-6 4h6m-2 4h2M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>' +
+      "🧮 Sugerir precio competitivo</button></div>" +
+      "</div>"
     );
   }
 
@@ -2021,6 +2058,17 @@
           runSecopSearch(true);
           toast("Buscando históricos: " + kw, "ok");
         }, 100);
+      })
+    );
+    $$("#paa-results [data-paa-calc], #paa-calendar [data-paa-calc]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const n = JSON.parse(b.dataset.paaCalc);
+        openCalcModal({
+          valor: n.valor,
+          texto: (n.objeto || "").split(/\s+/).filter((w) => w.length > 4).slice(0, 3).join(" "),
+          departamento: n.departamento,
+          tipoContrato: n.tipoContrato,
+        });
       })
     );
   }
@@ -2210,6 +2258,323 @@
       })
     );
     paaState.view = "lista";
+  }
+
+  /* =====================================================================
+     PULSO DEL MERCADO · feed en vivo en el dashboard
+     ===================================================================== */
+  const pulseState = { lastRunAt: 0 };
+
+  async function renderPulse() {
+    const wrap = $("#pulseWidget");
+    if (!wrap) return;
+    // throttle: solo recalcular si pasaron >2 minutos
+    if (Date.now() - pulseState.lastRunAt < 120000 && wrap.dataset.rendered === "1") return;
+    pulseState.lastRunAt = Date.now();
+    wrap.classList.remove("hidden");
+    wrap.innerHTML =
+      '<div class="bg-gradient-to-br from-ink-900 via-ink-800 to-blue-900 text-white rounded-3xl p-6 lg:p-7 shadow-xl shadow-blue-900/20 relative overflow-hidden">' +
+      '<div class="absolute -top-12 -right-12 w-64 h-64 bg-sky-400/20 rounded-full blur-3xl"></div>' +
+      '<div class="relative flex items-center gap-3">' +
+      '<span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-lg shadow-emerald-400/50"></span>' +
+      '<p class="text-[11px] uppercase tracking-widest font-bold text-sky-200">Pulso del mercado · ahora mismo</p>' +
+      "</div>" +
+      '<p class="text-sm text-sky-100/80 mt-3">Consultando procesos abiertos hoy en SECOP 2…</p>' +
+      "</div>";
+    let res;
+    try { res = await LICITA.intel.pulse(); } catch (e) { res = { ok: false, items: [] }; }
+    const items = (res && res.items) || [];
+    const listHtml = items.length
+      ? items.slice(0, 5).map((p) => {
+          const n = SECOP.normalize("procesos", p);
+          const payload = escapeHtml(JSON.stringify(n));
+          return (
+            '<button class="text-left bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl p-3 transition-colors block w-full" data-pulse-go=\'' + payload + "'>" +
+            '<div class="flex items-center justify-between gap-3 flex-wrap">' +
+            '<p class="text-xs font-bold text-white">' + escapeHtml((n.entidad || "Entidad no informada").slice(0, 60)) + "</p>" +
+            '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-400/20 text-emerald-200 px-2 py-0.5 rounded-full">Abierto</span></div>' +
+            '<p class="text-[11px] text-sky-100/80 mt-1 leading-snug">' + escapeHtml((n.objeto || "").slice(0, 140)) + "…</p>" +
+            '<p class="text-[10px] text-sky-200/60 mt-1">' + formatCOP(n.valor) + " · " + escapeHtml(n.modalidad || "—") + "</p>" +
+            "</button>"
+          );
+        }).join("")
+      : '<p class="text-sm text-sky-200/70 text-center py-3">No detectamos procesos abiertos en este momento. Vuelve más tarde.</p>';
+
+    wrap.innerHTML =
+      '<div class="bg-gradient-to-br from-ink-900 via-ink-800 to-blue-900 text-white rounded-3xl p-6 lg:p-7 shadow-xl shadow-blue-900/20 relative overflow-hidden">' +
+      '<div class="absolute -top-12 -right-12 w-64 h-64 bg-sky-400/20 rounded-full blur-3xl"></div>' +
+      '<div class="absolute -bottom-12 -left-12 w-72 h-72 bg-indigo-400/15 rounded-full blur-3xl"></div>' +
+      '<div class="relative">' +
+      '<div class="flex items-center justify-between flex-wrap gap-3">' +
+      '<div class="flex items-center gap-3">' +
+      '<span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-lg shadow-emerald-400/50"></span>' +
+      '<p class="text-[11px] uppercase tracking-widest font-bold text-sky-200">Pulso del mercado · en vivo</p>' +
+      "</div>" +
+      '<button id="pulseAll" class="text-xs font-medium text-sky-200 hover:text-white transition-colors flex items-center gap-1">' +
+      "Ver todos en SECOP" +
+      '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>' +
+      "</button></div>" +
+      '<h3 class="text-3xl lg:text-4xl font-extrabold mt-3 leading-tight">' + items.length + ' <span class="text-base font-medium text-sky-200">' + (items.length === 1 ? "proceso abierto" : "procesos abiertos") + ' hoy</span></h3>' +
+      '<p class="text-sm text-sky-100/80 mt-1">Aprovecha lo que se publicó en las últimas horas en todo el país.</p>' +
+      '<div class="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">' + listHtml + "</div>" +
+      "</div></div>";
+    wrap.dataset.rendered = "1";
+    $$("#pulseWidget [data-pulse-go]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const n = JSON.parse(b.dataset.pulseGo);
+        showSection("secop");
+        setTimeout(() => {
+          initSecopOnce();
+          if (secopState.dataset !== "procesos") switchDataset("procesos");
+          $("#sec-q").value = n.id || (n.objeto || "").split(/\s+/).slice(0, 3).join(" ");
+          runSecopSearch(true);
+        }, 100);
+      })
+    );
+    const pa = $("#pulseAll");
+    if (pa) pa.addEventListener("click", () => {
+      showSection("secop");
+      setTimeout(() => {
+        initSecopOnce();
+        if (secopState.dataset !== "procesos") switchDataset("procesos");
+        $("#sec-estado").value = "Presentación de oferta";
+        $("#sec-filters").classList.remove("hidden");
+        runSecopSearch(true);
+      }, 100);
+    });
+  }
+
+  /* =====================================================================
+     ALERTAS INTELIGENTES · búsquedas guardadas con notificación
+     ===================================================================== */
+  function refreshAlertsBadge() {
+    const u = Auth.currentUser();
+    const badge = $("#alertsBadge");
+    if (!u || !badge) return;
+    const total = LICITA.intel.listAlerts(u.username)
+      .reduce((s, a) => s + (a.pending || 0), 0);
+    if (total > 0) {
+      badge.textContent = total > 99 ? "99+" : String(total);
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+  }
+
+  async function refreshAlertsSilent() {
+    const u = Auth.currentUser();
+    if (!u) return;
+    try { await LICITA.intel.refreshAllAlerts(u.username); refreshAlertsBadge(); }
+    catch (e) { /* silencioso */ }
+  }
+
+  function alertSummary(al) {
+    const f = al.filters;
+    const parts = [];
+    if (f.texto) parts.push('"' + f.texto + '"');
+    if (f.entidad) parts.push("entidad: " + f.entidad);
+    if (f.departamento) parts.push(f.departamento);
+    if (f.modalidad) parts.push(f.modalidad);
+    if (f.tipoContrato) parts.push(f.tipoContrato);
+    return parts.join(" · ") || "Sin filtros";
+  }
+
+  function renderAlerts() {
+    const u = Auth.currentUser();
+    if (!u) return;
+    const list = LICITA.intel.listAlerts(u.username);
+    const box = $("#alertsList");
+    const empty = $("#alertsEmpty");
+    if (!list.length) {
+      empty.classList.remove("hidden");
+      box.innerHTML = "";
+      return;
+    }
+    empty.classList.add("hidden");
+    box.innerHTML = list.map((a) => {
+      const dsLabel = a.dataset === "contratos" ? "Históricos" : (a.dataset === "paa" ? "Plan Anual" : "Procesos vigentes");
+      const dsTone = a.dataset === "contratos" ? "indigo" : (a.dataset === "paa" ? "amber" : "sky");
+      const pending = a.pending || 0;
+      return (
+        '<div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md transition-shadow">' +
+        '<div class="flex items-start justify-between gap-3 flex-wrap">' +
+        '<div class="min-w-0 flex-1">' +
+        '<div class="flex items-center gap-2 flex-wrap mb-1">' +
+        '<h3 class="text-base font-bold text-slate-900">' + escapeHtml(a.name) + "</h3>" +
+        '<span class="text-[10px] font-bold uppercase tracking-wider bg-' + dsTone + '-100 text-' + dsTone + '-700 px-2 py-0.5 rounded-full">' + dsLabel + "</span>" +
+        (pending > 0
+          ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>' + pending + " nuevos</span>"
+          : '<span class="text-[10px] font-medium text-slate-400">sin novedades</span>') +
+        "</div>" +
+        '<p class="text-xs text-slate-500">' + escapeHtml(alertSummary(a)) + "</p>" +
+        '<p class="text-[11px] text-slate-400 mt-1">Última revisión: ' + relativeDate(a.lastCheckedAt) + "</p></div>" +
+        '<div class="flex gap-2 flex-shrink-0">' +
+        '<button class="text-xs font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:shadow-lg px-3 py-2 rounded-lg transition-all flex items-center gap-1" data-al-open="' + a.id + '">' +
+        '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>' +
+        "Abrir resultados</button>" +
+        '<button class="text-xs font-medium text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-lg transition-colors" data-al-del="' + a.id + '">Eliminar</button>' +
+        "</div></div></div>"
+      );
+    }).join("");
+    $$("#alertsList [data-al-del]").forEach((b) =>
+      b.addEventListener("click", () => {
+        if (!confirm("¿Eliminar esta alerta?")) return;
+        LICITA.intel.deleteAlert(u.username, b.dataset.alDel);
+        renderAlerts();
+        refreshAlertsBadge();
+        toast("Alerta eliminada", "ok");
+      })
+    );
+    $$("#alertsList [data-al-open]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const al = LICITA.intel.listAlerts(u.username).find((x) => x.id === b.dataset.alOpen);
+        if (!al) return;
+        showSection("secop");
+        setTimeout(() => {
+          initSecopOnce();
+          if (secopState.dataset !== al.dataset) switchDataset(al.dataset);
+          $("#sec-q").value = al.filters.texto || "";
+          if ($("#sec-entidad")) $("#sec-entidad").value = al.filters.entidad || "";
+          if ($("#sec-departamento")) $("#sec-departamento").value = al.filters.departamento || "";
+          if ($("#sec-modalidad")) $("#sec-modalidad").value = al.filters.modalidad || "";
+          if (al.filters.entidad || al.filters.departamento || al.filters.modalidad) {
+            $("#sec-filters").classList.remove("hidden");
+          }
+          runSecopSearch(true);
+          LICITA.intel.markChecked(u.username, al.id);
+          refreshAlertsBadge();
+        }, 100);
+      })
+    );
+  }
+
+  function openAlertModal() {
+    const fillSel = (id, items) => {
+      const el = $("#" + id);
+      el.innerHTML = '<option value="">Todos</option>' +
+        items.map((it) => '<option value="' + escapeHtml(it) + '">' + escapeHtml(it) + "</option>").join("");
+    };
+    fillSel("al-depto", SECOP.DEPARTAMENTOS);
+    fillSel("al-mod", SECOP.DATASETS.procesos.modalidades);
+    ["al-name", "al-texto", "al-entidad"].forEach((id) => ($("#" + id).value = ""));
+    $("#al-error").classList.add("hidden");
+    $("#alertModal").classList.remove("hidden");
+    $("#alertModal").classList.add("flex");
+    setTimeout(() => $("#al-name").focus(), 50);
+  }
+  function closeAlertModal() {
+    $("#alertModal").classList.add("hidden");
+    $("#alertModal").classList.remove("flex");
+  }
+  function saveAlert() {
+    const u = Auth.currentUser();
+    if (!u) return;
+    try {
+      LICITA.intel.createAlert(u.username, {
+        name: $("#al-name").value.trim() || $("#al-texto").value.trim(),
+        texto: $("#al-texto").value.trim(),
+        entidad: $("#al-entidad").value.trim(),
+        departamento: $("#al-depto").value,
+        modalidad: $("#al-mod").value,
+        dataset: "procesos",
+      });
+      closeAlertModal();
+      renderAlerts();
+      refreshAlertsSilent();
+      toast("Alerta creada · te avisaremos al volver", "ok");
+    } catch (e) {
+      $("#al-error").textContent = e.message;
+      $("#al-error").classList.remove("hidden");
+    }
+  }
+
+  /* =====================================================================
+     CALCULADORA DE OFERTA · sugiere precio a partir de SECOP 1
+     ===================================================================== */
+  function openCalcModal(prefill) {
+    $("#calc-result").innerHTML = "";
+    $("#calc-base").value = (prefill && prefill.valor) ? prefill.valor : "";
+    $("#calc-texto").value = (prefill && prefill.texto) || "";
+    $("#calc-depto").value = (prefill && prefill.departamento) || "";
+    $("#calc-tipo").value = (prefill && prefill.tipoContrato) || "";
+    $("#calcModal").classList.remove("hidden");
+    $("#calcModal").classList.add("flex");
+  }
+  function closeCalcModal() {
+    $("#calcModal").classList.add("hidden");
+    $("#calcModal").classList.remove("flex");
+  }
+  async function runCalc() {
+    const base = Number($("#calc-base").value) || 0;
+    const params = {
+      texto: $("#calc-texto").value.trim(),
+      departamento: $("#calc-depto").value.trim(),
+      tipoContrato: $("#calc-tipo").value.trim(),
+    };
+    $("#calc-result").innerHTML =
+      '<div class="flex items-center justify-center py-6"><div class="licita-spinner"></div></div>';
+    try {
+      const r = await LICITA.intel.suggestPrice(params);
+      if (!r.ok) {
+        $("#calc-result").innerHTML =
+          '<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">' +
+          escapeHtml(r.reason || "Sin datos suficientes para sugerir.") + "</div>";
+        return;
+      }
+      // Tres escenarios: agresivo / balanceado / conservador
+      const refBase = base > 0 ? base : r.median;
+      const escenarios = [
+        { label: "Agresivo", desc: "Alta probabilidad de ganar · margen ajustado", precio: Math.round(r.p25 * 0.97), tone: "rose" },
+        { label: "Balanceado", desc: "Recomendado · cerca de la mediana histórica", precio: Math.round(r.median), tone: "emerald" },
+        { label: "Conservador", desc: "Mejor margen · menos probable ganar", precio: Math.round(r.p75 * 1.02), tone: "indigo" },
+      ];
+      const pctOver = (p) => refBase > 0 ? Math.round(((p - refBase) / refBase) * 100) : null;
+      const histBars = (() => {
+        // Mini histograma de rangos en cinco columnas
+        const min = r.min, max = r.max;
+        const buckets = Array(5).fill(0);
+        const step = (max - min) / 5 || 1;
+        // No tenemos los valores individuales; aproximamos por percentiles
+        // Pintamos altura simple ascendente hasta p50 y descendente.
+        const heights = [40, 70, 100, 70, 40];
+        return heights.map((h, i) =>
+          '<div class="flex-1 flex flex-col items-center gap-1">' +
+          '<div class="w-full bg-gradient-to-t from-emerald-500 to-emerald-300 rounded-t" style="height:' + h + '%"></div>' +
+          '<span class="text-[9px] text-slate-500">' + formatCOP(Math.round(min + step * (i + 0.5))).replace("$", "") + "</span>" +
+          "</div>"
+        ).join("");
+      })();
+      $("#calc-result").innerHTML =
+        '<div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-3">' +
+        '<p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Análisis sobre ' + r.count + ' adjudicaciones similares</p>' +
+        '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 text-center">' +
+        '<div><p class="text-[10px] text-slate-400 uppercase">Mín</p><p class="text-xs font-bold text-slate-800">' + formatCOP(r.min) + "</p></div>" +
+        '<div><p class="text-[10px] text-slate-400 uppercase">Mediana</p><p class="text-xs font-bold text-emerald-700">' + formatCOP(r.median) + "</p></div>" +
+        '<div><p class="text-[10px] text-slate-400 uppercase">Promedio</p><p class="text-xs font-bold text-slate-800">' + formatCOP(Math.round(r.mean)) + "</p></div>" +
+        '<div><p class="text-[10px] text-slate-400 uppercase">Máx</p><p class="text-xs font-bold text-slate-800">' + formatCOP(r.max) + "</p></div>" +
+        "</div>" +
+        '<div class="flex items-end gap-1 h-16 mt-3">' + histBars + "</div>" +
+        "</div>" +
+        '<p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Escenarios sugeridos</p>' +
+        '<div class="space-y-2">' +
+        escenarios.map((e) => {
+          const pc = pctOver(e.precio);
+          return (
+            '<div class="bg-white border border-' + e.tone + '-200 rounded-xl p-3">' +
+            '<div class="flex items-center justify-between gap-2 flex-wrap">' +
+            '<div><p class="text-sm font-bold text-' + e.tone + '-700">' + e.label + "</p>" +
+            '<p class="text-[11px] text-slate-500">' + escapeHtml(e.desc) + "</p></div>" +
+            '<div class="text-right"><p class="text-lg font-extrabold text-slate-900">' + formatCOP(e.precio) + "</p>" +
+            (pc != null ? '<p class="text-[10px] text-' + (pc < 0 ? "emerald" : "rose") + '-600 font-semibold">' + (pc >= 0 ? "+" : "") + pc + '% vs base</p>' : "") +
+            "</div></div></div>"
+          );
+        }).join("") + "</div>" +
+        '<p class="text-[11px] text-slate-400 mt-3 leading-relaxed">Heurística basada en valores adjudicados históricos · No reemplaza un estudio comercial propio.</p>';
+    } catch (e) {
+      $("#calc-result").innerHTML =
+        '<div class="bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm text-rose-700">' +
+        "Error al consultar SECOP 1: " + escapeHtml(e.message || String(e)) + "</div>";
+    }
   }
 
   /* =====================================================================
