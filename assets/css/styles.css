@@ -339,6 +339,35 @@ html, body { font-family: 'Inter', sans-serif; }
 .sec-tab:hover { color: #0f172a; }
 .sec-tab.active { background: #fff; color: #0369a1; box-shadow: 0 1px 3px rgba(15,23,42,.08); }
 
+/* ---- Tabs PAA (lista/calendario) ---- */
+.paa-vtab { color: #475569; display: inline-flex; }
+.paa-vtab:hover { color: #0f172a; }
+.paa-vtab.active { background: #fff; color: #b45309; box-shadow: 0 1px 3px rgba(15,23,42,.08); }
+.paa-view-toggle-show { display: inline-flex !important; }
+
+/* ---- Onboarding coachmark ---- */
+.coach-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(11,18,32,.65);
+  backdrop-filter: blur(4px);
+  z-index: 70;
+  display: flex; align-items: center; justify-content: center;
+  animation: pop .25s ease-out;
+}
+.coach-card {
+  background: white;
+  border-radius: 1.25rem;
+  padding: 1.75rem;
+  max-width: 460px;
+  width: calc(100% - 2rem);
+  box-shadow: 0 30px 80px -20px rgba(15, 23, 42, .5);
+}
+.coach-dot {
+  width: 6px; height: 6px; border-radius: 9999px;
+  background: #cbd5e1; transition: all .2s;
+}
+.coach-dot.active { width: 24px; background: #0284c7; }
+
 /* ---- Login: oculta scroll del body cuando está visible ---- */
 body.locked { overflow: hidden; }
 

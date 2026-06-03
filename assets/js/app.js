@@ -1494,6 +1494,7 @@
       setTimeout(() =>
         toast("Recuerda cambiar la contraseña por defecto desde Clientes.", "err"), 800);
     }
+    maybeStartOnboarding();
   }
 
   function showLogin(view) {
@@ -1793,126 +1794,203 @@
 
   /* =====================================================================
      PLAN ANUAL DE ADQUISICIONES (PAA) · datos.gov.co crbs-icmf
-     Cruza con SECOP 2 (procesos vigentes) y con el analizador de pliegos.
+     Rediseñado: estilo Apple · didáctico · analítico · con calendario.
+     Cruza con SECOP 2, SECOP 1 y el analizador.
      ===================================================================== */
   const paaState = {
     initialized: false,
     page: 0,
-    pageSize: 25,
+    pageSize: 24,
     total: null,
     filters: {},
+    lastData: [],
+    view: "lista",
   };
+
+  const MESES_ABREV = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const MESES_LARGO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
   function paaCollectFilters() {
     return {
       texto: $("#paa-q").value.trim(),
-      entidad: $("#paa-entidad").value.trim(),
-      departamento: $("#paa-departamento").value,
-      modalidad: $("#paa-modalidad").value,
-      precioMin: $("#paa-pmin").value.trim(),
+      entidad: ($("#paa-entidad") && $("#paa-entidad").value || "").trim(),
+      departamento: $("#paa-departamento") ? $("#paa-departamento").value : "",
+      modalidad: $("#paa-modalidad") ? $("#paa-modalidad").value : "",
+      precioMin: ($("#paa-pmin") && $("#paa-pmin").value || "").trim(),
       orden: "fecha_estimada_de_inicio ASC",
     };
   }
 
-  function paaForensicSummary(items) {
+  /* Días hasta una fecha ISO. Negativo si ya pasó. Null si no hay fecha. */
+  function daysUntil(iso) {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return Math.round((d - today) / 86400000);
+  }
+
+  function urgencyOf(days) {
+    if (days == null) return { tone: "slate", label: "Sin fecha", hint: "Fecha no publicada" };
+    if (days < 0) return { tone: "slate", label: "Pasó", hint: "Verifica si ya se publicó en SECOP" };
+    if (days <= 7) return { tone: "rose", label: "Inminente", hint: "Abre en menos de una semana" };
+    if (days <= 30) return { tone: "orange", label: "Pronto", hint: "Abre este mes" };
+    if (days <= 90) return { tone: "amber", label: "Este trimestre", hint: "Aún hay tiempo de preparar" };
+    return { tone: "sky", label: "Más adelante", hint: "Monitorea, falta tiempo" };
+  }
+
+  /* Calcula los analytics que alimentan stats, gráficas y calendario. */
+  function paaAnalytics(items) {
     if (!items.length) return null;
-    const total = items.reduce((s, p) => {
-      const n = SECOP.normalize("paa", p);
-      return s + (Number(n.valor) || 0);
-    }, 0);
+    const norms = items.map((p) => SECOP.normalize("paa", p));
+    const total = norms.reduce((s, n) => s + (Number(n.valor) || 0), 0);
     const byEntity = {};
-    items.forEach((p) => {
-      const n = SECOP.normalize("paa", p);
+    const byMonth = Array(12).fill(0);
+    let nextOpening = null;
+    norms.forEach((n) => {
       const e = n.entidad || "—";
       byEntity[e] = (byEntity[e] || 0) + 1;
+      const d = n.fecha ? new Date(n.fecha) : null;
+      if (d && !isNaN(d.getTime())) {
+        byMonth[d.getMonth()] += 1;
+        if (d >= new Date() && (!nextOpening || d < nextOpening)) nextOpening = d;
+      }
     });
-    const topEntity = Object.entries(byEntity).sort((a, b) => b[1] - a[1])[0];
-    const months = {};
-    items.forEach((p) => {
-      const n = SECOP.normalize("paa", p);
-      const m = (n.fecha || "").slice(0, 7);
-      if (m) months[m] = (months[m] || 0) + 1;
-    });
-    const peakMonth = Object.entries(months).sort((a, b) => b[1] - a[1])[0];
+    const topEntities = Object.entries(byEntity)
+      .sort((a, b) => b[1] - a[1]).slice(0, 5);
     return {
-      total,
-      avg: total / items.length,
-      entityCount: Object.keys(byEntity).length,
-      topEntity: topEntity ? topEntity[0] : "—",
-      topEntityCount: topEntity ? topEntity[1] : 0,
-      peakMonth: peakMonth ? peakMonth[0] : "—",
-      peakMonthCount: peakMonth ? peakMonth[1] : 0,
+      total, avg: total / items.length,
+      count: items.length, entityCount: Object.keys(byEntity).length,
+      topEntities, byMonth,
+      nextOpening: nextOpening ? nextOpening.toISOString() : null,
     };
   }
 
-  function paaRenderForensic(sum) {
-    if (!sum) { $("#paa-forensic").classList.add("hidden"); return; }
-    $("#paa-forensic").classList.remove("hidden");
+  function paaRenderAnalytics(a) {
+    if (!a) { $("#paa-analytics").classList.add("hidden"); $("#paa-charts").classList.add("hidden"); return; }
+    $("#paa-analytics").classList.remove("hidden");
+    $("#paa-charts").classList.remove("hidden");
+
+    const next = a.nextOpening ? daysUntil(a.nextOpening) : null;
+    const nextTxt = next == null ? "—" : (next <= 0 ? "Hoy" : "En " + next + " días");
+
     const cards = [
-      { label: "Valor total estimado", value: formatCOP(sum.total), tone: "amber" },
-      { label: "Promedio por proceso", value: formatCOP(Math.round(sum.avg)), tone: "indigo" },
-      { label: "Entidades involucradas", value: sum.entityCount, tone: "sky" },
-      { label: "Entidad con más planes", value: sum.topEntity + " (" + sum.topEntityCount + ")", tone: "emerald" },
+      { label: "Procesos planeados", val: a.count.toLocaleString("es-CO"), tone: "amber", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
+      { label: "Valor total estimado", val: formatCOP(Math.round(a.total)), tone: "orange", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" },
+      { label: "Entidades activas", val: a.entityCount.toLocaleString("es-CO"), tone: "indigo", icon: "M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 11-8 0 4 4 0 018 0z" },
+      { label: "Próxima apertura", val: nextTxt, tone: "rose", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
     ];
-    $("#paa-forensic").innerHTML = cards
-      .map((c) =>
-        '<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 card-hover">' +
-        '<p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">' + c.label + "</p>" +
-        '<p class="text-lg font-bold text-' + c.tone + '-700 mt-1 leading-tight">' + escapeHtml(String(c.value)) + "</p></div>"
-      ).join("");
+    $("#paa-analytics").innerHTML = cards.map((c) =>
+      '<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 lift">' +
+      '<div class="flex items-center gap-2.5">' +
+      '<div class="w-9 h-9 rounded-lg bg-' + c.tone + '-100 flex items-center justify-center"><svg class="w-4 h-4 text-' + c.tone + '-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="' + c.icon + '"/></svg></div>' +
+      '<p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">' + c.label + "</p></div>" +
+      '<p class="text-xl lg:text-2xl font-extrabold text-' + c.tone + '-700 mt-2 leading-tight">' + escapeHtml(String(c.val)) + "</p></div>"
+    ).join("");
+
+    // Gráfica 1: top entidades (barras horizontales)
+    const max = Math.max(1, ...a.topEntities.map((x) => x[1]));
+    const topHtml = a.topEntities.length
+      ? a.topEntities.map((e) => {
+          const pct = Math.round((e[1] / max) * 100);
+          return '<div><div class="flex items-baseline justify-between text-xs mb-1 gap-2">' +
+            '<span class="font-medium text-slate-700 truncate">' + escapeHtml(e[0]) + "</span>" +
+            '<span class="text-slate-500 font-bold flex-shrink-0">' + e[1] + "</span></div>" +
+            '<div class="bar-track"><div class="bar-fill bg-amber-500" style="width:' + pct + '%"></div></div></div>';
+        }).join('<div class="h-2"></div>')
+      : '<p class="text-xs text-slate-400 text-center py-4">Sin datos</p>';
+
+    // Gráfica 2: distribución por mes
+    const maxMonth = Math.max(1, ...a.byMonth);
+    const monthHtml = '<div class="flex items-end gap-1 h-32">' +
+      a.byMonth.map((v, i) => {
+        const h = Math.round((v / maxMonth) * 100);
+        const isCurrent = i === new Date().getMonth();
+        return '<div class="flex-1 flex flex-col items-center gap-1.5">' +
+          '<div class="w-full rounded-t-md transition-all hover:opacity-80 ' +
+          (isCurrent ? "bg-gradient-to-t from-rose-500 to-orange-400" : "bg-gradient-to-t from-amber-500 to-amber-300") +
+          '" style="height:' + h + '%" title="' + v + ' procesos en ' + MESES_LARGO[i] + '"></div>' +
+          '<span class="text-[9px] font-semibold ' + (isCurrent ? "text-rose-700" : "text-slate-500") + '">' + MESES_ABREV[i] + '</span>' +
+          '<span class="text-[10px] font-bold text-slate-700">' + (v || "·") + '</span>' +
+          '</div>';
+      }).join("") + "</div>";
+
+    $("#paa-charts").innerHTML =
+      '<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">' +
+      '<div class="flex items-center justify-between mb-3"><h4 class="text-sm font-bold text-slate-900">Top entidades</h4>' +
+      '<span class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Que más planean</span></div>' +
+      topHtml + "</div>" +
+      '<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">' +
+      '<div class="flex items-center justify-between mb-3"><h4 class="text-sm font-bold text-slate-900">Distribución por mes</h4>' +
+      '<span class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Año en curso</span></div>' +
+      monthHtml + "</div>";
   }
 
+  /* Tarjeta visual de un proceso planeado, estilo Apple. */
   function paaCard(p) {
     const n = SECOP.normalize("paa", p);
-    const fecha = n.fecha ? n.fecha.slice(0, 10) : "—";
+    const days = daysUntil(n.fecha);
+    const urg = urgencyOf(days);
+    const fechaCorta = n.fecha ? n.fecha.slice(0, 10) : "—";
     const payload = escapeHtml(JSON.stringify(n));
+    const dayBox = days == null
+      ? '<div class="w-20 flex-shrink-0 text-center bg-slate-50 rounded-2xl p-3 border border-slate-200"><p class="text-xs text-slate-400">Sin</p><p class="text-xs text-slate-400">fecha</p></div>'
+      : days < 0
+        ? '<div class="w-20 flex-shrink-0 text-center bg-slate-50 rounded-2xl p-3 border border-slate-200"><p class="text-2xl font-extrabold text-slate-400">·</p><p class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Pasó</p></div>'
+        : '<div class="w-20 flex-shrink-0 text-center bg-' + urg.tone + '-50 rounded-2xl p-3 border border-' + urg.tone + '-100">' +
+          '<p class="text-2xl font-extrabold text-' + urg.tone + '-700 leading-none">' + days + "</p>" +
+          '<p class="text-[9px] font-bold uppercase tracking-wider text-' + urg.tone + '-700 mt-1">días</p></div>';
     return (
-      '<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">' +
-      '<div class="flex items-start justify-between gap-4 flex-wrap">' +
+      '<div class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-all">' +
+      '<div class="flex items-start gap-4">' +
+      dayBox +
       '<div class="min-w-0 flex-1">' +
-      '<div class="flex items-center gap-2 flex-wrap mb-1">' +
-      '<span class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Planeado</span>' +
+      '<div class="flex items-center gap-2 flex-wrap mb-1.5">' +
+      '<span class="text-[10px] font-bold uppercase tracking-wider bg-' + urg.tone + '-100 text-' + urg.tone + '-700 px-2 py-0.5 rounded-full">' + urg.label + "</span>" +
       (n.modalidad ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">' + escapeHtml(n.modalidad) + "</span>" : "") +
       (n.tipoContrato ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded">' + escapeHtml(n.tipoContrato) + "</span>" : "") +
       "</div>" +
-      '<p class="text-sm font-bold text-slate-900 leading-snug mt-1">' + escapeHtml(n.entidad || "Entidad no informada") + "</p>" +
-      '<p class="text-xs text-slate-600 mt-1 leading-relaxed">' +
-      escapeHtml((n.objeto || "").slice(0, 240)) + (n.objeto && n.objeto.length > 240 ? "…" : "") + "</p>" +
+      '<h3 class="text-base font-bold text-slate-900 leading-snug">' + escapeHtml(n.entidad || "Entidad no informada") + "</h3>" +
+      '<p class="text-sm text-slate-600 mt-1 leading-relaxed">' +
+      escapeHtml((n.objeto || "").slice(0, 200)) + (n.objeto && n.objeto.length > 200 ? "…" : "") + "</p>" +
       '<div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">' +
-      '<span><span class="font-semibold text-slate-700">Valor estimado:</span> ' + formatCOP(n.valor) + "</span>" +
-      (n.departamento ? '<span><span class="font-semibold text-slate-700">Ubicación:</span> ' + escapeHtml(n.departamento) + "</span>" : "") +
-      '<span><span class="font-semibold text-slate-700">Apertura prevista:</span> ' + fecha + "</span>" +
-      (n.duracion ? '<span><span class="font-semibold text-slate-700">Duración:</span> ' + escapeHtml(n.duracion + " " + (n.unidadDuracion || "")) + "</span>" : "") +
+      '<span><span class="font-semibold text-slate-700">💰 Valor:</span> ' + formatCOP(n.valor) + "</span>" +
+      (n.departamento ? '<span><span class="font-semibold text-slate-700">📍</span> ' + escapeHtml(n.departamento) + "</span>" : "") +
+      '<span><span class="font-semibold text-slate-700">📅 Apertura:</span> ' + fechaCorta + "</span>" +
+      (n.duracion ? '<span><span class="font-semibold text-slate-700">⏱️</span> ' + escapeHtml(n.duracion + " " + (n.unidadDuracion || "")) + "</span>" : "") +
       "</div></div></div>" +
-      '<div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">' +
-      '<button class="text-xs font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1" data-paa-secop=\'' + payload + "'>" +
+      '<div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-2">' +
+      '<button class="text-xs font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5" data-paa-secop=\'' + payload + "'>" +
       '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>' +
-      "Buscar en SECOP cuando se abra</button>" +
-      '<button class="text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-paa-load=\'' + payload + "'>" +
+      "Ya está en SECOP?</button>" +
+      '<button class="text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5" data-paa-load=\'' + payload + "'>" +
       '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>' +
       "Preparar análisis</button>" +
-      '<button class="text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1" data-paa-history=\'' + payload + "'>" +
+      '<button class="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5" data-paa-history=\'' + payload + "'>" +
       '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2"/></svg>' +
-      "Ver históricos similares</button>" +
+      "Quién ganó antes</button>" +
       "</div></div>"
     );
   }
 
   function bindPaaCardActions() {
-    $$("#paa-results [data-paa-secop]").forEach((b) =>
+    $$("#paa-results [data-paa-secop], #paa-calendar [data-paa-secop]").forEach((b) =>
       b.addEventListener("click", () => {
         const n = JSON.parse(b.dataset.paaSecop);
         showSection("secop");
         setTimeout(() => {
           initSecopOnce();
           if (secopState.dataset !== "procesos") switchDataset("procesos");
-          $("#sec-q").value = (n.objeto || "").split(/\s+/).filter((w) => w.length > 4).slice(0, 3).join(" ");
+          const kw = (n.objeto || "").split(/\s+/).filter((w) => w.length > 4).slice(0, 3).join(" ");
+          $("#sec-q").value = kw;
           $("#sec-entidad").value = n.entidad || "";
+          $("#sec-filters").classList.remove("hidden");
           runSecopSearch(true);
-        }, 60);
+          toast("Buscando en SECOP 2: " + (kw || n.entidad), "ok");
+        }, 100);
       })
     );
-    $$("#paa-results [data-paa-load]").forEach((b) =>
+    $$("#paa-results [data-paa-load], #paa-calendar [data-paa-load]").forEach((b) =>
       b.addEventListener("click", () => {
         const n = JSON.parse(b.dataset.paaLoad);
         const map = {
@@ -1930,18 +2008,94 @@
         toast("Proceso planeado cargado en el analizador", "ok");
       })
     );
-    $$("#paa-results [data-paa-history]").forEach((b) =>
+    $$("#paa-results [data-paa-history], #paa-calendar [data-paa-history]").forEach((b) =>
       b.addEventListener("click", () => {
         const n = JSON.parse(b.dataset.paaHistory);
         showSection("secop");
         setTimeout(() => {
           initSecopOnce();
           if (secopState.dataset !== "contratos") switchDataset("contratos");
-          $("#sec-q").value = (n.objeto || "").split(/\s+/).filter((w) => w.length > 4).slice(0, 3).join(" ");
+          const kw = (n.objeto || "").split(/\s+/).filter((w) => w.length > 4).slice(0, 3).join(" ");
+          $("#sec-q").value = kw;
+          $("#sec-filters").classList.remove("hidden");
           runSecopSearch(true);
-        }, 60);
+          toast("Buscando históricos: " + kw, "ok");
+        }, 100);
       })
     );
+  }
+
+  /* Vista calendario: 12 cards de mes con conteo y promedio de valor. */
+  function renderPaaCalendar(items) {
+    const calendar = $("#paa-calendar");
+    const byMonth = Array.from({ length: 12 }, () => ({ items: [], total: 0 }));
+    items.forEach((p) => {
+      const n = SECOP.normalize("paa", p);
+      const d = n.fecha ? new Date(n.fecha) : null;
+      if (!d || isNaN(d.getTime())) return;
+      const m = d.getMonth();
+      byMonth[m].items.push(n);
+      byMonth[m].total += Number(n.valor) || 0;
+    });
+    const today = new Date(); const curM = today.getMonth();
+    const grid = byMonth.map((m, i) => {
+      const isCur = i === curM;
+      const future = i >= curM;
+      const tone = isCur ? "rose" : (future ? "amber" : "slate");
+      const count = m.items.length;
+      return (
+        '<button data-paa-month="' + i + '" class="text-left bg-white rounded-2xl border ' +
+        (isCur ? "border-rose-300 shadow-md shadow-rose-100" : "border-slate-200 hover:shadow-md") +
+        ' p-5 transition-all" ' + (count === 0 ? "disabled" : "") + '>' +
+        '<div class="flex items-center justify-between">' +
+        '<p class="text-sm font-bold ' + (count ? "text-" + tone + "-700" : "text-slate-300") + '">' + MESES_LARGO[i] + "</p>" +
+        (isCur ? '<span class="text-[9px] font-bold uppercase tracking-wider text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">Ahora</span>' : "") +
+        "</div>" +
+        '<p class="text-4xl font-extrabold ' + (count ? "text-slate-900" : "text-slate-300") + ' mt-2 leading-none">' + count + "</p>" +
+        '<p class="text-[10px] font-semibold uppercase tracking-wider ' + (count ? "text-slate-500" : "text-slate-300") + ' mt-1">' + (count === 1 ? "proceso" : "procesos") + "</p>" +
+        (count ? '<p class="text-[11px] text-slate-500 mt-3 pt-3 border-t border-slate-100"><span class="font-semibold">' + formatCOP(Math.round(m.total)) + "</span> en total</p>" : "") +
+        "</button>"
+      );
+    }).join("");
+    calendar.innerHTML =
+      '<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-5">' + grid + "</div>" +
+      '<div id="paa-calendar-detail" class="hidden"></div>';
+
+    $$("#paa-calendar [data-paa-month]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const m = Number(btn.dataset.paaMonth);
+        const list = byMonth[m].items;
+        if (!list.length) return;
+        const detail = $("#paa-calendar-detail");
+        detail.classList.remove("hidden");
+        detail.innerHTML =
+          '<div class="bg-amber-50/40 border border-amber-200 rounded-2xl p-4 mb-3 flex items-center justify-between flex-wrap gap-2">' +
+          '<p class="text-sm font-bold text-amber-900">Procesos de ' + MESES_LARGO[m] + " · " + list.length + " planeados</p>" +
+          '<button id="paa-calendar-close" class="text-xs font-medium text-slate-500 hover:text-slate-900">Cerrar</button>' +
+          "</div>" +
+          '<div class="space-y-3">' + list.slice(0, 20).map((n) => paaCard(n.raw)).join("") + "</div>";
+        $("#paa-calendar-close").addEventListener("click", () => detail.classList.add("hidden"));
+        bindPaaCardActions();
+        detail.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }
+
+  function paaApplyView() {
+    $$(".paa-vtab").forEach((b) =>
+      b.classList.toggle("active", b.dataset.paaView === paaState.view)
+    );
+    if (paaState.view === "lista") {
+      $("#paa-results").classList.remove("hidden");
+      $("#paa-calendar").classList.add("hidden");
+      $("#paa-pagination").classList.remove("hidden");
+    } else {
+      $("#paa-results").classList.add("hidden");
+      $("#paa-calendar").classList.remove("hidden");
+      $("#paa-pagination").classList.add("hidden");
+      renderPaaCalendar(paaState.lastData);
+      bindPaaCardActions();
+    }
   }
 
   async function runPaaSearch(reset) {
@@ -1954,8 +2108,11 @@
     $("#paa-error").classList.add("hidden");
     $("#paa-empty").classList.add("hidden");
     $("#paa-results").classList.add("hidden");
+    $("#paa-calendar").classList.add("hidden");
     $("#paa-pagination").classList.add("hidden");
-    $("#paa-forensic").classList.add("hidden");
+    $("#paa-analytics").classList.add("hidden");
+    $("#paa-charts").classList.add("hidden");
+    $("#paa-view-toggle").classList.remove("paa-view-toggle-show");
     $("#paa-loading").classList.remove("hidden");
     try {
       const [data, totalMaybe] = await Promise.all([
@@ -1963,6 +2120,7 @@
         reset ? SECOP.count("paa", f).catch(() => null) : Promise.resolve(paaState.total),
       ]);
       if (reset) paaState.total = totalMaybe;
+      paaState.lastData = data;
       $("#paa-loading").classList.add("hidden");
       if (!data.length && paaState.page === 0) {
         $("#paa-empty").classList.remove("hidden");
@@ -1970,13 +2128,15 @@
           '<div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">' +
           '<svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>' +
           '<h3 class="text-base font-semibold text-slate-900">Sin resultados en el PAA</h3>' +
-          '<p class="text-sm text-slate-400 mt-1 max-w-md">Las entidades no han publicado planes con esos filtros. Prueba con palabras más amplias o quita filtros.</p>';
+          '<p class="text-sm text-slate-400 mt-1 max-w-md">Prueba con palabras más amplias o quita filtros.</p>';
         return;
       }
-      paaRenderForensic(paaForensicSummary(data));
+      paaRenderAnalytics(paaAnalytics(data));
       $("#paa-results").innerHTML = data.map(paaCard).join("");
-      $("#paa-results").classList.remove("hidden");
       bindPaaCardActions();
+      $("#paa-view-toggle").classList.add("paa-view-toggle-show");
+      paaApplyView();
+
       const start = paaState.page * paaState.pageSize + 1;
       const end = start + data.length - 1;
       $("#paa-pageinfo").textContent =
@@ -1985,7 +2145,6 @@
       $("#paa-prev").disabled = paaState.page === 0;
       $("#paa-next").disabled = data.length < paaState.pageSize ||
         (paaState.total != null && end >= paaState.total);
-      $("#paa-pagination").classList.remove("hidden");
     } catch (err) {
       $("#paa-loading").classList.add("hidden");
       $("#paa-error").classList.remove("hidden");
@@ -1997,31 +2156,45 @@
     if (paaState.initialized) return;
     paaState.initialized = true;
     const ds = SECOP.DATASETS.paa;
-    const fillSel = (id, items) => {
+    const fillSel = (id, items, placeholder) => {
       const el = $("#" + id);
-      el.innerHTML = '<option value="">Todos</option>' +
+      if (!el) return;
+      el.innerHTML = '<option value="">' + (placeholder || "Todos") + "</option>" +
         items.map((it) => '<option value="' + escapeHtml(it) + '">' + escapeHtml(it) + "</option>").join("");
     };
-    fillSel("paa-departamento", SECOP.DEPARTAMENTOS);
-    fillSel("paa-modalidad", ds.modalidades);
+    fillSel("paa-departamento", SECOP.DEPARTAMENTOS, "Todos los departamentos");
+    fillSel("paa-modalidad", ds.modalidades, "Todas las modalidades");
+
     const chips = [
-      { label: "Próximos a abrir", set: { orden: "fecha_estimada_de_inicio ASC" } },
-      { label: "Mayor presupuesto", set: { orden: "valor_total_estimado DESC" } },
-      { label: "Mínima cuantía", set: { modalidad: "Mínima cuantía" } },
-      { label: "Licitación pública", set: { modalidad: "Licitación pública" } },
+      { label: "⚡ Próximos a abrir" },
+      { label: "💰 Mayor presupuesto" },
+      { label: "🏗️ Obras" },
+      { label: "💻 Tecnología" },
+      { label: "🧹 Servicios generales" },
+      { label: "📝 Consultoría" },
     ];
+    const chipQueries = {
+      "⚡ Próximos a abrir": { texto: "" },
+      "💰 Mayor presupuesto": { texto: "" },
+      "🏗️ Obras": { texto: "obra" },
+      "💻 Tecnología": { texto: "software tecnología sistema" },
+      "🧹 Servicios generales": { texto: "aseo cafetería vigilancia" },
+      "📝 Consultoría": { texto: "consultoría asesoría" },
+    };
     $("#paa-chips").innerHTML = chips
-      .map((c, i) =>
-        '<button data-paa-chip="' + i + '" class="text-[11px] font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-full transition-colors">' +
+      .map((c) =>
+        '<button data-paa-chip="' + escapeHtml(c.label) +
+        '" class="text-xs font-semibold text-amber-800 bg-white/80 hover:bg-white border border-amber-100 hover:border-amber-300 px-3 py-1.5 rounded-full transition-colors backdrop-blur shadow-sm">' +
         escapeHtml(c.label) + "</button>"
       ).join("");
     $$("#paa-chips [data-paa-chip]").forEach((b) =>
       b.addEventListener("click", () => {
-        const c = chips[Number(b.dataset.paaChip)];
-        if (c.set.modalidad) $("#paa-modalidad").value = c.set.modalidad;
+        const q = chipQueries[b.dataset.paaChip] || {};
+        if (q.texto) $("#paa-q").value = q.texto;
         runPaaSearch(true);
       })
     );
+
     $("#paa-search").addEventListener("click", () => runPaaSearch(true));
     $("#paa-q").addEventListener("keydown", (e) => { if (e.key === "Enter") runPaaSearch(true); });
     $("#paa-prev").addEventListener("click", () => {
@@ -2030,6 +2203,95 @@
     $("#paa-next").addEventListener("click", () => {
       paaState.page++; runPaaSearch(false);
     });
+    $$(".paa-vtab").forEach((b) =>
+      b.addEventListener("click", () => {
+        paaState.view = b.dataset.paaView;
+        paaApplyView();
+      })
+    );
+    paaState.view = "lista";
+  }
+
+  /* =====================================================================
+     ONBOARDING TOUR (coachmark) — primera visita
+     ===================================================================== */
+  function onboardingDoneKey(u) { return "licita.onboarding." + u.username; }
+  function maybeStartOnboarding() {
+    const u = Auth.currentUser();
+    if (!u) return;
+    if (u.role === "admin") return; // admin no necesita el tour
+    try {
+      if (localStorage.getItem(onboardingDoneKey(u))) return;
+    } catch (e) { return; }
+    setTimeout(() => startOnboarding(), 700);
+  }
+  function startOnboarding() {
+    const steps = [
+      {
+        emoji: "🎯",
+        title: "Bienvenido a LICITA",
+        body: "Tu ecosistema para encontrar, anticipar y ganar licitaciones en Colombia.",
+      },
+      {
+        emoji: "🔍",
+        title: "Busca procesos en SECOP",
+        body: "Encuentra procesos vigentes (SECOP 2) o ve quién ganó antes (SECOP 1) en tu nicho.",
+      },
+      {
+        emoji: "📅",
+        title: "Anticipa con el PAA",
+        body: "Mira qué planean comprar las entidades este año con un calendario interactivo.",
+      },
+      {
+        emoji: "🤖",
+        title: "Análisis con IA",
+        body: "Carga un pliego y la IA detecta riesgos jurídicos. Tienes 3 análisis gratis al registrarte.",
+      },
+      {
+        emoji: "🎓",
+        title: "Aprende mientras usas",
+        body: "Cursos cortos sobre contratación pública con certificado descargable.",
+      },
+    ];
+    let i = 0;
+    const root = document.createElement("div");
+    root.className = "coach-backdrop";
+    root.innerHTML = "";
+    document.body.appendChild(root);
+
+    function render() {
+      const s = steps[i];
+      root.innerHTML =
+        '<div class="coach-card">' +
+        '<div class="flex items-center gap-3">' +
+        '<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-2xl shadow-lg shadow-blue-200">' + s.emoji + "</div>" +
+        '<div><p class="text-[10px] font-bold uppercase tracking-wider text-sky-700">Paso ' + (i + 1) + " de " + steps.length + "</p>" +
+        '<h3 class="text-lg font-extrabold text-slate-900 leading-tight">' + escapeHtml(s.title) + "</h3></div></div>" +
+        '<p class="text-base text-slate-600 mt-4 leading-relaxed">' + escapeHtml(s.body) + "</p>" +
+        '<div class="flex items-center justify-between mt-6">' +
+        '<div class="flex gap-1.5 items-center">' +
+        steps.map((_, k) => '<span class="coach-dot' + (k === i ? " active" : "") + '"></span>').join("") + "</div>" +
+        '<div class="flex gap-2">' +
+        (i > 0 ? '<button id="coach-prev" class="text-sm font-medium text-slate-500 hover:text-slate-900 px-3 py-1.5 rounded-lg transition-colors">Atrás</button>' : '<button id="coach-skip" class="text-sm font-medium text-slate-400 hover:text-slate-700 px-3 py-1.5 rounded-lg transition-colors">Saltar</button>') +
+        '<button id="coach-next" class="text-sm font-bold text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:shadow-lg px-4 py-2 rounded-lg transition-all">' +
+        (i === steps.length - 1 ? "¡Empezar!" : "Siguiente →") + "</button></div></div></div>";
+      const next = $("#coach-next");
+      const prev = $("#coach-prev");
+      const skip = $("#coach-skip");
+      if (next) next.onclick = () => {
+        if (i === steps.length - 1) finish();
+        else { i++; render(); }
+      };
+      if (prev) prev.onclick = () => { i--; render(); };
+      if (skip) skip.onclick = finish;
+    }
+    function finish() {
+      const u = Auth.currentUser();
+      try { if (u) localStorage.setItem(onboardingDoneKey(u), "1"); } catch (e) {}
+      root.classList.add("fade-out");
+      setTimeout(() => root.remove(), 250);
+    }
+    render();
   }
 
   /* =====================================================================

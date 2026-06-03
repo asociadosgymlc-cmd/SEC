@@ -78,7 +78,7 @@ LICITA.secop = (function () {
         proveedor: "",
         nitProveedor: "",
         fecha: "fecha_estimada_de_inicio",
-        url: "anio",
+        url: null,
         duracion: "duracion_estimada_del",
         unidadDuracion: "unidad_de_duraci_n_estimada",
       },
@@ -252,10 +252,11 @@ LICITA.secop = (function () {
   function normalize(dsKey, p) {
     const f = DATASETS[dsKey].f;
     const url = (() => {
+      if (!f.url) return null;
       const raw = p[f.url];
       if (!raw) return null;
-      if (typeof raw === "string") return raw;
-      if (typeof raw === "object") return raw.url || null;
+      if (typeof raw === "string" && /^https?:\/\//i.test(raw)) return raw;
+      if (typeof raw === "object" && raw.url && /^https?:\/\//i.test(raw.url)) return raw.url;
       return null;
     })();
     return {

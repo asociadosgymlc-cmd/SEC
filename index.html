@@ -875,65 +875,89 @@
       </section>
 
       <!-- ===== Plan Anual de Adquisiciones (PAA) ===== -->
-      <section id="paa-section" class="p-8 hidden">
-        <div class="bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 border border-amber-200 rounded-2xl p-5 mb-6 flex items-start gap-4">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-orange-200">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-          </div>
-          <div class="min-w-0">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-amber-700">Inteligencia estratégica</p>
-            <h3 class="text-base font-bold text-slate-900 mt-0.5">Lo que las entidades planean comprar este año</h3>
-            <p class="text-sm text-slate-600 mt-1 leading-relaxed">Las entidades publican su Plan Anual de Adquisiciones (PAA) con la lista de procesos que abrirán a lo largo del año. Búscalo aquí y anticipa cuáles oportunidades vienen para tu nicho.</p>
+      <section id="paa-section" class="p-6 lg:p-8 hidden">
+        <!-- Hero buscador estilo Apple -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 border border-amber-200 p-6 lg:p-10 mb-6">
+          <div class="absolute -top-16 -right-16 w-72 h-72 bg-amber-200/40 rounded-full blur-3xl"></div>
+          <div class="absolute -bottom-16 -left-16 w-80 h-80 bg-rose-200/40 rounded-full blur-3xl"></div>
+          <div class="relative max-w-2xl mx-auto text-center">
+            <span class="inline-flex items-center gap-2 bg-white/80 backdrop-blur border border-amber-100 text-amber-800 text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+              Inteligencia anticipada · Datos oficiales
+            </span>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-4 tracking-tight leading-[1.1]">¿Qué planean comprar<br>este año?</h2>
+            <p class="text-base text-slate-600 mt-3">Anticípate. Las entidades publican antes lo que sacarán como proceso en SECOP.</p>
+            <div class="relative mt-7">
+              <svg class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="paa-q" type="text"
+                class="w-full pl-12 pr-32 py-4 text-base bg-white rounded-2xl border border-slate-200 shadow-lg shadow-amber-100/50 focus:outline-none focus:border-amber-400 focus:shadow-xl focus:shadow-amber-200/60 transition-all"
+                placeholder="Escribe lo que vendes: software, obra, aseo, papelería…"
+                aria-label="Buscar en el plan anual de adquisiciones" />
+              <button id="paa-search"
+                class="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md transition-all">
+                Buscar
+              </button>
+            </div>
+            <div id="paa-chips" class="mt-5 flex flex-wrap gap-2 justify-center"></div>
+            <p class="text-[11px] text-slate-500 mt-4">Datos públicos del Plan Anual de Adquisiciones · datos.gov.co</p>
           </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
-          <div class="flex items-center gap-2 flex-wrap">
-            <div class="relative flex-1 min-w-[220px]">
-              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-              <input id="paa-q" type="text" class="field pl-9" placeholder="¿Qué planean comprar? p. ej. mantenimiento, software, aseo, papelería…" aria-label="Buscar en el plan anual de adquisiciones" />
-            </div>
-            <button id="paa-search" class="text-sm font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:shadow-lg hover:shadow-orange-200 px-5 py-2 rounded-lg shadow-sm transition-all">Buscar</button>
+        <!-- Filtros avanzados colapsables -->
+        <details id="paa-adv" class="mb-5 bg-white rounded-2xl border border-slate-200">
+          <summary class="cursor-pointer px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between rounded-2xl">
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+              Filtros avanzados
+            </span>
+            <span class="text-xs text-slate-400">Entidad, departamento, modalidad, valor</span>
+          </summary>
+          <div class="px-5 pb-5 pt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <input id="paa-entidad" type="text" class="field" placeholder="Entidad contratante" />
+            <select id="paa-departamento" class="field"><option value="">Todos los departamentos</option></select>
+            <select id="paa-modalidad" class="field"><option value="">Todas las modalidades</option></select>
+            <input id="paa-pmin" type="number" class="field" placeholder="Valor mínimo (COP)" min="0" />
           </div>
-          <div class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div>
-              <label class="text-[11px] font-medium text-slate-500 uppercase">Entidad</label>
-              <input id="paa-entidad" type="text" class="field mt-1" placeholder="Nombre de la entidad" />
-            </div>
-            <div>
-              <label class="text-[11px] font-medium text-slate-500 uppercase">Departamento</label>
-              <select id="paa-departamento" class="field mt-1"><option value="">Todos</option></select>
-            </div>
-            <div>
-              <label class="text-[11px] font-medium text-slate-500 uppercase">Modalidad prevista</label>
-              <select id="paa-modalidad" class="field mt-1"><option value="">Todas</option></select>
-            </div>
-            <div>
-              <label class="text-[11px] font-medium text-slate-500 uppercase">Valor estimado mínimo (COP)</label>
-              <input id="paa-pmin" type="number" class="field mt-1" placeholder="0" min="0" />
-            </div>
-          </div>
-          <div class="mt-3 flex flex-wrap gap-1.5" id="paa-chips"></div>
-        </div>
+        </details>
 
-        <div id="paa-loading" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center">
+        <!-- Estado: cargando / error / vacío inicial -->
+        <div id="paa-loading" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center">
           <div class="licita-spinner mb-4"></div>
           <p class="text-sm font-medium text-slate-600">Consultando el Plan Anual…</p>
         </div>
-        <div id="paa-error" class="hidden bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-3 mb-3"></div>
-
-        <div id="paa-empty" class="bg-white rounded-xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center text-center">
+        <div id="paa-error" class="hidden bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-2xl p-4 mb-3"></div>
+        <div id="paa-empty" class="bg-white rounded-2xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center text-center">
           <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mb-3">
-            <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           </div>
-          <h3 class="text-base font-semibold text-slate-900">Anticipa los procesos del año</h3>
-          <p class="text-sm text-slate-400 mt-1 max-w-md">Escribe lo que vendes (software, obras, aseo, asesoría, papelería…) o filtra por entidad para ver qué planea contratar.</p>
+          <h3 class="text-base font-semibold text-slate-900">Empieza con una palabra</h3>
+          <p class="text-sm text-slate-400 mt-1 max-w-md">O elige un chip de arriba. Verás cuántos procesos se planean, qué entidades lideran y cuándo abrirán.</p>
         </div>
 
-        <!-- Resumen forense -->
-        <div id="paa-forensic" class="hidden grid grid-cols-1 md:grid-cols-4 gap-3 mb-5"></div>
+        <!-- Stats analíticos (4 tarjetas grandes) -->
+        <div id="paa-analytics" class="hidden grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5"></div>
 
+        <!-- Gráficas: top entidades + distribución mensual -->
+        <div id="paa-charts" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5"></div>
+
+        <!-- Toggle lista / calendario -->
+        <div id="paa-view-toggle" class="hidden items-center gap-1 bg-slate-100 p-1 rounded-xl w-fit mb-4">
+          <button data-paa-view="lista" class="paa-vtab text-xs font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            Lista
+          </button>
+          <button data-paa-view="calendario" class="paa-vtab text-xs font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Calendario
+          </button>
+        </div>
+
+        <!-- Resultados como tarjetas con indicador de días -->
         <div id="paa-results" class="hidden space-y-3"></div>
+
+        <!-- Vista calendario -->
+        <div id="paa-calendar" class="hidden"></div>
+
         <div id="paa-pagination" class="hidden mt-5 flex items-center justify-between flex-wrap gap-3">
           <p id="paa-pageinfo" class="text-xs text-slate-500"></p>
           <div class="flex gap-2">
