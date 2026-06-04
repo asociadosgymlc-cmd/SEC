@@ -1819,6 +1819,7 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         closeModal(); closeClientModal(); closeCredentialsModal();
+        closeAlertModal(); closeCalcModal(); closeCmdk(); closeAchievements();
       }
     });
 
@@ -1849,6 +1850,41 @@
     if (ahc) ahc.addEventListener("click", closeAchievements);
     const ahm = $("#achModal");
     if (ahm) ahm.addEventListener("click", (e) => { if (e.target.id === "achModal") closeAchievements(); });
+
+    // mobile nav
+    const mn = $("#mobileNavBtn");
+    if (mn) mn.addEventListener("click", toggleMobileNav);
+    // cerrar sidebar al tocar un link en móvil
+    $$("#navMenu .nav-link").forEach((a) =>
+      a.addEventListener("click", () => closeMobileNav())
+    );
+
+    // Command Palette
+    const ck = $("#cmdkBtn");
+    if (ck) ck.addEventListener("click", openCmdk);
+    const cki = $("#cmdkInput");
+    if (cki) {
+      cki.addEventListener("input", (e) => renderCmdk(e.target.value));
+      cki.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown") { e.preventDefault(); moveCmdk(1); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); moveCmdk(-1); }
+        else if (e.key === "Enter") {
+          e.preventDefault();
+          const a = cmdkState.filtered[cmdkState.active];
+          if (a) { closeCmdk(); setTimeout(a.run, 50); }
+        } else if (e.key === "Escape") closeCmdk();
+      });
+    }
+    const ckm = $("#cmdkModal");
+    if (ckm) ckm.addEventListener("click", (e) => { if (e.target.id === "cmdkModal") closeCmdk(); });
+
+    document.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        if ($("#cmdkModal").classList.contains("hidden")) openCmdk();
+        else closeCmdk();
+      }
+    });
   }
 
   /* =====================================================================
@@ -2173,6 +2209,7 @@
   }
 
   async function runPaaSearch(reset) {
+    if (reset) unlockAchievement("first_paa");
     if (reset) paaState.page = 0;
     paaState.filters = paaCollectFilters();
     const f = Object.assign({}, paaState.filters, {
@@ -2229,7 +2266,6 @@
   function initPaaOnce() {
     if (paaState.initialized) return;
     paaState.initialized = true;
-    unlockAchievement("first_paa");
     const ds = SECOP.DATASETS.paa;
     const fillSel = (id, items, placeholder) => {
       const el = $("#" + id);
@@ -2933,6 +2969,93 @@
   }
 
   /* =====================================================================
+     MOBILE NAV · hamburguesa para abrir el sidebar en pantallas pequeñas
+     ===================================================================== */
+  function toggleMobileNav() {
+    const sb = $("#sidebar");
+    if (!sb) return;
+    sb.classList.toggle("open");
+  }
+  function closeMobileNav() {
+    const sb = $("#sidebar");
+    if (sb) sb.classList.remove("open");
+  }
+
+  /* =====================================================================
+     COMMAND PALETTE · ⌘K para saltar a cualquier acción
+     ===================================================================== */
+  const cmdkState = { active: 0, filtered: [] };
+  function cmdkActions() {
+    const isAdmin = Auth.isAdmin();
+    const base = [
+      { id: "go-dashboard", label: "Ir al dashboard", hint: "Inicio", emoji: "🏠", run: () => showSection("dashboard") },
+      { id: "go-analisis", label: "Analizar un pliego", hint: "Motor IA jurídico", emoji: "🧠", run: () => showSection("analisis") },
+      { id: "go-secop", label: "Buscar en SECOP 2 · Procesos vigentes", hint: "En vivo", emoji: "🔍", run: () => showSection("secop") },
+      { id: "go-secop1", label: "Buscar en SECOP 1 · Históricos", hint: "Quién ganó qué", emoji: "📊", run: () => { showSection("secop"); setTimeout(() => { initSecopOnce(); switchDataset("contratos"); }, 100); } },
+      { id: "go-paa", label: "Plan Anual de Adquisiciones", hint: "Qué se planea comprar", emoji: "📅", run: () => showSection("paa") },
+      { id: "new-alert", label: "Crear nueva alerta", hint: "Notificación de mercado", emoji: "🔔", run: () => { showSection("alertas"); setTimeout(openAlertModal, 100); } },
+      { id: "go-alertas", label: "Ver mis alertas", hint: "Lista guardada", emoji: "🔔", run: () => showSection("alertas") },
+      { id: "open-calc", label: "Calculadora de oferta", hint: "Sugerir precio", emoji: "🧮", run: () => openCalcModal({}) },
+      { id: "go-historial", label: "Historial de análisis", hint: "Lo que ya analizaste", emoji: "🗂️", run: () => showSection("historial") },
+      { id: "go-marco", label: "Marco normativo", hint: "Leyes y jurisprudencia", emoji: "📖", run: () => showSection("marco") },
+      { id: "go-formacion", label: "Formación · Cursos", hint: "Aprende y certifica", emoji: "🎓", run: () => showSection("formacion") },
+      { id: "open-ach", label: "Mis logros", hint: "Gamificación", emoji: "🏆", run: openAchievements },
+      { id: "toggle-theme", label: "Cambiar tema claro / oscuro", hint: "Apariencia", emoji: "🌓", run: toggleTheme },
+    ];
+    if (isAdmin) {
+      base.push({ id: "go-clientes", label: "Administrar clientes", hint: "Solo admin", emoji: "👥", run: () => showSection("clientes") });
+      base.push({ id: "go-monitoreo", label: "Monitoreo de actividad", hint: "Solo admin", emoji: "📈", run: () => showSection("monitoreo") });
+    }
+    return base;
+  }
+  function openCmdk() {
+    $("#cmdkModal").classList.remove("hidden");
+    $("#cmdkModal").classList.add("flex");
+    $("#cmdkInput").value = "";
+    renderCmdk("");
+    setTimeout(() => $("#cmdkInput").focus(), 30);
+  }
+  function closeCmdk() {
+    $("#cmdkModal").classList.add("hidden");
+    $("#cmdkModal").classList.remove("flex");
+  }
+  function renderCmdk(query) {
+    const q = String(query || "").trim().toLowerCase();
+    const all = cmdkActions();
+    cmdkState.filtered = q ? all.filter((a) => (a.label + " " + a.hint).toLowerCase().includes(q)) : all;
+    cmdkState.active = 0;
+    if (!cmdkState.filtered.length) {
+      $("#cmdkList").innerHTML =
+        '<div class="px-3 py-8 text-center text-sm text-slate-400">Sin coincidencias. Prueba con: pliego, secop, alerta, calculadora…</div>';
+      return;
+    }
+    $("#cmdkList").innerHTML = cmdkState.filtered.map((a, i) =>
+      '<button data-cmdk-idx="' + i + '" class="cmdk-item w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ' +
+      (i === 0 ? "bg-sky-50 dark:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-700") + '">' +
+      '<span class="text-xl">' + a.emoji + "</span>" +
+      '<div class="flex-1 min-w-0"><p class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">' + escapeHtml(a.label) + "</p>" +
+      '<p class="text-[11px] text-slate-500 truncate">' + escapeHtml(a.hint) + "</p></div>" +
+      "</button>"
+    ).join("");
+    $$("#cmdkList .cmdk-item").forEach((b) =>
+      b.addEventListener("click", () => {
+        const a = cmdkState.filtered[Number(b.dataset.cmdkIdx)];
+        if (a) { closeCmdk(); setTimeout(a.run, 50); }
+      })
+    );
+  }
+  function moveCmdk(delta) {
+    const items = $$("#cmdkList .cmdk-item");
+    if (!items.length) return;
+    cmdkState.active = (cmdkState.active + delta + items.length) % items.length;
+    items.forEach((el, i) =>
+      el.classList.toggle("bg-sky-50", i === cmdkState.active) ||
+      el.classList.toggle("dark:bg-slate-700", i === cmdkState.active)
+    );
+    items[cmdkState.active].scrollIntoView({ block: "nearest" });
+  }
+
+  /* =====================================================================
      TEMA · claro / oscuro
      ===================================================================== */
   function currentTheme() {
@@ -3166,6 +3289,16 @@
     }
   }
 
+  function normDep(s) {
+    return String(s || "")
+      .toUpperCase()
+      .replace(/[ÁÀÄÂ]/g, "A").replace(/[ÉÈËÊ]/g, "E")
+      .replace(/[ÍÌÏÎ]/g, "I").replace(/[ÓÒÖÔ]/g, "O")
+      .replace(/[ÚÙÜÛ]/g, "U").replace(/Ñ/g, "N")
+      .replace(/[^A-Z]/g, "")
+      .trim();
+  }
+
   function paintMap(rows) {
     const valid = rows.filter((r) => r.grupo && r.grupo !== "—" && r.total > 0);
     const max = Math.max(1, ...valid.map((r) => r.total));
@@ -3174,8 +3307,11 @@
     const top = valid.slice(0, 3);
 
     const cells = SECOP.DEPARTAMENTOS.map((dep) => {
-      const r = valid.find((x) => x.grupo.toUpperCase().includes(dep.toUpperCase()) ||
-                                  dep.toUpperCase().includes(x.grupo.toUpperCase()));
+      const depN = normDep(dep);
+      const r = valid.find((x) => {
+        const xN = normDep(x.grupo);
+        return xN === depN || xN.includes(depN) || depN.includes(xN);
+      });
       const t = r ? r.total : 0;
       const v = r ? r.valor : 0;
       const intensity = Math.round((t / max) * 100);

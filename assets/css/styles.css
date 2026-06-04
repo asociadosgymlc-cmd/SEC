@@ -76,6 +76,23 @@ html.dark .risk-meter { box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
 html.dark ::-webkit-scrollbar-thumb { background: #334155; }
 html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
+/* Gradientes pastel del landing → cielo oscuro */
+html.dark .mesh-bg { background: linear-gradient(125deg, #0b1220, #111a2e, #1e293b, #0b1220); }
+html.dark .from-slate-50 { --tw-gradient-from: #0f172a !important; --tw-gradient-to: rgb(15 23 42 / 0) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html.dark .via-sky-50\/40 { --tw-gradient-stops: var(--tw-gradient-from), rgba(56,189,248,.06), var(--tw-gradient-to) !important; }
+html.dark .to-white { --tw-gradient-to: #0f172a !important; }
+html.dark .from-amber-50, html.dark .via-orange-50, html.dark .to-rose-50,
+html.dark .from-sky-50, html.dark .via-indigo-50, html.dark .to-violet-50,
+html.dark .from-rose-50, html.dark .via-pink-50, html.dark .to-amber-50 {
+  --tw-gradient-from: rgba(30,41,59,.95) !important;
+  --tw-gradient-to: rgba(15,23,42,.95) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+html.dark .focus\:shadow-amber-200\/60:focus { box-shadow: 0 0 0 3px rgba(251,191,36,.18) !important; }
+
+/* Login screen dark */
+html.dark #loginScreen { background: #0b1220 !important; }
+
 /* Toggle dark/light en el header */
 .theme-toggle {
   display: inline-flex; align-items: center; justify-content: center;
