@@ -185,11 +185,17 @@ LICITA.secop = (function () {
 
     if (filters.texto) {
       const t = esc(String(filters.texto).toUpperCase());
-      const fields = SEARCH_FIELDS[dsKey] || [f.objeto];
-      const ors = fields.map((fld) => "upper(" + fld + ") like '%" + t + "%'");
-      c.push("(" + ors.join(" OR ") + ")");
+      // Solo usamos campos que existen en el dataset actual (o detectados).
+      const base = SEARCH_FIELDS[dsKey] || [f.objeto].filter(Boolean);
+      const fields = base.filter(Boolean);
+      // Garantizamos al menos un campo: objeto detectado dinámicamente.
+      if (!fields.length && f.objeto) fields.push(f.objeto);
+      if (fields.length) {
+        const ors = fields.map((fld) => "upper(" + fld + ") like '%" + t + "%'");
+        c.push("(" + ors.join(" OR ") + ")");
+      }
     }
-    if (filters.entidad)
+    if (filters.entidad && f.entidad)
       c.push("upper(" + f.entidad + ") like '%" + esc(filters.entidad.toUpperCase()) + "%'");
     if (filters.departamento && f.departamento)
       c.push("upper(" + f.departamento + ") like '%" + esc(filters.departamento.toUpperCase()) + "%'");
@@ -211,7 +217,9 @@ LICITA.secop = (function () {
       c.push(f.fecha + " >= '" + filters.fechaDesde + "T00:00:00.000'");
     if (filters.fechaHasta && f.fecha)
       c.push(f.fecha + " <= '" + filters.fechaHasta + "T23:59:59.000'");
-    return c.join(" AND ");
+    // Defensa final: no devolver una expresión que contenga undefined.
+    const expr = c.join(" AND ");
+    return expr.includes("undefined") ? "" : expr;
   }
 
   async function fetchSoda(endpoint, params) {
@@ -304,8 +312,78 @@ LICITA.secop = (function () {
     };
   }
 
+  /* Sondeo del dataset: pide 1 fila y devuelve los nombres de campos reales.
+   * Permite mapear dinámicamente cuando el dataset cambió de estructura. */
+  async function probeDataset(dsKey) {
+    const ds = DATASETS[dsKey];
+    if (!ds) return { ok: false, error: "Dataset desconocido" };
+    try {
+      const r = await fetch(ds.endpoint + "?$limit=1", {
+        headers: { Accept: "application/json" },
+      });
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        return { ok: false, status: r.status, error: (txt.slice(0, 200) || r.statusText) };
+      }
+      const data = await r.json();
+      const sample = data && data[0] ? data[0] : null;
+      return { ok: true, sample, keys: sample ? Object.keys(sample) : [] };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /* Detecta campos comunes en cualquier dataset de contratación pública
+   * usando una lista de candidatos por concepto. */
+  function detectFields(keys) {
+    const lower = keys.map((k) => k.toLowerCase());
+    const find = (candidates) => {
+      for (const c of candidates) {
+        const i = lower.indexOf(c.toLowerCase());
+        if (i >= 0) return keys[i];
+      }
+      return null;
+    };
+    return {
+      id: find(["uid", "id_de_paa", "id_paa", "id_del_proceso", "id", "codigo_proceso", "identificador"]),
+      objeto: find(["descripcion_del_proceso", "descripcion", "descripci_n_del_procedimiento", "objeto", "objeto_a_contratar", "objeto_del_proceso_a_contratar", "objeto_del_contrato_a_la"]),
+      nombre: find(["nombre_del_procedimiento", "nombre", "nombre_del_proceso"]),
+      entidad: find(["entidad", "nombre_entidad", "nombre_de_la_entidad", "entidad_estatal"]),
+      nitEntidad: find(["nit_entidad", "nit_de_la_entidad", "nit"]),
+      valor: find(["valor_total_estimado", "valor_estimado", "precio_base", "cuantia_contrato", "cuantia", "valor"]),
+      valorAdjudicado: find(["valor_total_adjudicacion", "valor_contrato_con_adiciones", "valor_adjudicado"]),
+      fecha: find(["fecha_estimada_de_inicio", "fecha_de_publicacion_del", "fecha_de_firma_del_contrato", "fecha_inicio", "fecha"]),
+      modalidad: find(["modalidad_de_contratacion", "modalidad_de_contrataci_n", "modalidad_de_seleccion", "modalidad"]),
+      tipoContrato: find(["tipo_de_contrato", "tipo_contrato"]),
+      departamento: find(["departamento_entidad", "departamento", "ubicacion", "ubicaci_n"]),
+      ciudad: find(["ciudad_de_la_unidad_de", "ciudad", "municipio_entrega", "municipio"]),
+      estado: find(["estado_resumen", "estado_del_proceso", "estado_de_suma", "estado_contrato"]),
+      proveedor: find(["nombre_del_proveedor", "nom_raz_social_contratista", "contratista"]),
+      nitProveedor: find(["nit_del_proveedor_adjudicado", "documento_proveedor", "documento_contratista"]),
+      duracion: find(["duracion", "duracion_estimada_del_contrato", "duracion_estimada_del"]),
+      unidadDuracion: find(["unidad_de_duracion", "unidad_de_duraci_n_estimada", "unidad_de_duracion_estimada"]),
+      url: find(["urlproceso", "url_proceso", "ruta_proceso_en_secop", "url"]),
+    };
+  }
+
+  /* Permite que el código de app.js sobreescriba el mapeo de campos de un
+   * dataset cuando el sondeo descubre nombres distintos a los asumidos. */
+  function setDatasetFields(dsKey, fields) {
+    const ds = DATASETS[dsKey];
+    if (!ds) return;
+    ds.f = Object.assign({}, ds.f, fields);
+  }
+
+  /* Cambia el endpoint en caliente — usado para activar el fallback PAA → SECOP 2. */
+  function setDatasetEndpoint(dsKey, endpoint) {
+    const ds = DATASETS[dsKey];
+    if (!ds) return;
+    ds.endpoint = endpoint;
+  }
+
   return {
     DATASETS, DEPARTAMENTOS, TIPOS_CONTRATO,
     search, count, aggregate, normalize, buildWhere,
+    probeDataset, detectFields, setDatasetFields, setDatasetEndpoint,
   };
 })();

@@ -1894,6 +1894,9 @@
      ===================================================================== */
   const paaState = {
     initialized: false,
+    ready: false,
+    mode: "paa",          // "paa" | "fallback" (SECOP 2 Borradores)
+    probeError: null,
     page: 0,
     pageSize: 24,
     total: null,
@@ -1901,6 +1904,67 @@
     lastData: [],
     view: "lista",
   };
+
+  /* Sondea el dataset PAA y prepara el mapeo dinámico.
+   * Si falla, activa el modo fallback: SECOP 2 procesos en Borrador. */
+  async function preparePaaSource() {
+    if (paaState.ready) return;
+    const banner = $("#paa-empty");
+    const loading = $("#paa-loading");
+    if (loading) loading.classList.remove("hidden");
+    if (banner) banner.classList.add("hidden");
+
+    const probe = await SECOP.probeDataset("paa");
+    if (probe.ok && probe.keys.length) {
+      const detected = SECOP.detectFields(probe.keys);
+      // Solo aplicamos los detectados que existen — preservamos los del fallback.
+      const clean = {};
+      Object.keys(detected).forEach((k) => { if (detected[k]) clean[k] = detected[k]; });
+      SECOP.setDatasetFields("paa", clean);
+      paaState.mode = "paa";
+      paaState.probeError = null;
+    } else {
+      // Activar fallback: usar el endpoint y los campos de procesos SECOP 2.
+      const proc = SECOP.DATASETS.procesos;
+      SECOP.setDatasetEndpoint("paa", proc.endpoint);
+      SECOP.setDatasetFields("paa", Object.assign({}, proc.f));
+      // Reescribir las opciones de orden para que usen los campos de procesos.
+      SECOP.DATASETS.paa.ordenDefault = "fecha_de_publicacion_del DESC";
+      SECOP.DATASETS.paa.ordenOptions = [
+        { v: "fecha_de_publicacion_del DESC", t: "Más recientes" },
+        { v: "fecha_de_publicacion_del ASC", t: "Más antiguos" },
+        { v: "precio_base DESC", t: "Mayor presupuesto" },
+        { v: "precio_base ASC", t: "Menor presupuesto" },
+      ];
+      paaState.mode = "fallback";
+      paaState.probeError = probe.error || ("status " + (probe.status || "—"));
+    }
+    paaState.ready = true;
+    if (loading) loading.classList.add("hidden");
+    if (banner) banner.classList.remove("hidden");
+    renderPaaSourceBadge();
+  }
+
+  function renderPaaSourceBadge() {
+    const empty = $("#paa-empty");
+    if (!empty) return;
+    if (paaState.mode === "fallback") {
+      const note = document.createElement("div");
+      note.id = "paa-source-note";
+      note.className = "bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 mb-3 flex items-start gap-2";
+      note.innerHTML =
+        '<svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+        '<div><b>Fuente alterna activa.</b> El dataset oficial del PAA no respondió ' +
+        "(" + escapeHtml(paaState.probeError || "API no disponible") + "); " +
+        "te mostramos <b>procesos en estado Borrador de SECOP 2</b>, que son los procesos en planeación inmediata.</div>";
+      const existing = document.getElementById("paa-source-note");
+      if (existing) existing.remove();
+      empty.parentNode.insertBefore(note, empty);
+    } else {
+      const existing = document.getElementById("paa-source-note");
+      if (existing) existing.remove();
+    }
+  }
 
   const MESES_ABREV = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   const MESES_LARGO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -2210,12 +2274,15 @@
 
   async function runPaaSearch(reset) {
     if (reset) unlockAchievement("first_paa");
+    if (!paaState.ready) await preparePaaSource();
     if (reset) paaState.page = 0;
     paaState.filters = paaCollectFilters();
     const f = Object.assign({}, paaState.filters, {
       limite: paaState.pageSize,
       offset: paaState.page * paaState.pageSize,
     });
+    // En modo fallback forzamos estado Borrador (procesos en planeación)
+    if (paaState.mode === "fallback" && !f.estado) f.estado = "Borrador";
     $("#paa-error").classList.add("hidden");
     $("#paa-empty").classList.add("hidden");
     $("#paa-results").classList.add("hidden");
@@ -2259,13 +2326,39 @@
     } catch (err) {
       $("#paa-loading").classList.add("hidden");
       $("#paa-error").classList.remove("hidden");
-      $("#paa-error").textContent = "Error consultando el PAA: " + (err && err.message ? err.message : err);
+      const msg = err && err.message ? err.message : String(err);
+      $("#paa-error").innerHTML =
+        '<div class="flex items-start gap-3">' +
+        '<svg class="w-5 h-5 text-rose-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+        '<div class="flex-1"><p class="font-semibold">No se pudo consultar el PAA</p>' +
+        '<p class="mt-1 text-rose-600 text-xs">' + escapeHtml(msg) + "</p>" +
+        '<button id="paa-retry" class="mt-3 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 px-3 py-1.5 rounded-lg transition-colors">Reintentar con fuente alterna</button>' +
+        "</div></div>";
+      const retry = $("#paa-retry");
+      if (retry) retry.addEventListener("click", async () => {
+        // Forzamos modo fallback explícitamente
+        const proc = SECOP.DATASETS.procesos;
+        SECOP.setDatasetEndpoint("paa", proc.endpoint);
+        SECOP.setDatasetFields("paa", Object.assign({}, proc.f));
+        paaState.mode = "fallback";
+        paaState.ready = true;
+        renderPaaSourceBadge();
+        runPaaSearch(true);
+      });
     }
   }
 
-  function initPaaOnce() {
+  async function initPaaOnce() {
     if (paaState.initialized) return;
     paaState.initialized = true;
+    // Sondeo en background — no bloquea la UI; cuando termine, el badge
+    // y los filtros disponibles se actualizan solos.
+    preparePaaSource().catch((e) => {
+      paaState.probeError = e && e.message;
+      paaState.mode = "fallback";
+      paaState.ready = true;
+      renderPaaSourceBadge();
+    });
     const ds = SECOP.DATASETS.paa;
     const fillSel = (id, items, placeholder) => {
       const el = $("#" + id);
