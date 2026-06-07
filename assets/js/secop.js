@@ -317,6 +317,39 @@ LICITA.secop = (function () {
     };
   }
 
+  /* Candidatos conocidos del dataset PAA en datos.gov.co. Los IDs cambian
+   * con el tiempo en Socrata. Probamos varios en paralelo y usamos el
+   * primero que responda con datos reales. */
+  const PAA_CANDIDATES = [
+    { id: "xvdy-vrsj", name: "Plan Anual de Adquisiciones" },
+    { id: "4dyc-vyat", name: "PAA - Entidades estatales" },
+    { id: "ce4n-8usk", name: "Plan Anual de Adquisiciones SECOP" },
+    { id: "rqbr-4uy5", name: "PAA Colombia Compra Eficiente" },
+    { id: "8mhx-tkpd", name: "Plan Anual de Adquisiciones - PAA" },
+    { id: "crbs-icmf", name: "PAA (legado)" },
+  ];
+
+  /* Descubre el endpoint real del PAA probando candidatos en paralelo.
+   * Devuelve el primero que responda con al menos un registro. */
+  async function discoverPaaDataset() {
+    const probes = PAA_CANDIDATES.map((c) => {
+      const url = BASE + c.id + ".json";
+      return fetch(url + "?$limit=1", { headers: { Accept: "application/json" } })
+        .then(async (r) => {
+          if (!r.ok) return { ok: false, id: c.id };
+          const data = await r.json().catch(() => null);
+          if (data && data.length > 0) {
+            return { ok: true, id: c.id, name: c.name, url, sample: data[0], keys: Object.keys(data[0]) };
+          }
+          return { ok: false, id: c.id, empty: true };
+        })
+        .catch(() => ({ ok: false, id: c.id, error: true }));
+    });
+    const results = await Promise.all(probes);
+    const winner = results.find((r) => r.ok);
+    return { winner, results };
+  }
+
   /* Sondeo del dataset: pide 1 fila y devuelve los nombres de campos reales.
    * Permite mapear dinámicamente cuando el dataset cambió de estructura. */
   async function probeDataset(dsKey) {
@@ -350,23 +383,48 @@ LICITA.secop = (function () {
       return null;
     };
     return {
-      id: find(["uid", "id_de_paa", "id_paa", "id_del_proceso", "id", "codigo_proceso", "identificador"]),
-      objeto: find(["descripcion_del_proceso", "descripcion", "descripci_n_del_procedimiento", "objeto", "objeto_a_contratar", "objeto_del_proceso_a_contratar", "objeto_del_contrato_a_la"]),
-      nombre: find(["nombre_del_procedimiento", "nombre", "nombre_del_proceso"]),
-      entidad: find(["entidad", "nombre_entidad", "nombre_de_la_entidad", "entidad_estatal"]),
+      id: find(["uid", "id_de_paa", "id_paa", "id_del_proceso", "id", "codigo_proceso", "codigo_unspsc", "identificador"]),
+      objeto: find([
+        "descripcion", "descripci_n", "descripcion_del_proceso",
+        "descripci_n_del_procedimiento", "descripcion_del_procedimiento",
+        "objeto_a_contratar", "objeto", "objeto_del_proceso_a_contratar",
+        "objeto_del_contrato_a_la",
+      ]),
+      nombre: find(["nombre_del_procedimiento", "nombre", "nombre_del_proceso", "nombre_descripcion"]),
+      entidad: find(["entidad", "nombre_entidad", "nombre_de_la_entidad", "entidad_estatal", "unidad_responsable"]),
       nitEntidad: find(["nit_entidad", "nit_de_la_entidad", "nit"]),
-      valor: find(["valor_total_estimado", "valor_estimado", "precio_base", "cuantia_contrato", "cuantia", "valor"]),
+      valor: find([
+        "valor_total_estimado", "valor_estimado", "valor_estimado_en_la",
+        "valor_estimado_en_la_vigencia_actual", "precio_base",
+        "cuantia_contrato", "cuantia", "valor",
+      ]),
       valorAdjudicado: find(["valor_total_adjudicacion", "valor_contrato_con_adiciones", "valor_adjudicado"]),
-      fecha: find(["fecha_estimada_de_inicio", "fecha_de_publicacion_del", "fecha_de_firma_del_contrato", "fecha_inicio", "fecha"]),
-      modalidad: find(["modalidad_de_contratacion", "modalidad_de_contrataci_n", "modalidad_de_seleccion", "modalidad"]),
-      tipoContrato: find(["tipo_de_contrato", "tipo_contrato"]),
-      departamento: find(["departamento_entidad", "departamento", "ubicacion", "ubicaci_n"]),
+      fecha: find([
+        "fecha_estimada_de_inicio_de", "fecha_estimada_de_inicio_de_proceso",
+        "fecha_estimada_de_inicio", "fecha_de_publicacion_del",
+        "fecha_de_firma_del_contrato", "fecha_inicio", "fecha",
+      ]),
+      modalidad: find([
+        "modalidad_de_contratacion", "modalidad_de_contrataci_n",
+        "modalidad_de_seleccion", "modalidad_de_selecci_n", "modalidad",
+      ]),
+      tipoContrato: find(["tipo_de_contrato", "tipo_contrato", "tipo"]),
+      departamento: find([
+        "departamento_entidad", "departamento",
+        "ubicacion", "ubicaci_n", "ubicacion_geografica",
+      ]),
       ciudad: find(["ciudad_de_la_unidad_de", "ciudad", "municipio_entrega", "municipio"]),
-      estado: find(["estado_resumen", "estado_del_proceso", "estado_de_suma", "estado_contrato"]),
+      estado: find(["estado_resumen", "estado_del_proceso", "estado_de_suma", "estado_contrato", "estado_de_solicitud"]),
       proveedor: find(["nombre_del_proveedor", "nom_raz_social_contratista", "contratista"]),
       nitProveedor: find(["nit_del_proveedor_adjudicado", "documento_proveedor", "documento_contratista"]),
-      duracion: find(["duracion", "duracion_estimada_del_contrato", "duracion_estimada_del"]),
-      unidadDuracion: find(["unidad_de_duracion", "unidad_de_duraci_n_estimada", "unidad_de_duracion_estimada"]),
+      duracion: find([
+        "duracion_estimada_del", "duracion_estimada_del_contrato",
+        "duracion_estimada", "duracion",
+      ]),
+      unidadDuracion: find([
+        "unidad_de_duracion_estimada", "unidad_de_duraci_n_estimada",
+        "unidad_de_duracion", "unidad_duracion",
+      ]),
       url: find(["urlproceso", "url_proceso", "ruta_proceso_en_secop", "url"]),
     };
   }
@@ -387,8 +445,8 @@ LICITA.secop = (function () {
   }
 
   return {
-    DATASETS, DEPARTAMENTOS, TIPOS_CONTRATO,
+    DATASETS, DEPARTAMENTOS, TIPOS_CONTRATO, PAA_CANDIDATES,
     search, count, aggregate, normalize, buildWhere,
-    probeDataset, detectFields, setDatasetFields, setDatasetEndpoint,
+    probeDataset, discoverPaaDataset, detectFields, setDatasetFields, setDatasetEndpoint,
   };
 })();

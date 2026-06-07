@@ -1894,7 +1894,9 @@
   const paaState = {
     initialized: false,
     ready: false,
-    mode: "paa",          // "paa" | "fallback" (SECOP 2 Borradores)
+    mode: "discovering",  // "paa" | "fallback"
+    datasetId: null,
+    datasetName: null,
     probeError: null,
     page: 0,
     pageSize: 24,
@@ -1904,30 +1906,47 @@
     view: "lista",
   };
 
-  /* Sondea el dataset PAA y prepara el mapeo dinámico.
-   * Si falla, activa el modo fallback: SECOP 2 procesos en Borrador. */
+  /* Descubre el dataset PAA real probando candidatos en paralelo.
+   * Si encuentra uno, mapea sus campos dinámicamente y queda en modo "paa".
+   * Si no encuentra ninguno, cae a SECOP 2 con estado Borrador (modo "fallback"). */
   async function preparePaaSource() {
     if (paaState.ready) return;
-    const banner = $("#paa-empty");
     const loading = $("#paa-loading");
+    const empty = $("#paa-empty");
     if (loading) loading.classList.remove("hidden");
-    if (banner) banner.classList.add("hidden");
+    if (empty) empty.classList.add("hidden");
 
-    const probe = await SECOP.probeDataset("paa");
-    if (probe.ok && probe.keys.length) {
-      const detected = SECOP.detectFields(probe.keys);
-      // Solo aplicamos los detectados que existen — preservamos los del fallback.
+    const { winner, results } = await SECOP.discoverPaaDataset();
+    if (winner) {
+      const detected = SECOP.detectFields(winner.keys);
       const clean = {};
       Object.keys(detected).forEach((k) => { if (detected[k]) clean[k] = detected[k]; });
+      SECOP.setDatasetEndpoint("paa", winner.url);
       SECOP.setDatasetFields("paa", clean);
       paaState.mode = "paa";
+      paaState.datasetId = winner.id;
+      paaState.datasetName = winner.name;
       paaState.probeError = null;
+      // Rehacer las opciones de orden con los campos detectados
+      const fechaCol = clean.fecha;
+      const valorCol = clean.valor;
+      if (fechaCol || valorCol) {
+        const opts = [];
+        if (fechaCol) {
+          opts.push({ v: fechaCol + " ASC", t: "Más próximos" });
+          opts.push({ v: fechaCol + " DESC", t: "Más lejanos" });
+        }
+        if (valorCol) {
+          opts.push({ v: valorCol + " DESC", t: "Mayor valor" });
+          opts.push({ v: valorCol + " ASC", t: "Menor valor" });
+        }
+        SECOP.DATASETS.paa.ordenOptions = opts;
+        SECOP.DATASETS.paa.ordenDefault = opts[0].v;
+      }
     } else {
-      // Activar fallback: usar el endpoint y los campos de procesos SECOP 2.
       const proc = SECOP.DATASETS.procesos;
       SECOP.setDatasetEndpoint("paa", proc.endpoint);
       SECOP.setDatasetFields("paa", Object.assign({}, proc.f));
-      // Reescribir las opciones de orden para que usen los campos de procesos.
       SECOP.DATASETS.paa.ordenDefault = "fecha_de_publicacion_del DESC";
       SECOP.DATASETS.paa.ordenOptions = [
         { v: "fecha_de_publicacion_del DESC", t: "Más recientes" },
@@ -1936,19 +1955,38 @@
         { v: "precio_base ASC", t: "Menor presupuesto" },
       ];
       paaState.mode = "fallback";
-      paaState.probeError = probe.error || ("status " + (probe.status || "—"));
+      paaState.probeError = "Ningún dataset PAA conocido respondió. Candidatos probados: " +
+        results.map((r) => r.id).join(", ");
     }
     paaState.ready = true;
     if (loading) loading.classList.add("hidden");
-    if (banner) banner.classList.remove("hidden");
+    if (empty) empty.classList.remove("hidden");
     renderPaaSourceBadge();
   }
 
   function renderPaaSourceBadge() {
-    // El badge ya no es necesario porque el dataset por defecto siempre
-    // funciona. Lo dejamos como no-op por compatibilidad con preparePaaSource.
     const existing = document.getElementById("paa-source-note");
     if (existing) existing.remove();
+    if (!paaState.ready) return;
+    const empty = $("#paa-empty");
+    if (!empty || !empty.parentNode) return;
+    const note = document.createElement("div");
+    note.id = "paa-source-note";
+    if (paaState.mode === "paa") {
+      note.className = "bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800 mb-3 flex items-start gap-2";
+      note.innerHTML =
+        '<svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' +
+        '<div><b>Conectado al PAA real.</b> Dataset: <code class="bg-emerald-100 px-1 rounded">' +
+        escapeHtml(paaState.datasetId) + "</code> · " + escapeHtml(paaState.datasetName) +
+        ". Estás viendo el Plan Anual de Adquisiciones publicado por las entidades.</div>";
+    } else {
+      note.className = "bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 mb-3 flex items-start gap-2";
+      note.innerHTML =
+        '<svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+        '<div><b>Dataset PAA no localizado.</b> Te mostramos <b>procesos en Borrador de SECOP 2</b> como alternativa de anticipación. ' +
+        'Si conoces el ID del dataset PAA actual en datos.gov.co, podemos conectarlo en código.</div>';
+    }
+    empty.parentNode.insertBefore(note, empty);
   }
 
   const MESES_ABREV = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -2259,15 +2297,16 @@
 
   async function runPaaSearch(reset) {
     if (reset) unlockAchievement("first_paa");
+    if (!paaState.ready) await preparePaaSource();
     if (reset) paaState.page = 0;
     paaState.filters = paaCollectFilters();
     const f = Object.assign({}, paaState.filters, {
       limite: paaState.pageSize,
       offset: paaState.page * paaState.pageSize,
     });
-    // PAA = procesos próximos: si el usuario no eligió estado, mostramos
-    // los Borrador (procesos en planeación inmediata).
-    if (!f.estado) f.estado = "Borrador";
+    // Solo en modo fallback (Borradores SECOP 2) forzamos el estado.
+    // En modo PAA real no se filtra por estado (todos los planeados sirven).
+    if (paaState.mode === "fallback" && !f.estado) f.estado = "Borrador";
     $("#paa-error").classList.add("hidden");
     $("#paa-empty").classList.add("hidden");
     $("#paa-results").classList.add("hidden");
