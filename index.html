@@ -942,8 +942,58 @@
         <p id="disclaimerText" class="text-xs text-slate-400 mt-5 text-center max-w-3xl mx-auto"></p>
       </section>
 
-      <!-- ===== Plan Anual de Adquisiciones (PAA) ===== -->
+      <!-- ===== Plan Anual de Adquisiciones (PAA) =====
+           Vista oficial = dashboard Power BI publicado.
+           Vista buscador = búsqueda + filtros sobre SECOP (alternativa). -->
       <section id="paa-section" class="p-6 lg:p-8 hidden">
+        <!-- Toggle de vista: dashboard oficial vs buscador -->
+        <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            <button data-paa-mode="dashboard" class="paa-mode text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h12M9 19a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              Dashboard oficial
+            </button>
+            <button data-paa-mode="search" class="paa-mode text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              Buscar y filtrar
+            </button>
+          </div>
+          <a id="paaPowerBiOpen" href="https://app.powerbi.com/view?r=eyJrIjoiNjkwMzhkMjItNjZjZC00YzA3LWI1MDMtMGEyNzlmYWRjNDYxIiwidCI6IjdiMDkwNDFlLTI0NTEtNDlkMC04Y2IxLTc5ZDVlM2Q4YzFiZSIsImMiOjR9" target="_blank" rel="noopener" class="text-xs font-medium text-slate-500 hover:text-sky-700 transition-colors flex items-center gap-1">
+            Abrir en pantalla completa
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        </div>
+
+        <!-- Vista 1: Dashboard oficial Power BI -->
+        <div id="paaDashboardView">
+          <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-50 via-indigo-50 to-violet-50 border border-sky-200 p-5 lg:p-6 mb-5">
+            <div class="flex items-start gap-4 flex-wrap">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h12M9 19a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-sky-700">Dashboard oficial · Power BI</p>
+                <h3 class="text-xl font-bold text-slate-900 mt-0.5 leading-tight">Plan Anual de Adquisiciones</h3>
+                <p class="text-sm text-slate-600 mt-1.5">Vista oficial publicada por la entidad — datos reales del PAA con todos los filtros que ya conoces. Si necesitas búsqueda libre por palabra clave, usa el modo <b>Buscar y filtrar</b>.</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <iframe
+              id="paaPowerBiFrame"
+              title="Plan Anual de Adquisiciones · Dashboard oficial Power BI"
+              src="https://app.powerbi.com/view?r=eyJrIjoiNjkwMzhkMjItNjZjZC00YzA3LWI1MDMtMGEyNzlmYWRjNDYxIiwidCI6IjdiMDkwNDFlLTI0NTEtNDlkMC04Y2IxLTc5ZDVlM2Q4YzFiZSIsImMiOjR9"
+              class="w-full block"
+              style="height:78vh;min-height:600px;border:0"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen></iframe>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3 text-center">Si el dashboard tarda en cargar, recárgalo con el botón <b>"Abrir en pantalla completa"</b> arriba.</p>
+        </div>
+
+        <!-- Vista 2: Buscador (resto del módulo) -->
+        <div id="paaSearchView" class="hidden">
         <!-- Hero buscador estilo Apple -->
         <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 border border-amber-200 p-6 lg:p-10 mb-6">
           <div class="absolute -top-16 -right-16 w-72 h-72 bg-amber-200/40 rounded-full blur-3xl"></div>
@@ -1033,6 +1083,7 @@
             <button id="paa-next" class="text-sm font-medium border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Siguiente →</button>
           </div>
         </div>
+        </div><!-- /paaSearchView -->
       </section>
 
       <!-- ===== Formación / Cursos ===== -->
@@ -1360,14 +1411,14 @@
     document.getElementById("brandYear").textContent = yr;
     var fy = document.getElementById("footerYear"); if (fy) fy.textContent = yr;
   </script>
-  <script src="assets/js/knowledge.js?v=20260606"></script>
-  <script src="assets/js/docs.js?v=20260606"></script>
-  <script src="assets/js/analyzer.js?v=20260606"></script>
-  <script src="assets/js/parsers.js?v=20260606"></script>
-  <script src="assets/js/secop.js?v=20260606"></script>
-  <script src="assets/js/cursos.js?v=20260606"></script>
-  <script src="assets/js/intel.js?v=20260606"></script>
-  <script src="assets/js/auth.js?v=20260606"></script>
-  <script src="assets/js/app.js?v=20260606"></script>
+  <script src="assets/js/knowledge.js?v=20260607"></script>
+  <script src="assets/js/docs.js?v=20260607"></script>
+  <script src="assets/js/analyzer.js?v=20260607"></script>
+  <script src="assets/js/parsers.js?v=20260607"></script>
+  <script src="assets/js/secop.js?v=20260607"></script>
+  <script src="assets/js/cursos.js?v=20260607"></script>
+  <script src="assets/js/intel.js?v=20260607"></script>
+  <script src="assets/js/auth.js?v=20260607"></script>
+  <script src="assets/js/app.js?v=20260607"></script>
 </body>
 </html>

@@ -1894,7 +1894,8 @@
   const paaState = {
     initialized: false,
     ready: false,
-    mode: "discovering",  // "paa" | "fallback"
+    mode: "discovering",  // "paa" | "fallback" (fuente de datos del buscador)
+    uiMode: "dashboard",  // "dashboard" | "search" (vista activa)
     datasetId: null,
     datasetName: null,
     probeError: null,
@@ -2372,9 +2373,25 @@
     }
   }
 
+  function paaApplyMode(mode) {
+    paaState.uiMode = mode;
+    const dash = $("#paaDashboardView");
+    const search = $("#paaSearchView");
+    if (dash) dash.classList.toggle("hidden", mode !== "dashboard");
+    if (search) search.classList.toggle("hidden", mode !== "search");
+    $$(".paa-mode").forEach((b) =>
+      b.classList.toggle("active", b.dataset.paaMode === mode)
+    );
+  }
+
   async function initPaaOnce() {
     if (paaState.initialized) return;
     paaState.initialized = true;
+    // Bind del toggle de modo PAA y arranque en dashboard oficial.
+    $$(".paa-mode").forEach((b) =>
+      b.addEventListener("click", () => paaApplyMode(b.dataset.paaMode))
+    );
+    paaApplyMode(paaState.uiMode || "dashboard");
     // Sondeo en background — no bloquea la UI; cuando termine, el badge
     // y los filtros disponibles se actualizan solos.
     preparePaaSource().catch((e) => {
