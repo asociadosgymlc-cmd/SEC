@@ -1946,24 +1946,10 @@
   }
 
   function renderPaaSourceBadge() {
-    const empty = $("#paa-empty");
-    if (!empty) return;
-    if (paaState.mode === "fallback") {
-      const note = document.createElement("div");
-      note.id = "paa-source-note";
-      note.className = "bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 mb-3 flex items-start gap-2";
-      note.innerHTML =
-        '<svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
-        '<div><b>Fuente alterna activa.</b> El dataset oficial del PAA no respondió ' +
-        "(" + escapeHtml(paaState.probeError || "API no disponible") + "); " +
-        "te mostramos <b>procesos en estado Borrador de SECOP 2</b>, que son los procesos en planeación inmediata.</div>";
-      const existing = document.getElementById("paa-source-note");
-      if (existing) existing.remove();
-      empty.parentNode.insertBefore(note, empty);
-    } else {
-      const existing = document.getElementById("paa-source-note");
-      if (existing) existing.remove();
-    }
+    // El badge ya no es necesario porque el dataset por defecto siempre
+    // funciona. Lo dejamos como no-op por compatibilidad con preparePaaSource.
+    const existing = document.getElementById("paa-source-note");
+    if (existing) existing.remove();
   }
 
   const MESES_ABREV = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -2274,15 +2260,15 @@
 
   async function runPaaSearch(reset) {
     if (reset) unlockAchievement("first_paa");
-    if (!paaState.ready) await preparePaaSource();
     if (reset) paaState.page = 0;
     paaState.filters = paaCollectFilters();
     const f = Object.assign({}, paaState.filters, {
       limite: paaState.pageSize,
       offset: paaState.page * paaState.pageSize,
     });
-    // En modo fallback forzamos estado Borrador (procesos en planeación)
-    if (paaState.mode === "fallback" && !f.estado) f.estado = "Borrador";
+    // PAA = procesos próximos: si el usuario no eligió estado, mostramos
+    // los Borrador (procesos en planeación inmediata).
+    if (!f.estado) f.estado = "Borrador";
     $("#paa-error").classList.add("hidden");
     $("#paa-empty").classList.add("hidden");
     $("#paa-results").classList.add("hidden");
