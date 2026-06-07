@@ -1888,9 +1888,8 @@
   }
 
   /* =====================================================================
-     PLAN ANUAL DE ADQUISICIONES (PAA) · datos.gov.co crbs-icmf
-     Rediseñado: estilo Apple · didáctico · analítico · con calendario.
-     Cruza con SECOP 2, SECOP 1 y el analizador.
+     PROCESOS EN PLANEACIÓN · SECOP 2 con filtro estado='Borrador'
+     Cruza con SECOP 2 (vigentes), SECOP 1 (históricos) y el analizador.
      ===================================================================== */
   const paaState = {
     initialized: false,
