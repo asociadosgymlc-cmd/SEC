@@ -3215,6 +3215,11 @@
   }
 
   function renderEmpresa() {
+    // Defensa: si el DOM no está al día (cache antigua), abortamos limpio.
+    if (!$("#emp-razonSocial")) {
+      console.warn("LICITA: Mi empresa requiere recargar la página (Ctrl+Shift+R)");
+      return;
+    }
     const p = currentProfile();
     $("#emp-razonSocial").value = p.razonSocial || "";
     $("#emp-nit").value = p.nit || "";
@@ -3470,6 +3475,10 @@
   }
 
   function renderPipeline() {
+    if (!$("#pipelineBoard")) {
+      console.warn("LICITA: Pipeline requiere recargar la página (Ctrl+Shift+R)");
+      return;
+    }
     const u = Auth.currentUser();
     if (!u) return;
     const s = PL.summary(u);
