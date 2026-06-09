@@ -182,6 +182,23 @@ LICITA.secop = (function () {
 
   function esc(value) { return String(value).replace(/'/g, "''"); }
 
+  /* Devuelve la variante sin tildes ni eñes para tolerar capturas
+   * sucias en datos públicos. Si no hay diferencia, retorna un solo valor. */
+  function accentVariants(s) {
+    const upper = String(s).toUpperCase();
+    const noAcc = upper
+      .replace(/[ÁÀÄÂ]/g, "A").replace(/[ÉÈËÊ]/g, "E")
+      .replace(/[ÍÌÏÎ]/g, "I").replace(/[ÓÒÖÔ]/g, "O")
+      .replace(/[ÚÙÜÛ]/g, "U").replace(/Ñ/g, "N");
+    return upper === noAcc ? [upper] : [upper, noAcc];
+  }
+
+  function likeAny(field, value) {
+    return "(" + accentVariants(value)
+      .map((v) => "upper(" + field + ") like '%" + esc(v) + "%'")
+      .join(" OR ") + ")";
+  }
+
   function buildWhere(dsKey, filters) {
     const ds = DATASETS[dsKey];
     if (!ds) throw new Error("Dataset desconocido: " + dsKey);
@@ -189,31 +206,27 @@ LICITA.secop = (function () {
     const c = [];
 
     if (filters.texto) {
-      const t = esc(String(filters.texto).toUpperCase());
-      // Solo usamos campos que existen en el dataset actual (o detectados).
+      const variants = accentVariants(filters.texto);
       const base = SEARCH_FIELDS[dsKey] || [f.objeto].filter(Boolean);
       const fields = base.filter(Boolean);
-      // Garantizamos al menos un campo: objeto detectado dinámicamente.
       if (!fields.length && f.objeto) fields.push(f.objeto);
       if (fields.length) {
-        const ors = fields.map((fld) => "upper(" + fld + ") like '%" + t + "%'");
+        const ors = [];
+        fields.forEach((fld) => {
+          variants.forEach((v) => {
+            ors.push("upper(" + fld + ") like '%" + esc(v) + "%'");
+          });
+        });
         c.push("(" + ors.join(" OR ") + ")");
       }
     }
-    if (filters.entidad && f.entidad)
-      c.push("upper(" + f.entidad + ") like '%" + esc(filters.entidad.toUpperCase()) + "%'");
-    if (filters.departamento && f.departamento)
-      c.push("upper(" + f.departamento + ") like '%" + esc(filters.departamento.toUpperCase()) + "%'");
-    if (filters.ciudad && f.ciudad)
-      c.push("upper(" + f.ciudad + ") like '%" + esc(filters.ciudad.toUpperCase()) + "%'");
-    if (filters.modalidad && f.modalidad)
-      c.push("upper(" + f.modalidad + ") like '%" + esc(filters.modalidad.toUpperCase()) + "%'");
-    if (filters.tipoContrato && f.tipoContrato)
-      c.push("upper(" + f.tipoContrato + ") like '%" + esc(filters.tipoContrato.toUpperCase()) + "%'");
-    if (filters.estado && f.estado)
-      c.push(f.estado + "='" + esc(filters.estado) + "'");
-    if (filters.proveedor && f.proveedor)
-      c.push("upper(" + f.proveedor + ") like '%" + esc(filters.proveedor.toUpperCase()) + "%'");
+    if (filters.entidad && f.entidad) c.push(likeAny(f.entidad, filters.entidad));
+    if (filters.departamento && f.departamento) c.push(likeAny(f.departamento, filters.departamento));
+    if (filters.ciudad && f.ciudad) c.push(likeAny(f.ciudad, filters.ciudad));
+    if (filters.modalidad && f.modalidad) c.push(likeAny(f.modalidad, filters.modalidad));
+    if (filters.tipoContrato && f.tipoContrato) c.push(likeAny(f.tipoContrato, filters.tipoContrato));
+    if (filters.estado && f.estado) c.push(f.estado + "='" + esc(filters.estado) + "'");
+    if (filters.proveedor && f.proveedor) c.push(likeAny(f.proveedor, filters.proveedor));
     if (filters.precioMin != null && filters.precioMin !== "" && f.valor)
       c.push(f.valor + " >= '" + Number(filters.precioMin) + "'");
     if (filters.precioMax != null && filters.precioMax !== "" && f.valor)

@@ -460,13 +460,13 @@ html.dark .dep-cell { border-color: #334155; }
 .sec-tab:hover { color: #0f172a; }
 .sec-tab.active { background: #fff; color: #0369a1; box-shadow: 0 1px 3px rgba(15,23,42,.08); }
 
-/* ---- Toggle de modo PAA (dashboard vs buscador) ---- */
-.paa-mode { color: #475569; display: inline-flex; }
-.paa-mode:hover { color: #0f172a; }
-.paa-mode.active { background: #fff; color: #0369a1; box-shadow: 0 1px 3px rgba(15,23,42,.08); }
-html.dark .paa-mode { color: #94a3b8; }
-html.dark .paa-mode:hover { color: #f1f5f9; }
-html.dark .paa-mode.active { background: #1e293b; color: #7dd3fc; }
+/* ---- Toggle de modo PAA y SECOP (dashboard/oficial vs buscador) ---- */
+.paa-mode, .secop-mode { color: #475569; display: inline-flex; }
+.paa-mode:hover, .secop-mode:hover { color: #0f172a; }
+.paa-mode.active, .secop-mode.active { background: #fff; color: #0369a1; box-shadow: 0 1px 3px rgba(15,23,42,.08); }
+html.dark .paa-mode, html.dark .secop-mode { color: #94a3b8; }
+html.dark .paa-mode:hover, html.dark .secop-mode:hover { color: #f1f5f9; }
+html.dark .paa-mode.active, html.dark .secop-mode.active { background: #1e293b; color: #7dd3fc; }
 
 /* Power BI iframe fondo blanco para que se vea bien en dark mode */
 html.dark #paaPowerBiFrame { background: #fff; }

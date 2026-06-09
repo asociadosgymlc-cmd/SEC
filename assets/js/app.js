@@ -984,6 +984,7 @@
   const SECOP = LICITA.secop;
   const secopState = {
     initialized: false,
+    uiMode: "search",
     dataset: "procesos",
     page: 0,
     pageSize: 25,
@@ -1306,17 +1307,28 @@
         $("#sec-empty").classList.remove("hidden");
         const otroDs = secopState.dataset === "procesos" ? "contratos" : "procesos";
         const otroLabel = secopState.dataset === "procesos" ? "los contratos históricos (SECOP 1)" : "los procesos vigentes (SECOP 2)";
+        // Resumen humano de los filtros aplicados
+        const partes = [];
+        if (secopState.filters.texto) partes.push('"' + escapeHtml(secopState.filters.texto) + '"');
+        if (secopState.filters.entidad) partes.push("entidad: " + escapeHtml(secopState.filters.entidad));
+        if (secopState.filters.departamento) partes.push("dpto: " + escapeHtml(secopState.filters.departamento));
+        if (secopState.filters.modalidad) partes.push("modalidad: " + escapeHtml(secopState.filters.modalidad));
+        if (secopState.filters.estado) partes.push("estado: " + escapeHtml(secopState.filters.estado));
+        if (secopState.filters.tipoContrato) partes.push("tipo: " + escapeHtml(secopState.filters.tipoContrato));
         $("#sec-empty").innerHTML =
           '<div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">' +
           '<svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>' +
           '<h3 class="text-base font-semibold text-slate-900">Sin resultados</h3>' +
-          '<p class="text-sm text-slate-400 mt-1 max-w-md">No encontramos coincidencias con esos filtros. Pruebá a quitar alguno, escribir solo la palabra clave principal o cambiar a ' + otroLabel + '.</p>' +
+          (partes.length ? '<p class="text-[11px] text-slate-400 mt-1 max-w-md">Buscaste: ' + partes.join(" · ") + "</p>" : "") +
+          '<p class="text-sm text-slate-500 mt-2 max-w-md">Los datos abiertos pueden estar incompletos. Probá relajar filtros o consultá la fuente oficial.</p>' +
           '<div class="mt-4 flex gap-2 flex-wrap justify-center">' +
           '<button id="sec-emp-clear" class="text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors">Limpiar filtros</button>' +
           '<button id="sec-emp-switch" class="text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors">Probar en ' + otroLabel + '</button>' +
+          '<button id="sec-emp-official" class="text-xs font-medium text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:shadow-lg px-3 py-1.5 rounded-lg transition-all">Abrir SECOP II oficial</button>' +
           "</div>";
         const cb = $("#sec-emp-clear"); if (cb) cb.addEventListener("click", () => { $("#sec-clear").click(); runSecopSearch(true); });
         const sb = $("#sec-emp-switch"); if (sb) sb.addEventListener("click", () => switchDataset(otroDs));
+        const ob = $("#sec-emp-official"); if (ob) ob.addEventListener("click", () => secopApplyMode("official"));
         return;
       }
       $("#sec-results").innerHTML = data.map(secopCard).join("");
@@ -1417,9 +1429,38 @@
     $("#sec-empty").classList.remove("hidden");
   }
 
+  function secopApplyMode(mode) {
+    secopState.uiMode = mode;
+    const off = $("#secopOfficialView");
+    const search = $("#secopSearchView");
+    if (off) off.classList.toggle("hidden", mode !== "official");
+    if (search) search.classList.toggle("hidden", mode !== "search");
+    $$(".secop-mode").forEach((b) =>
+      b.classList.toggle("active", b.dataset.secopMode === mode)
+    );
+    if (mode === "official") {
+      // Si tras 4s el iframe no cargó, mostramos el fallback con CTA.
+      const iframe = $("#secopOfficialFrame");
+      const fb = $("#secopOfficialFallback");
+      let loaded = false;
+      const onLoad = () => { loaded = true; };
+      if (iframe && fb) {
+        iframe.addEventListener("load", onLoad, { once: true });
+        setTimeout(() => {
+          if (!loaded) fb.classList.remove("hidden");
+        }, 4000);
+      }
+    }
+  }
+
   function initSecopOnce() {
     if (secopState.initialized) return;
     secopState.initialized = true;
+    // Bind del toggle de modo y vista por defecto = buscador LICITA.
+    $$(".secop-mode").forEach((b) =>
+      b.addEventListener("click", () => secopApplyMode(b.dataset.secopMode))
+    );
+    secopApplyMode(secopState.uiMode || "search");
 
     fillSelect("sec-departamento", SECOP.DEPARTAMENTOS);
     fillSelect("sec-tipo", SECOP.TIPOS_CONTRATO);
