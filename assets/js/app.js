@@ -121,6 +121,7 @@
   /* ---------------------------- navegación ---------------------------- */
   const SECTIONS = {
     dashboard: { title: "Dashboard", sub: "Resumen de tu actividad" },
+    empresa: { title: "Mi empresa", sub: "Perfil del proponente · habilita el Match Score" },
     analisis: { title: "Análisis de Pliego", sub: "Carga un pliego y detecta riesgos jurídicos con IA" },
     secop: { title: "Buscar en SECOP 2", sub: "Procesos publicados en vivo · Colombia Compra Eficiente" },
     paa: { title: "Plan Anual de Adquisiciones", sub: "Anticipa lo que las entidades planean comprar este año" },
@@ -156,6 +157,7 @@
     if (name === "formacion") showCursosCatalog();
     if (name === "alertas") renderAlerts();
     if (name === "dashboard") { renderPulse(); renderMap(); }
+    if (name === "empresa") renderEmpresa();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1068,6 +1070,7 @@
       (n.modalidad ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">' + escapeHtml(n.modalidad) + "</span>" : "") +
       (isHist ? '<span class="text-[10px] font-medium uppercase tracking-wide bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Histórico</span>' : "") +
       '<span class="ml-auto text-[10px] font-bold tracking-wider uppercase text-' + sc.color + '-700 bg-' + sc.color + '-50 border border-' + sc.color + '-100 px-2 py-0.5 rounded-full">Oportunidad ' + sc.label + " · " + sc.score + "</span>" +
+      matchChipHtml(n) +
       "</div>" +
       '<p class="text-sm text-slate-800 font-medium leading-snug">' + escapeHtml(n.entidad || "Entidad no informada") + "</p>" +
       '<p class="text-xs text-slate-600 mt-1 leading-relaxed">' +
@@ -1256,6 +1259,15 @@
           departamento: n.departamento,
           tipoContrato: n.tipoContrato,
         });
+      })
+    );
+    $$("#sec-results [data-match]").forEach((b) =>
+      b.addEventListener("click", () => {
+        try {
+          const m = JSON.parse(b.dataset.match);
+          const op = JSON.parse(b.dataset.matchOp);
+          openMatchDetail(m, op);
+        } catch (e) {}
       })
     );
   }
@@ -1891,6 +1903,12 @@
     if (ahc) ahc.addEventListener("click", closeAchievements);
     const ahm = $("#achModal");
     if (ahm) ahm.addEventListener("click", (e) => { if (e.target.id === "achModal") closeAchievements(); });
+
+    // mi empresa
+    const empForm = $("#empForm");
+    if (empForm) empForm.addEventListener("submit", submitProfile);
+    const empAdd = $("#empAddContrato");
+    if (empAdd) empAdd.addEventListener("click", addContrato);
 
     // mobile nav
     const mn = $("#mobileNavBtn");
@@ -3141,6 +3159,216 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1500);
     toast("Certificado descargado", "ok");
+  }
+
+  /* =====================================================================
+     MI EMPRESA · perfil del proponente + Match Score
+     ===================================================================== */
+  function currentProfile() { return LICITA.empresa.load(Auth.currentUser()); }
+  function saveCurrentProfile(p) { LICITA.empresa.save(Auth.currentUser(), p); }
+
+  function profileCompletion(p) {
+    const fields = [
+      !!p.razonSocial, !!p.nit, !!(p.sectores && p.sectores.length),
+      !!(p.departamentos && p.departamentos.length),
+      !!p.patrimonio, !!p.capitalTrabajo,
+      !!(p.experiencia && p.experiencia.length),
+    ];
+    return Math.round((fields.filter(Boolean).length / fields.length) * 100);
+  }
+
+  function renderEmpresa() {
+    const p = currentProfile();
+    $("#emp-razonSocial").value = p.razonSocial || "";
+    $("#emp-nit").value = p.nit || "";
+    $("#emp-tipo").value = p.tipo || "juridica";
+    $("#emp-esMipyme").checked = !!p.esMipyme;
+    $("#emp-patrimonio").value = p.patrimonio || "";
+    $("#emp-capital").value = p.capitalTrabajo || "";
+    $("#emp-liquidez").value = p.indiceLiquidez || "";
+    $("#emp-endeudamiento").value = p.indiceEndeudamiento || "";
+    $("#emp-personal").value = p.personalClave || "";
+    renderSectorChips(p);
+    renderDeptoChips(p);
+    renderContratos(p);
+    refreshCompletion();
+  }
+
+  function renderSectorChips(p) {
+    const sel = new Set(p.sectores || []);
+    $("#empSectores").innerHTML = LICITA.empresa.SECTORES.map((s) =>
+      '<button type="button" data-sector="' + s.id + '" class="text-left p-3 rounded-xl border transition-all ' +
+      (sel.has(s.id)
+        ? "border-sky-400 bg-sky-50 text-sky-900 shadow-sm"
+        : "border-slate-200 bg-white hover:border-sky-200") + '">' +
+      '<span class="text-xl block leading-none">' + s.icon + "</span>" +
+      '<span class="text-xs font-semibold mt-1.5 block leading-tight">' + escapeHtml(s.label) + "</span>" +
+      "</button>"
+    ).join("");
+    $$("#empSectores [data-sector]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const cur = currentProfile();
+        const set = new Set(cur.sectores || []);
+        if (set.has(b.dataset.sector)) set.delete(b.dataset.sector);
+        else set.add(b.dataset.sector);
+        cur.sectores = [...set];
+        saveCurrentProfile(cur);
+        renderSectorChips(cur);
+        refreshCompletion();
+      })
+    );
+  }
+
+  function renderDeptoChips(p) {
+    const sel = new Set(p.departamentos || []);
+    $("#empDeptos").innerHTML = SECOP.DEPARTAMENTOS.map((d) =>
+      '<button type="button" data-depto="' + escapeHtml(d) + '" class="text-xs font-medium px-3 py-1.5 rounded-full transition-colors ' +
+      (sel.has(d)
+        ? "bg-sky-600 text-white"
+        : "bg-slate-100 text-slate-600 hover:bg-slate-200") + '">' + escapeHtml(d) + "</button>"
+    ).join("");
+    $$("#empDeptos [data-depto]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const cur = currentProfile();
+        const set = new Set(cur.departamentos || []);
+        if (set.has(b.dataset.depto)) set.delete(b.dataset.depto);
+        else set.add(b.dataset.depto);
+        cur.departamentos = [...set];
+        saveCurrentProfile(cur);
+        renderDeptoChips(cur);
+        refreshCompletion();
+      })
+    );
+  }
+
+  function renderContratos(p) {
+    const arr = p.experiencia || [];
+    const empty = $("#empContratosEmpty");
+    const box = $("#empContratos");
+    if (!arr.length) {
+      empty.classList.remove("hidden");
+      box.innerHTML = "";
+      return;
+    }
+    empty.classList.add("hidden");
+    box.innerHTML = arr.map((c, i) =>
+      '<div class="border border-slate-200 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-12 gap-2 items-start">' +
+      '<input type="text" data-c-entidad="' + i + '" class="field sm:col-span-3 text-xs" placeholder="Entidad" value="' + escapeHtml(c.entidad || "") + '">' +
+      '<input type="text" data-c-objeto="' + i + '" class="field sm:col-span-5 text-xs" placeholder="Objeto del contrato" value="' + escapeHtml(c.objeto || "") + '">' +
+      '<input type="number" data-c-valor="' + i + '" class="field sm:col-span-2 text-xs" placeholder="Valor (COP)" value="' + (c.valor || "") + '" min="0">' +
+      '<input type="number" data-c-anio="' + i + '" class="field sm:col-span-1 text-xs" placeholder="Año" value="' + (c.anio || "") + '" min="2000" max="2030">' +
+      '<button type="button" data-c-del="' + i + '" class="sm:col-span-1 text-rose-600 hover:bg-rose-50 text-xs font-medium py-2 rounded-lg transition-colors">Quitar</button>' +
+      "</div>"
+    ).join("");
+    box.querySelectorAll("input").forEach((inp) =>
+      inp.addEventListener("input", saveContratos)
+    );
+    box.querySelectorAll("[data-c-del]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const cur = currentProfile();
+        cur.experiencia.splice(Number(b.dataset.cDel), 1);
+        saveCurrentProfile(cur);
+        renderContratos(cur);
+        refreshCompletion();
+      })
+    );
+  }
+  function saveContratos() {
+    const cur = currentProfile();
+    const total = (cur.experiencia || []).length;
+    const out = [];
+    for (let i = 0; i < total; i++) {
+      out.push({
+        entidad: ($('[data-c-entidad="' + i + '"]') || {}).value || "",
+        objeto: ($('[data-c-objeto="' + i + '"]') || {}).value || "",
+        valor: Number(($('[data-c-valor="' + i + '"]') || {}).value) || 0,
+        anio: Number(($('[data-c-anio="' + i + '"]') || {}).value) || null,
+      });
+    }
+    cur.experiencia = out;
+    saveCurrentProfile(cur);
+    refreshCompletion();
+  }
+  function addContrato() {
+    const cur = currentProfile();
+    cur.experiencia = cur.experiencia || [];
+    cur.experiencia.unshift({ entidad: "", objeto: "", valor: 0, anio: null });
+    saveCurrentProfile(cur);
+    renderContratos(cur);
+  }
+  function refreshCompletion() {
+    const p = currentProfile();
+    const pct = profileCompletion(p);
+    const el = $("#empCompletionPct");
+    if (el) el.textContent = pct + "%";
+  }
+  function submitProfile(e) {
+    e.preventDefault();
+    const p = currentProfile();
+    p.razonSocial = $("#emp-razonSocial").value.trim();
+    p.nit = $("#emp-nit").value.trim();
+    p.tipo = $("#emp-tipo").value;
+    p.esMipyme = $("#emp-esMipyme").checked;
+    p.patrimonio = Number($("#emp-patrimonio").value) || 0;
+    p.capitalTrabajo = Number($("#emp-capital").value) || 0;
+    p.indiceLiquidez = Number($("#emp-liquidez").value) || 0;
+    p.indiceEndeudamiento = Number($("#emp-endeudamiento").value) || 0;
+    p.personalClave = $("#emp-personal").value.trim();
+    saveCurrentProfile(p);
+    refreshCompletion();
+    toast("Perfil guardado · ya verás tu Match Score en SECOP", "ok");
+  }
+
+  /* Devuelve el HTML del chip Match Score para una oportunidad. */
+  function matchChipHtml(opportunity) {
+    const p = currentProfile();
+    if (!LICITA.empresa.isProfileSetup(p)) return "";
+    const m = LICITA.empresa.score(p, opportunity);
+    if (!m) return "";
+    return (
+      '<button type="button" data-match=\'' + escapeHtml(JSON.stringify(m)) + "' " +
+      'data-match-op=\'' + escapeHtml(JSON.stringify(opportunity)) + "' " +
+      'class="text-[10px] font-bold uppercase tracking-wider text-' + m.color +
+      '-700 bg-' + m.color + '-50 border border-' + m.color + '-200 hover:bg-' + m.color +
+      '-100 px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors" title="Match Score basado en tu perfil empresarial">' +
+      '<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+      "Match " + m.score + "% · " + escapeHtml(m.label) + "</button>"
+    );
+  }
+
+  /* Modal liviano que muestra el desglose del match al clickearlo. */
+  function openMatchDetail(m, op) {
+    const wrap = $("#toastWrap");
+    const overlay = document.createElement("div");
+    overlay.className = "fixed inset-0 z-[65] flex items-center justify-center bg-slate-900/60 p-4";
+    const items = m.breakdown.map((b) => {
+      const iconOk = b.ok === true
+        ? '<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>'
+        : b.ok === false
+          ? '<svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+          : '<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+      return (
+        '<div class="flex items-start gap-2 py-2 border-b border-slate-100 last:border-0">' +
+        iconOk +
+        '<div class="flex-1 min-w-0"><p class="text-xs font-semibold text-slate-800 capitalize">' + escapeHtml(b.k) + '<span class="ml-2 text-[10px] font-medium text-slate-500">' + b.pts + "/" + b.max + " pts</span></p>" +
+        '<p class="text-[11px] text-slate-500 leading-snug">' + escapeHtml(b.reason) + "</p></div></div>"
+      );
+    }).join("");
+    overlay.innerHTML =
+      '<div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-pop">' +
+      '<div class="flex items-center gap-3 mb-4">' +
+      '<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-' + m.color + '-400 to-' + m.color + '-600 flex items-center justify-center text-white text-xl font-extrabold">' + m.score + "</div>" +
+      '<div><h3 class="text-lg font-bold text-slate-900">' + escapeHtml(m.label) + "</h3>" +
+      '<p class="text-xs text-slate-500">Match Score basado en tu perfil</p></div></div>' +
+      '<div class="space-y-0.5">' + items + "</div>" +
+      '<div class="mt-4 flex gap-2">' +
+      '<button id="matchEdit" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">Editar mi empresa</button>' +
+      '<button id="matchClose" class="flex-1 border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-medium py-2.5 rounded-lg transition-colors">Cerrar</button>' +
+      "</div></div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector("#matchClose").addEventListener("click", () => overlay.remove());
+    overlay.querySelector("#matchEdit").addEventListener("click", () => { overlay.remove(); showSection("empresa"); });
   }
 
   /* =====================================================================

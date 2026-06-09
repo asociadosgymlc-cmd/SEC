@@ -574,6 +574,10 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
           Dashboard
         </a>
+        <a href="#" data-section="empresa" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          Mi empresa
+        </a>
         <a href="#" data-section="analisis" class="nav-link">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           Análisis de Pliego
@@ -965,6 +969,126 @@
           <p class="text-sm text-slate-400 mt-1 max-w-md">Crea una alerta con palabras clave de tu nicho. Cada vez que entres te diremos cuántos procesos nuevos aparecieron.</p>
         </div>
         <div id="alertsList" class="space-y-3"></div>
+      </section>
+
+      <!-- ===== Mi Empresa (perfil del proponente) ===== -->
+      <section id="empresa-section" class="p-6 lg:p-8 hidden">
+        <!-- Hero -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-50 via-indigo-50 to-emerald-50 border border-sky-200 p-6 lg:p-8 mb-6">
+          <div class="absolute -top-12 -right-12 w-64 h-64 bg-sky-200/30 rounded-full blur-3xl"></div>
+          <div class="relative flex items-start gap-4 flex-wrap">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 flex-shrink-0">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-sky-700">Perfil empresarial · Habilita el Match Score</p>
+              <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">Hagamos a LICITA tu copiloto.</h2>
+              <p class="text-sm text-slate-600 mt-2 max-w-2xl">Completa tu perfil para que cada proceso de SECOP traiga un <b>Match Score</b> personalizado. Te diremos en porcentaje qué tan bien encaja con tu capacidad, sector y geografía — y por qué.</p>
+            </div>
+            <div id="empCompletion" class="bg-white/80 backdrop-blur border border-sky-100 rounded-2xl px-4 py-3 text-center min-w-[120px]">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Perfil</p>
+              <p id="empCompletionPct" class="text-3xl font-extrabold text-sky-700 leading-none mt-1">0%</p>
+              <p class="text-[10px] text-slate-500 mt-1">completo</p>
+            </div>
+          </div>
+        </div>
+
+        <form id="empForm" class="space-y-5">
+          <!-- Identificación -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-4"><span class="step-badge">1</span> Identificación</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="sm:col-span-2">
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Razón social</label>
+                <input id="emp-razonSocial" type="text" class="field mt-1" placeholder="p. ej. Constructora ABC S.A.S." />
+              </div>
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">NIT</label>
+                <input id="emp-nit" type="text" class="field mt-1" placeholder="900.123.456-7" />
+              </div>
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Tipo</label>
+                <select id="emp-tipo" class="field mt-1">
+                  <option value="juridica">Persona jurídica</option>
+                  <option value="natural">Persona natural</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input id="emp-esMipyme" type="checkbox" class="w-4 h-4" />
+                  <span class="text-sm text-slate-700">Soy MIPYME (Ley 2069 de 2020) — habilita estímulos en cuantías &lt; $500M</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sectores -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1"><span class="step-badge">2</span> Sectores donde compites</h3>
+            <p class="text-xs text-slate-500 mb-4">Marca todos los aplican (mínimo 1). Define el match contra el objeto del proceso.</p>
+            <div id="empSectores" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+          </div>
+
+          <!-- Geografía -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1"><span class="step-badge">3</span> Departamentos donde operas</h3>
+            <p class="text-xs text-slate-500 mb-4">Los procesos en estos departamentos suman puntos al match.</p>
+            <div id="empDeptos" class="flex flex-wrap gap-1.5"></div>
+          </div>
+
+          <!-- Financiera -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1"><span class="step-badge">4</span> Capacidad financiera</h3>
+            <p class="text-xs text-slate-500 mb-4">Valores actuales para validar habilitantes típicos del Decreto 1082/2015.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Patrimonio (COP)</label>
+                <input id="emp-patrimonio" type="number" class="field mt-1" placeholder="0" min="0" />
+              </div>
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Capital de trabajo (COP)</label>
+                <input id="emp-capital" type="number" class="field mt-1" placeholder="0" min="0" />
+              </div>
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Índice de liquidez</label>
+                <input id="emp-liquidez" type="number" step="0.01" class="field mt-1" placeholder="1.5" min="0" />
+              </div>
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Índice de endeudamiento (%)</label>
+                <input id="emp-endeudamiento" type="number" step="0.01" class="field mt-1" placeholder="60" min="0" max="100" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Experiencia -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <div class="flex items-center justify-between gap-3 flex-wrap mb-1">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2"><span class="step-badge">5</span> Contratos ejecutados</h3>
+              <button type="button" id="empAddContrato" class="text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Agregar contrato
+              </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">Tu experiencia comparable es la prueba de habilitación. Al menos 3 mejora el match.</p>
+            <div id="empContratos" class="space-y-2"></div>
+            <div id="empContratosEmpty" class="text-xs text-slate-400 text-center py-6">Aún no agregaste contratos.</div>
+          </div>
+
+          <!-- Personal -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1"><span class="step-badge">6</span> Personal clave (opcional)</h3>
+            <p class="text-xs text-slate-500 mb-3">Notas sobre tu equipo profesional — útil para la futura verificación de hojas de vida.</p>
+            <textarea id="emp-personal" class="field h-20 resize-none" placeholder="p. ej. Ing. Civil 10 años · Arquitecto 8 años · Contador público..."></textarea>
+          </div>
+
+          <div class="flex flex-wrap gap-3 items-center justify-between">
+            <button type="submit" class="bg-gradient-to-r from-sky-600 to-blue-700 hover:shadow-lg hover:shadow-blue-200 text-white font-bold px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Guardar perfil
+            </button>
+            <p class="text-[11px] text-slate-400">Se guarda solo en tu navegador. Cero envío a servidores externos.</p>
+          </div>
+        </form>
       </section>
 
       <!-- ===== Historial ===== -->
@@ -1465,14 +1589,15 @@
     document.getElementById("brandYear").textContent = yr;
     var fy = document.getElementById("footerYear"); if (fy) fy.textContent = yr;
   </script>
-  <script src="assets/js/knowledge.js?v=20260608"></script>
-  <script src="assets/js/docs.js?v=20260608"></script>
-  <script src="assets/js/analyzer.js?v=20260608"></script>
-  <script src="assets/js/parsers.js?v=20260608"></script>
-  <script src="assets/js/secop.js?v=20260608"></script>
-  <script src="assets/js/cursos.js?v=20260608"></script>
-  <script src="assets/js/intel.js?v=20260608"></script>
-  <script src="assets/js/auth.js?v=20260608"></script>
-  <script src="assets/js/app.js?v=20260608"></script>
+  <script src="assets/js/knowledge.js?v=20260609"></script>
+  <script src="assets/js/docs.js?v=20260609"></script>
+  <script src="assets/js/analyzer.js?v=20260609"></script>
+  <script src="assets/js/parsers.js?v=20260609"></script>
+  <script src="assets/js/secop.js?v=20260609"></script>
+  <script src="assets/js/cursos.js?v=20260609"></script>
+  <script src="assets/js/intel.js?v=20260609"></script>
+  <script src="assets/js/empresa.js?v=20260609"></script>
+  <script src="assets/js/auth.js?v=20260609"></script>
+  <script src="assets/js/app.js?v=20260609"></script>
 </body>
 </html>
