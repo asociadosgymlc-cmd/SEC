@@ -122,6 +122,7 @@
   const SECTIONS = {
     dashboard: { title: "Dashboard", sub: "Resumen de tu actividad" },
     empresa: { title: "Mi empresa", sub: "Perfil del proponente · habilita el Match Score" },
+    pipeline: { title: "Pipeline", sub: "CRM de oportunidades · arrastra por las etapas" },
     analisis: { title: "Análisis de Pliego", sub: "Carga un pliego y detecta riesgos jurídicos con IA" },
     secop: { title: "Buscar en SECOP 2", sub: "Procesos publicados en vivo · Colombia Compra Eficiente" },
     paa: { title: "Plan Anual de Adquisiciones", sub: "Anticipa lo que las entidades planean comprar este año" },
@@ -158,6 +159,7 @@
     if (name === "alertas") renderAlerts();
     if (name === "dashboard") { renderPulse(); renderMap(); }
     if (name === "empresa") renderEmpresa();
+    if (name === "pipeline") renderPipeline();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1315,7 +1317,22 @@
       ]);
       if (reset) secopState.total = totalMaybe;
       $("#sec-loading").classList.add("hidden");
-      if (!data.length && secopState.page === 0) {
+      // Aplicar filtro Match (cliente) y notificar high-match
+      const fullCount = data.length;
+      let displayed = applyMatchFilter(data);
+      try { notifyHighMatches(displayed); } catch (e) {}
+      if (matchFilterState.enabled && fullCount > 0 && displayed.length < fullCount) {
+        const filtered = fullCount - displayed.length;
+        const statusEl = $("#sec-status");
+        if (statusEl) {
+          statusEl.classList.remove("hidden");
+          statusEl.innerHTML = '🎯 Mostrando ' + displayed.length + ' con Match ≥ ' +
+            matchFilterState.threshold + '% · oculté ' + filtered + ' que no encajan';
+        }
+      }
+      // Renombramos para no tocar el resto del bloque
+      const renderItems = displayed;
+      if (!renderItems.length && secopState.page === 0) {
         $("#sec-empty").classList.remove("hidden");
         const otroDs = secopState.dataset === "procesos" ? "contratos" : "procesos";
         const otroLabel = secopState.dataset === "procesos" ? "los contratos históricos (SECOP 1)" : "los procesos vigentes (SECOP 2)";
@@ -1343,12 +1360,12 @@
         const ob = $("#sec-emp-official"); if (ob) ob.addEventListener("click", () => secopApplyMode("official"));
         return;
       }
-      $("#sec-results").innerHTML = data.map(secopCard).join("");
+      $("#sec-results").innerHTML = renderItems.map(secopCard).join("");
       $("#sec-results").classList.remove("hidden");
       bindSecopCardActions();
       // Estado/paginación
       const start = secopState.page * secopState.pageSize + 1;
-      const end = start + data.length - 1;
+      const end = start + renderItems.length - 1;
       $("#sec-pageinfo").textContent =
         "Mostrando " + start.toLocaleString("es-CO") + "–" + end.toLocaleString("es-CO") +
         (secopState.total != null ? " de " + secopState.total.toLocaleString("es-CO") + " procesos" : "");
@@ -1482,6 +1499,8 @@
       b.addEventListener("click", () => switchDataset(b.dataset.ds))
     );
 
+    refreshMatchFilterUI();
+
     $("#sec-toggle-filters").addEventListener("click", () =>
       $("#sec-filters").classList.toggle("hidden")
     );
@@ -1582,6 +1601,7 @@
     unlockAchievement("first_login");
     bumpStreak();
     refreshStreakChip();
+    refreshPipelineBadge();
     maybeShowDailyBrief();
   }
 
@@ -1909,6 +1929,21 @@
     if (empForm) empForm.addEventListener("submit", submitProfile);
     const empAdd = $("#empAddContrato");
     if (empAdd) empAdd.addEventListener("click", addContrato);
+
+    // filtro Match Score en SECOP
+    loadMatchFilterPrefs();
+    const matchTog = $("#sec-matchtoggle");
+    const matchMin = $("#sec-matchmin");
+    if (matchTog) matchTog.addEventListener("change", () => {
+      matchFilterState.enabled = matchTog.checked;
+      saveMatchFilterPrefs();
+      if (secopState.initialized) runSecopSearch(true);
+    });
+    if (matchMin) matchMin.addEventListener("change", () => {
+      matchFilterState.threshold = Number(matchMin.value) || 70;
+      saveMatchFilterPrefs();
+      if (matchFilterState.enabled && secopState.initialized) runSecopSearch(true);
+    });
 
     // mobile nav
     const mn = $("#mobileNavBtn");
@@ -2383,6 +2418,8 @@
       ]);
       if (reset) paaState.total = totalMaybe;
       paaState.lastData = data;
+      // En PAA también notificamos matches altos si hay perfil
+      try { notifyHighMatches(data); } catch (e) {}
       $("#paa-loading").classList.add("hidden");
       if (!data.length && paaState.page === 0) {
         $("#paa-empty").classList.remove("hidden");
@@ -3355,20 +3392,282 @@
       );
     }).join("");
     overlay.innerHTML =
-      '<div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-pop">' +
+      '<div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-pop max-h-[90vh] overflow-y-auto">' +
       '<div class="flex items-center gap-3 mb-4">' +
       '<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-' + m.color + '-400 to-' + m.color + '-600 flex items-center justify-center text-white text-xl font-extrabold">' + m.score + "</div>" +
-      '<div><h3 class="text-lg font-bold text-slate-900">' + escapeHtml(m.label) + "</h3>" +
+      '<div class="flex-1 min-w-0"><h3 class="text-lg font-bold text-slate-900">' + escapeHtml(m.label) + "</h3>" +
       '<p class="text-xs text-slate-500">Match Score basado en tu perfil</p></div></div>' +
-      '<div class="space-y-0.5">' + items + "</div>" +
-      '<div class="mt-4 flex gap-2">' +
-      '<button id="matchEdit" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">Editar mi empresa</button>' +
-      '<button id="matchClose" class="flex-1 border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-medium py-2.5 rounded-lg transition-colors">Cerrar</button>' +
+      '<div class="bg-slate-50 rounded-xl p-3 mb-3"><p class="text-xs font-bold text-slate-700 mb-2">Desglose</p>' +
+      '<div class="space-y-0.5">' + items + "</div></div>" +
+      habilitantesHtml(op) +
+      checklistHtml(op) +
+      '<div class="mt-4 flex gap-2 flex-wrap">' +
+      '<button id="matchAddPipeline" class="flex-1 min-w-[140px] bg-gradient-to-r from-emerald-500 to-teal-600 hover:shadow-lg text-white text-sm font-semibold py-2.5 rounded-lg transition-all">+ Agregar al pipeline</button>' +
+      '<button id="matchEdit" class="flex-1 min-w-[140px] bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">Editar mi empresa</button>' +
+      '<button id="matchClose" class="flex-1 min-w-[100px] border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-medium py-2.5 rounded-lg transition-colors">Cerrar</button>' +
       "</div></div>";
     document.body.appendChild(overlay);
+
+    // Persistir cambios en el checklist y refrescar el contador in-place.
+    function wireChecklist() {
+      overlay.querySelectorAll("[data-chk]").forEach((cb) =>
+        cb.addEventListener("change", () => {
+          const st = loadChecklist(op.id);
+          st[cb.dataset.chk] = cb.checked;
+          saveChecklistState(op.id, st);
+          // Tachar/destachar la etiqueta
+          const lbl = cb.parentElement && cb.parentElement.querySelector("span");
+          if (lbl) {
+            lbl.classList.toggle("line-through", cb.checked);
+            lbl.classList.toggle("text-slate-400", cb.checked);
+            lbl.classList.toggle("text-slate-700", !cb.checked);
+          }
+          // Actualizar el contador "X/Y listos"
+          const total = overlay.querySelectorAll("[data-chk]").length;
+          const done = overlay.querySelectorAll("[data-chk]:checked").length;
+          const counter = overlay.querySelector('[data-chk-counter]');
+          if (counter) counter.textContent = done + "/" + total + " listos";
+        })
+      );
+    }
+    wireChecklist();
+    overlay.querySelector("#matchAddPipeline").addEventListener("click", () => {
+      addToPipeline(op);
+      overlay.remove();
+    });
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
     overlay.querySelector("#matchClose").addEventListener("click", () => overlay.remove());
     overlay.querySelector("#matchEdit").addEventListener("click", () => { overlay.remove(); showSection("empresa"); });
+  }
+
+  /* =====================================================================
+     PIPELINE · CRM por estado (Interesado→Analizando→Ofertando→…)
+     ===================================================================== */
+  const PL = LICITA.pipeline;
+
+  function refreshPipelineBadge() {
+    const u = Auth.currentUser();
+    if (!u) return;
+    const badge = $("#pipelineBadge");
+    if (!badge) return;
+    const s = PL.summary(u);
+    const active = s.counts.interesado + s.counts.analizando + s.counts.ofertando;
+    if (active > 0) {
+      badge.textContent = String(active);
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+  }
+
+  function addToPipeline(proceso) {
+    const u = Auth.currentUser();
+    if (!u) return;
+    const added = PL.add(u, proceso);
+    if (!added) { toast("Ya está en tu pipeline", "err"); return; }
+    refreshPipelineBadge();
+    toast("Agregado al pipeline · estado: Interesado", "ok");
+  }
+
+  function renderPipeline() {
+    const u = Auth.currentUser();
+    if (!u) return;
+    const s = PL.summary(u);
+    refreshPipelineBadge();
+
+    // Resumen superior
+    const cards = [
+      { label: "En pipeline",      value: formatCOP(s.pipelineValue), tone: "sky" },
+      { label: "Ganados",          value: formatCOP(s.wonValue),      tone: "emerald" },
+      { label: "Procesos activos", value: s.counts.interesado + s.counts.analizando + s.counts.ofertando, tone: "amber" },
+      { label: "Tasa de éxito",    value: s.winRate == null ? "—" : s.winRate + "%", tone: "indigo" },
+    ];
+    $("#pipelineSummary").innerHTML = cards.map((c) =>
+      '<div class="bg-white/80 backdrop-blur border border-sky-100 rounded-xl px-3 py-2 min-w-[110px] text-center">' +
+      '<p class="text-[9px] font-bold uppercase tracking-wider text-slate-500">' + c.label + "</p>" +
+      '<p class="text-base font-extrabold text-' + c.tone + '-700 leading-tight mt-0.5">' + escapeHtml(String(c.value)) + "</p></div>"
+    ).join("");
+
+    // Columnas Kanban
+    const board = $("#pipelineBoard");
+    board.innerHTML = PL.STATES.map((st) => {
+      const inCol = s.items.filter((it) => it.state === st.id);
+      const cards = inCol.map((it) => pipelineCardHtml(it)).join("");
+      return (
+        '<div class="bg-slate-50 dark:bg-slate-900/30 rounded-2xl p-3 min-h-[140px]">' +
+        '<div class="flex items-center justify-between mb-3 px-1">' +
+        '<p class="text-xs font-bold text-slate-700 flex items-center gap-1.5">' + st.emoji + " " + st.label + "</p>" +
+        '<span class="text-[10px] font-bold bg-' + st.tone + '-100 text-' + st.tone + '-700 px-1.5 rounded-full">' + inCol.length + "</span>" +
+        "</div>" +
+        '<div class="space-y-2">' +
+        (cards || '<p class="text-[11px] text-slate-400 text-center py-6">vacío</p>') +
+        "</div></div>"
+      );
+    }).join("");
+
+    bindPipelineCards();
+  }
+
+  function pipelineCardHtml(item) {
+    const n = item.proceso || {};
+    return (
+      '<div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 p-3 shadow-sm" data-pl-id="' + escapeHtml(item.id) + '">' +
+      '<p class="text-[11px] font-bold text-slate-900 leading-tight">' + escapeHtml((n.entidad || "Entidad").slice(0, 50)) + "</p>" +
+      '<p class="text-[11px] text-slate-600 mt-1 leading-snug line-clamp-2">' + escapeHtml((n.objeto || "").slice(0, 90)) + (n.objeto && n.objeto.length > 90 ? "…" : "") + "</p>" +
+      '<p class="text-[10px] text-slate-400 mt-1.5">' + formatCOP(n.valor) + "</p>" +
+      '<div class="mt-2 flex gap-1 flex-wrap">' +
+      '<select data-pl-move="' + escapeHtml(item.id) + '" class="text-[10px] bg-slate-100 border border-slate-200 rounded px-1 py-0.5 flex-1">' +
+      PL.STATES.map((s) => '<option value="' + s.id + '"' + (s.id === item.state ? " selected" : "") + ">" + s.emoji + " " + s.label + "</option>").join("") +
+      "</select>" +
+      '<button data-pl-del="' + escapeHtml(item.id) + '" class="text-[10px] text-rose-600 hover:bg-rose-50 px-1.5 rounded">×</button>' +
+      "</div></div>"
+    );
+  }
+
+  function bindPipelineCards() {
+    $$("#pipelineBoard [data-pl-move]").forEach((sel) =>
+      sel.addEventListener("change", () => {
+        const u = Auth.currentUser();
+        PL.move(u, sel.dataset.plMove, sel.value);
+        renderPipeline();
+        toast("Movido a " + PL.stateById(sel.value).label, "ok");
+      })
+    );
+    $$("#pipelineBoard [data-pl-del]").forEach((b) =>
+      b.addEventListener("click", () => {
+        if (!confirm("¿Quitar del pipeline?")) return;
+        const u = Auth.currentUser();
+        PL.remove(u, b.dataset.plDel);
+        renderPipeline();
+        toast("Quitado del pipeline", "ok");
+      })
+    );
+  }
+
+  /* =====================================================================
+     FILTRO SOLO MATCH ≥ X% en resultados SECOP
+     ===================================================================== */
+  const matchFilterState = { enabled: false, threshold: 70 };
+  function loadMatchFilterPrefs() {
+    try {
+      const raw = localStorage.getItem("licita.matchFilter");
+      if (!raw) return;
+      const o = JSON.parse(raw);
+      matchFilterState.enabled = !!o.enabled;
+      matchFilterState.threshold = Number(o.threshold) || 70;
+    } catch (e) {}
+  }
+  function saveMatchFilterPrefs() {
+    try { localStorage.setItem("licita.matchFilter", JSON.stringify(matchFilterState)); } catch (e) {}
+  }
+  function refreshMatchFilterUI() {
+    const p = currentProfile();
+    const wrap = $("#sec-matchfilter");
+    if (!wrap) return;
+    if (LICITA.empresa.isProfileSetup(p)) {
+      wrap.classList.remove("hidden");
+      const sel = $("#sec-matchmin");
+      const tog = $("#sec-matchtoggle");
+      if (sel) sel.value = String(matchFilterState.threshold);
+      if (tog) tog.checked = matchFilterState.enabled;
+    } else {
+      wrap.classList.add("hidden");
+    }
+  }
+  /* Filtra una lista de items SECOP según el match score actual. */
+  function applyMatchFilter(items) {
+    if (!matchFilterState.enabled || !matchFilterState.threshold) return items;
+    const p = currentProfile();
+    if (!LICITA.empresa.isProfileSetup(p)) return items;
+    return items.filter((p_) => {
+      const n = SECOP.normalize(secopState.dataset, p_);
+      const m = LICITA.empresa.score(p, n);
+      return m && m.score >= matchFilterState.threshold;
+    });
+  }
+
+  /* =====================================================================
+     NOTIFICACIÓN de matches altos tras una búsqueda SECOP
+     ===================================================================== */
+  function notifyHighMatches(data) {
+    const p = currentProfile();
+    if (!LICITA.empresa.isProfileSetup(p)) return;
+    const highCount = data.reduce((acc, item) => {
+      const n = SECOP.normalize(secopState.dataset, item);
+      const m = LICITA.empresa.score(p, n);
+      return acc + (m && m.score >= 80 ? 1 : 0);
+    }, 0);
+    if (highCount > 0) {
+      setTimeout(() =>
+        toast("🎯 " + highCount + " proceso" + (highCount === 1 ? "" : "s") + " con Match excelente (≥80%)", "ok"), 500);
+    }
+  }
+
+  /* =====================================================================
+     CHECKLIST DE DOCUMENTOS + HABILITANTES para un proceso
+     (se muestra dentro del modal del Match Score)
+     ===================================================================== */
+  function checklistKey(u, procId) { return "licita.checklist." + u.username + "." + procId; }
+  function loadChecklist(procId) {
+    const u = Auth.currentUser();
+    if (!u || !procId) return {};
+    try { return JSON.parse(localStorage.getItem(checklistKey(u, procId)) || "{}"); }
+    catch (e) { return {}; }
+  }
+  function saveChecklistState(procId, st) {
+    const u = Auth.currentUser();
+    if (!u || !procId) return;
+    try { localStorage.setItem(checklistKey(u, procId), JSON.stringify(st)); } catch (e) {}
+  }
+  function checklistHtml(opp) {
+    const items = LICITA.empresa.checklistFor(opp.modalidad);
+    const state = loadChecklist(opp.id);
+    const done = items.filter((it) => state[it.id]).length;
+    return (
+      '<div class="bg-white rounded-xl border border-slate-200 p-4 mt-4">' +
+      '<div class="flex items-center justify-between mb-3 gap-3 flex-wrap">' +
+      '<h4 class="text-sm font-bold text-slate-900 flex items-center gap-2"><span>📋</span> Documentos para postular</h4>' +
+      '<span data-chk-counter class="text-xs font-bold text-sky-700">' + done + "/" + items.length + " listos</span>" +
+      "</div>" +
+      '<p class="text-[11px] text-slate-500 mb-3">Modalidad: ' + escapeHtml(opp.modalidad || "—") + '. Verifica el pliego antes de cerrar.</p>' +
+      '<div class="space-y-1.5">' +
+      items.map((it) =>
+        '<label class="flex items-start gap-2 cursor-pointer text-xs p-2 rounded hover:bg-slate-50">' +
+        '<input type="checkbox" data-chk="' + it.id + '"' + (state[it.id] ? " checked" : "") + ' class="mt-0.5 w-4 h-4">' +
+        '<div class="flex-1"><span class="' + (state[it.id] ? "text-slate-400 line-through" : "text-slate-700") + '">' + escapeHtml(it.label) + "</span>" +
+        (it.required ? ' <span class="text-[9px] font-bold text-rose-600 ml-1">REQUERIDO</span>' : ' <span class="text-[9px] font-medium text-slate-400 ml-1">opcional</span>') +
+        (it.note ? '<p class="text-[10px] text-slate-400 mt-0.5">' + escapeHtml(it.note) + "</p>" : "") +
+        "</div></label>"
+      ).join("") +
+      "</div></div>"
+    );
+  }
+  function habilitantesHtml(opp) {
+    const p = currentProfile();
+    const r = LICITA.empresa.habilitantes(p, opp);
+    if (!r || !r.tests.length) return "";
+    return (
+      '<div class="bg-white rounded-xl border border-slate-200 p-4 mt-3">' +
+      '<div class="flex items-center justify-between mb-3 gap-3 flex-wrap">' +
+      '<h4 class="text-sm font-bold text-slate-900 flex items-center gap-2"><span>📊</span> Verificación de habilitantes</h4>' +
+      '<span class="text-xs font-bold ' + (r.cleared ? "text-emerald-700" : "text-amber-700") + '">' + r.summary + "</span>" +
+      "</div>" +
+      '<div class="space-y-2">' +
+      r.tests.map((t) => {
+        const valStr = t.formato === "cop" ? formatCOP(t.valor) :
+                       t.formato === "pct" ? t.valor + "%" : t.valor;
+        const sugStr = t.formato === "cop" ? formatCOP(t.umbral) :
+                       t.formato === "pct" ? t.umbral + "%" : t.umbral;
+        return '<div class="flex items-start gap-2 p-2 rounded ' + (t.ok ? "bg-emerald-50" : "bg-rose-50") + '">' +
+          (t.ok
+            ? '<svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>'
+            : '<svg class="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>') +
+          '<div class="flex-1 min-w-0"><p class="text-xs font-semibold text-slate-800">' + escapeHtml(t.label) + '</p>' +
+          '<p class="text-[11px] text-slate-600">Tuyo: <b>' + valStr + "</b> · Típico: " + (t.invertido ? "≤ " : "≥ ") + sugStr + "</p>" +
+          '<p class="text-[10px] text-slate-500 mt-0.5">' + escapeHtml(t.nota) + "</p></div></div>";
+      }).join("") +
+      "</div></div>"
+    );
   }
 
   /* =====================================================================

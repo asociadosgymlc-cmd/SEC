@@ -232,6 +232,148 @@ LICITA.empresa = (function () {
     return { score: cap, label, color, breakdown: items };
   }
 
+  /* ----------------------------------------------------------------
+   * CHECKLIST DE DOCUMENTOS por modalidad
+   * Lista los documentos típicos exigidos por la entidad según la
+   * modalidad. El usuario marca lo que ya tiene listo.
+   * ---------------------------------------------------------------- */
+  const CHECKLIST_BASE = [
+    { id: "rut",          label: "RUT actualizado",                                    required: true  },
+    { id: "camara",       label: "Cámara de Comercio (vigente últimos 30 días)",        required: true  },
+    { id: "antec_proc",   label: "Antecedentes Procuraduría",                          required: true  },
+    { id: "antec_contr",  label: "Antecedentes Contraloría",                           required: true  },
+    { id: "antec_pol",    label: "Antecedentes Policía",                               required: true  },
+    { id: "pila",         label: "Pago aportes a seguridad social (PILA)",             required: true  },
+    { id: "oferta",       label: "Oferta económica firmada",                           required: true  },
+    { id: "ctm",          label: "Cumplimiento de Condiciones Técnicas Mínimas",       required: true  },
+    { id: "rep_legal",    label: "Documento de identidad del representante legal",     required: true  },
+  ];
+  const CHECKLIST_EXTRA = {
+    minima: [],
+    abreviada: [
+      { id: "rup",         label: "RUP vigente con categorías UNSPSC del objeto", required: true  },
+      { id: "indicadores", label: "Acreditación de indicadores financieros",       required: true  },
+      { id: "experiencia", label: "Certificaciones de contratos similares",        required: true  },
+      { id: "gar_ofer",    label: "Garantía de seriedad de la oferta",            required: true  },
+    ],
+    licitacion: [
+      { id: "rup",         label: "RUP vigente",                                  required: true  },
+      { id: "indicadores", label: "Acreditación de indicadores financieros y organizacionales", required: true  },
+      { id: "experiencia", label: "Mínimo de contratos similares (verificar pliego)", required: true  },
+      { id: "personal",    label: "Hojas de vida del personal mínimo exigido",    required: true  },
+      { id: "gar_ofer",    label: "Garantía de seriedad de la oferta",            required: true  },
+      { id: "prop_tec",    label: "Propuesta técnica detallada",                  required: true  },
+      { id: "metodologia", label: "Metodología y cronograma",                     required: true  },
+    ],
+    concurso: [
+      { id: "rup",         label: "RUP vigente",                                  required: true  },
+      { id: "experiencia", label: "Experiencia específica en consultoría similar", required: true  },
+      { id: "equipo",      label: "Hojas de vida del equipo de consultores",      required: true  },
+      { id: "metodologia", label: "Metodología de la consultoría",                required: true  },
+      { id: "gar_ofer",    label: "Garantía de seriedad",                         required: true  },
+    ],
+    directa: [
+      { id: "justif",      label: "Justificación de la causal (la elabora la entidad)", required: false },
+      { id: "idoneidad",   label: "Certificación de idoneidad del contratista",   required: true  },
+    ],
+  };
+  function modalityKey(mod) {
+    const m = (mod || "").toLowerCase();
+    if (m.includes("mínima") || m.includes("minima")) return "minima";
+    if (m.includes("selección abreviada") || m.includes("seleccion abreviada") || m.includes("abreviada")) return "abreviada";
+    if (m.includes("licitación") || m.includes("licitacion")) return "licitacion";
+    if (m.includes("concurso") || m.includes("méritos") || m.includes("meritos")) return "concurso";
+    if (m.includes("contratación directa") || m.includes("contratacion directa") || m.includes("directa")) return "directa";
+    return "abreviada";
+  }
+  function checklistFor(modalidad) {
+    const key = modalityKey(modalidad);
+    return [].concat(CHECKLIST_BASE, CHECKLIST_EXTRA[key] || []);
+  }
+
+  /* ----------------------------------------------------------------
+   * VERIFICACIÓN DE HABILITANTES FINANCIEROS
+   * Compara el perfil contra los umbrales típicos del Decreto 1082/2015
+   * proyectados sobre el valor de la oportunidad.
+   * ---------------------------------------------------------------- */
+  function habilitantes(profile, opportunity) {
+    if (!profile || !opportunity) return null;
+    const valor = Number(opportunity.valor) || 0;
+    const tests = [];
+
+    // Patrimonio sugerido ≈ 30% del valor del contrato
+    if (valor > 0 && profile.patrimonio) {
+      const sug = valor * 0.30;
+      tests.push({
+        id: "patrimonio",
+        label: "Patrimonio",
+        ok: profile.patrimonio >= sug,
+        valor: profile.patrimonio,
+        umbral: sug,
+        formato: "cop",
+        nota: profile.patrimonio >= sug
+          ? "Cumple el patrimonio típico exigido"
+          : "Tu patrimonio queda por debajo del 30% típico del valor",
+      });
+    }
+
+    // Capital de trabajo ≈ 20% del valor
+    if (valor > 0 && profile.capitalTrabajo) {
+      const sug = valor * 0.20;
+      tests.push({
+        id: "capital",
+        label: "Capital de trabajo",
+        ok: profile.capitalTrabajo >= sug,
+        valor: profile.capitalTrabajo,
+        umbral: sug,
+        formato: "cop",
+        nota: profile.capitalTrabajo >= sug
+          ? "Cubre el capital de trabajo esperado"
+          : "Capital de trabajo por debajo del 20% típico del valor",
+      });
+    }
+
+    // Liquidez ≥ 1.5
+    if (profile.indiceLiquidez) {
+      tests.push({
+        id: "liquidez",
+        label: "Índice de liquidez",
+        ok: profile.indiceLiquidez >= 1.5,
+        valor: profile.indiceLiquidez,
+        umbral: 1.5,
+        formato: "num",
+        nota: profile.indiceLiquidez >= 1.5
+          ? "Cumple el típico ≥ 1.5"
+          : "Suelen exigir ≥ 1.5 (activo corriente / pasivo corriente)",
+      });
+    }
+
+    // Endeudamiento ≤ 60%
+    if (profile.indiceEndeudamiento) {
+      tests.push({
+        id: "endeudamiento",
+        label: "Índice de endeudamiento",
+        ok: profile.indiceEndeudamiento <= 60,
+        valor: profile.indiceEndeudamiento,
+        umbral: 60,
+        formato: "pct",
+        invertido: true,
+        nota: profile.indiceEndeudamiento <= 60
+          ? "Por debajo del 60% (saludable)"
+          : "Por encima del 60%; muchas entidades lo rechazan",
+      });
+    }
+
+    const okCount = tests.filter((t) => t.ok).length;
+    return {
+      tests,
+      summary: tests.length
+        ? okCount + "/" + tests.length + " indicadores cumplen el típico"
+        : "Sin datos suficientes en tu perfil",
+      cleared: tests.length > 0 && okCount === tests.length,
+    };
+  }
+
   /* Recomendaciones para subir el score con el perfil actual */
   function recommendationsToImprove(profile) {
     const r = [];
@@ -247,5 +389,6 @@ LICITA.empresa = (function () {
     SECTORES, sectorById,
     blank, load, save, isProfileSetup,
     score, recommendationsToImprove,
+    checklistFor, habilitantes,
   };
 })();
