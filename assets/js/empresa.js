@@ -31,13 +31,20 @@ LICITA.empresa = (function () {
   function sectorById(id) { return SECTORES.find((s) => s.id === id) || null; }
 
   function profileKey(u) { return u ? "licita.empresa." + u.username : null; }
+  function multiKey(u)   { return u ? "licita.empresas." + u.username : null; }
+  function newId() { return "emp_" + Math.random().toString(36).slice(2, 9); }
 
   function blank() {
     return {
+      id: "",
       razonSocial: "",
       nit: "",
-      tipo: "juridica",      // natural | juridica
+      tipo: "juridica",
       esMipyme: false,
+      direccion: "",
+      ciudad: "",
+      representanteLegal: "",
+      objetoSocial: "",
       patrimonio: 0,
       capitalTrabajo: 0,
       indiceLiquidez: 0,
@@ -45,22 +52,104 @@ LICITA.empresa = (function () {
       sectores: [],
       departamentos: [],
       personalClave: "",
-      experiencia: [],       // { entidad, objeto, valor, anio }
+      experiencia: [],
     };
+  }
+
+  /* ------------- Storage multi-empresa con migración automática ------------- */
+  function loadAll(currentUser) {
+    if (!currentUser) return { active: null, list: [] };
+    try {
+      const raw = localStorage.getItem(multiKey(currentUser));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.list && parsed.list.length) return parsed;
+      }
+      // Migración del formato single-profile (versión anterior)
+      const old = localStorage.getItem(profileKey(currentUser));
+      if (old) {
+        const p = Object.assign(blank(), JSON.parse(old));
+        if (!p.id) p.id = newId();
+        const migrated = { active: p.id, list: [p] };
+        try { localStorage.setItem(multiKey(currentUser), JSON.stringify(migrated)); } catch (e) {}
+        return migrated;
+      }
+      return { active: null, list: [] };
+    } catch (e) { return { active: null, list: [] }; }
+  }
+
+  function persistAll(currentUser, state) {
+    if (!currentUser) return;
+    try { localStorage.setItem(multiKey(currentUser), JSON.stringify(state)); } catch (e) {}
+  }
+
+  function listCompanies(currentUser) { return loadAll(currentUser).list; }
+  function activeId(currentUser)      { return loadAll(currentUser).active; }
+
+  function setActive(currentUser, id) {
+    const all = loadAll(currentUser);
+    if (!all.list.find((p) => p.id === id)) return;
+    all.active = id;
+    persistAll(currentUser, all);
+  }
+
+  function createCompany(currentUser, name) {
+    const all = loadAll(currentUser);
+    const p = blank();
+    p.id = newId();
+    p.razonSocial = String(name || "Nueva empresa").trim();
+    all.list.unshift(p);
+    all.active = p.id;
+    persistAll(currentUser, all);
+    return p;
+  }
+
+  function deleteCompany(currentUser, id) {
+    const all = loadAll(currentUser);
+    all.list = all.list.filter((p) => p.id !== id);
+    if (all.active === id) all.active = all.list[0] ? all.list[0].id : null;
+    persistAll(currentUser, all);
   }
 
   function load(currentUser) {
     if (!currentUser) return blank();
-    try {
-      const raw = localStorage.getItem(profileKey(currentUser));
-      return raw ? Object.assign(blank(), JSON.parse(raw)) : blank();
-    } catch (e) { return blank(); }
+    const all = loadAll(currentUser);
+    if (!all.list.length) return blank();
+    const active = all.list.find((p) => p.id === all.active) || all.list[0];
+    return Object.assign(blank(), active);
   }
 
   function save(currentUser, profile) {
     if (!currentUser) return;
-    try { localStorage.setItem(profileKey(currentUser), JSON.stringify(profile)); }
-    catch (e) {}
+    const all = loadAll(currentUser);
+    if (!profile.id) profile.id = newId();
+    const idx = all.list.findIndex((p) => p.id === profile.id);
+    if (idx >= 0) all.list[idx] = profile;
+    else { all.list.unshift(profile); all.active = profile.id; }
+    if (!all.active) all.active = profile.id;
+    persistAll(currentUser, all);
+  }
+
+  /* Mezcla campos extraídos en el perfil activo sin pisar lo capturado. */
+  function applyExtracted(currentUser, extracted) {
+    const cur = load(currentUser);
+    const merged = Object.assign({}, cur);
+    Object.keys(extracted || {}).forEach((k) => {
+      const v = extracted[k];
+      if (v == null || v === "") return;
+      if (Array.isArray(v)) {
+        const arr = (merged[k] && Array.isArray(merged[k])) ? merged[k] : [];
+        merged[k] = Array.from(new Set([].concat(arr, v)));
+      } else if (typeof v === "number") {
+        if (!Number(merged[k])) merged[k] = v;
+      } else if (typeof v === "string") {
+        if (!merged[k]) merged[k] = v;
+      } else if (typeof v === "object") {
+        merged[k] = Object.assign({}, merged[k], v);
+      }
+    });
+    save(currentUser, merged);
+    return merged;
   }
 
   function isProfileSetup(p) {
@@ -390,5 +479,8 @@ LICITA.empresa = (function () {
     blank, load, save, isProfileSetup,
     score, recommendationsToImprove,
     checklistFor, habilitantes,
+    // Multi-empresa
+    listCompanies, activeId, setActive, createCompany, deleteCompany,
+    applyExtracted,
   };
 })();

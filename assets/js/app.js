@@ -1930,6 +1930,54 @@
     const empAdd = $("#empAddContrato");
     if (empAdd) empAdd.addEventListener("click", addContrato);
 
+    // Multi-empresa
+    const empSel = $("#empSelector");
+    if (empSel) empSel.addEventListener("change", () => {
+      const u = Auth.currentUser();
+      LICITA.empresa.setActive(u, empSel.value);
+      renderEmpresa();
+      toast("Empresa activa cambiada", "ok");
+    });
+    const empNew = $("#empNew");
+    if (empNew) empNew.addEventListener("click", () => {
+      const name = prompt("Nombre o razón social de la nueva empresa:");
+      if (!name || !name.trim()) return;
+      const u = Auth.currentUser();
+      LICITA.empresa.createCompany(u, name.trim());
+      renderEmpresa();
+      toast("Empresa creada", "ok");
+    });
+    const empDel = $("#empDelete");
+    if (empDel) empDel.addEventListener("click", () => {
+      const u = Auth.currentUser();
+      const list = LICITA.empresa.listCompanies(u);
+      if (list.length <= 1) { toast("No puedes eliminar la última empresa", "err"); return; }
+      const active = LICITA.empresa.activeId(u);
+      const cur = list.find((c) => c.id === active);
+      if (!cur) return;
+      if (!confirm("¿Eliminar la empresa \"" + (cur.razonSocial || "Sin nombre") + "\"? Esta acción no se puede deshacer.")) return;
+      LICITA.empresa.deleteCompany(u, active);
+      renderEmpresa();
+      toast("Empresa eliminada", "ok");
+    });
+
+    // Subida de documentos (RUT / RUP / Cámara) → extracción y preview
+    const docInput = $("#empDocInput");
+    let pendingDocType = null;
+    $$('button[data-emp-doc]').forEach((b) =>
+      b.addEventListener("click", () => {
+        pendingDocType = b.dataset.empDoc;
+        if (docInput) docInput.click();
+      })
+    );
+    if (docInput) docInput.addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      docInput.value = "";
+      await handleDocUpload(file, pendingDocType);
+      pendingDocType = null;
+    });
+
     // filtro Match Score en SECOP
     loadMatchFilterPrefs();
     const matchTog = $("#sec-matchtoggle");
@@ -3214,12 +3262,31 @@
     return Math.round((fields.filter(Boolean).length / fields.length) * 100);
   }
 
+  function renderEmpresaSelector() {
+    const u = Auth.currentUser();
+    if (!u) return;
+    const sel = $("#empSelector");
+    if (!sel) return;
+    const list = LICITA.empresa.listCompanies(u);
+    const active = LICITA.empresa.activeId(u);
+    if (!list.length) {
+      sel.innerHTML = '<option value="">Sin empresas — crea una</option>';
+      return;
+    }
+    sel.innerHTML = list.map((c) =>
+      '<option value="' + escapeHtml(c.id) + '"' + (c.id === active ? " selected" : "") + ">" +
+      escapeHtml(c.razonSocial || "Sin nombre") +
+      (c.nit ? " · " + escapeHtml(c.nit) : "") + "</option>"
+    ).join("");
+  }
+
   function renderEmpresa() {
     // Defensa: si el DOM no está al día (cache antigua), abortamos limpio.
     if (!$("#emp-razonSocial")) {
       console.warn("LICITA: Mi empresa requiere recargar la página (Ctrl+Shift+R)");
       return;
     }
+    renderEmpresaSelector();
     const p = currentProfile();
     $("#emp-razonSocial").value = p.razonSocial || "";
     $("#emp-nit").value = p.nit || "";
@@ -3677,6 +3744,112 @@
       }).join("") +
       "</div></div>"
     );
+  }
+
+  /* =====================================================================
+     CARGA DE DOCUMENTOS (RUT / RUP / Cámara) + EXTRACCIÓN
+     ===================================================================== */
+  async function handleDocUpload(file, hintType) {
+    const preview = $("#empExtractedPreview");
+    if (!preview) return;
+    preview.classList.remove("hidden");
+    preview.innerHTML =
+      '<div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">' +
+      '<div class="licita-spinner"></div>' +
+      '<p class="text-sm text-slate-600">Extrayendo texto de <b>' + escapeHtml(file.name) + '</b>…</p></div>';
+    try {
+      const res = await LICITA.parsers.extract(file);
+      const text = res.text || "";
+      if (!text || text.length < 100) {
+        preview.innerHTML =
+          '<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-700">' +
+          'El PDF no parece tener texto seleccionable. Si es un escaneo, necesita OCR previo.</div>';
+        return;
+      }
+      const extracted = LICITA.empresaDocs.extract(hintType, text);
+      const typeLabel = { rut: "RUT", rup: "RUP", camara: "Cámara de Comercio", unknown: "Documento" }[extracted._type] || "Documento";
+      renderExtractionPreview(extracted, typeLabel, file.name);
+    } catch (err) {
+      preview.innerHTML =
+        '<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-700">' +
+        'No se pudo leer el PDF: ' + escapeHtml(err.message || String(err)) + '</div>';
+    }
+  }
+
+  function renderExtractionPreview(extracted, typeLabel, fileName) {
+    const preview = $("#empExtractedPreview");
+    const fields = [];
+    const map = {
+      razonSocial: "Razón social",
+      nit: "NIT",
+      tipo: "Tipo",
+      ciudad: "Ciudad",
+      representanteLegal: "Representante legal",
+      objetoSocial: "Objeto social",
+      patrimonio: "Patrimonio",
+      capitalTrabajo: "Capital de trabajo",
+      indiceLiquidez: "Índice de liquidez",
+      indiceEndeudamiento: "Índice de endeudamiento",
+      departamentos: "Departamentos",
+      sectores: "Sectores",
+    };
+    Object.keys(map).forEach((k) => {
+      const v = extracted[k];
+      if (v == null || v === "" || (Array.isArray(v) && !v.length)) return;
+      let display;
+      if (k === "sectores") {
+        display = v.map((id) => {
+          const s = LICITA.empresa.SECTORES.find((x) => x.id === id);
+          return s ? s.icon + " " + s.label : id;
+        }).join(", ");
+      } else if (Array.isArray(v)) display = v.join(", ");
+      else if (typeof v === "number") display = (k.includes("indice")) ? v : formatCOP(v);
+      else if (k === "objetoSocial") display = String(v).slice(0, 200) + (String(v).length > 200 ? "…" : "");
+      else display = String(v);
+      fields.push({ k, label: map[k], value: display });
+    });
+    if (!fields.length) {
+      preview.innerHTML =
+        '<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">' +
+        '<b>No detectamos campos en este documento.</b><br>El formato puede no ser el esperado. Revisa o llena el formulario manualmente.</div>';
+      return;
+    }
+    preview.innerHTML =
+      '<div class="bg-white border-2 border-emerald-300 rounded-xl p-4 shadow-sm">' +
+      '<div class="flex items-center justify-between gap-3 mb-3 flex-wrap">' +
+      '<div class="flex items-center gap-2"><span class="text-xl">✨</span>' +
+      '<div><p class="text-sm font-bold text-slate-900">Datos detectados en ' + escapeHtml(typeLabel) + '</p>' +
+      '<p class="text-[11px] text-slate-500">' + escapeHtml(fileName) + '</p></div></div>' +
+      '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">' + fields.length + ' campos</span>' +
+      '</div>' +
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">' +
+      fields.map((f) =>
+        '<label class="flex items-start gap-2 p-2 bg-slate-50 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors">' +
+        '<input type="checkbox" data-emp-extract="' + f.k + '" checked class="mt-0.5 w-4 h-4">' +
+        '<div class="min-w-0"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">' + escapeHtml(f.label) + '</p>' +
+        '<p class="text-xs font-medium text-slate-800 truncate">' + escapeHtml(f.value) + '</p></div></label>'
+      ).join("") + '</div>' +
+      '<div class="flex gap-2 flex-wrap">' +
+      '<button type="button" id="empApplyExtract" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:shadow-lg text-white font-semibold px-4 py-2 rounded-lg text-sm transition-all">Aplicar al perfil</button>' +
+      '<button type="button" id="empCancelExtract" class="border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium px-4 py-2 rounded-lg text-sm transition-colors">Descartar</button>' +
+      '</div></div>';
+    $("#empApplyExtract").addEventListener("click", () => {
+      const u = Auth.currentUser();
+      // Mantener solo campos seleccionados
+      const selected = {};
+      $$("#empExtractedPreview [data-emp-extract]:checked").forEach((cb) => {
+        selected[cb.dataset.empExtract] = extracted[cb.dataset.empExtract];
+      });
+      LICITA.empresa.applyExtracted(u, selected);
+      preview.classList.add("hidden");
+      preview.innerHTML = "";
+      renderEmpresa();
+      toast("Perfil actualizado con datos del documento", "ok");
+    });
+    $("#empCancelExtract").addEventListener("click", () => {
+      preview.classList.add("hidden");
+      preview.innerHTML = "";
+    });
   }
 
   /* =====================================================================

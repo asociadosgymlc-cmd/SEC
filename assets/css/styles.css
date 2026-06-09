@@ -471,6 +471,24 @@ html.dark .paa-mode.active, html.dark .secop-mode.active { background: #1e293b; 
 /* Power BI iframe fondo blanco para que se vea bien en dark mode */
 html.dark #paaPowerBiFrame { background: #fff; }
 
+/* ---- Dropzones de documentos en Mi Empresa ---- */
+.emp-dropzone {
+  background: #fff;
+  border: 2px dashed #cbd5e1;
+  border-radius: 1rem;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  transition: border-color .15s, transform .15s, background .15s;
+  cursor: pointer;
+}
+.emp-dropzone:hover {
+  border-color: #10b981;
+  background: #ecfdf5;
+  transform: translateY(-2px);
+}
+html.dark .emp-dropzone { background: #1e293b; border-color: #334155; }
+html.dark .emp-dropzone:hover { background: rgba(16,185,129,.15); border-color: #34d399; }
+
 /* ---- Tabs PAA (lista/calendario) ---- */
 .paa-vtab { color: #475569; display: inline-flex; }
 .paa-vtab:hover { color: #0f172a; }
