@@ -1961,13 +1961,18 @@
       toast("Empresa eliminada", "ok");
     });
 
-    // Subida de documentos (RUT / RUP / Cámara) → extracción y preview
+    // Subida de documentos (RUT / RUP / Cámara → 1 archivo · Experiencia → multi)
     const docInput = $("#empDocInput");
+    const expInput = $("#empExpInput");
     let pendingDocType = null;
     $$('button[data-emp-doc]').forEach((b) =>
       b.addEventListener("click", () => {
         pendingDocType = b.dataset.empDoc;
-        if (docInput) docInput.click();
+        if (pendingDocType === "experiencia") {
+          if (expInput) expInput.click();
+        } else {
+          if (docInput) docInput.click();
+        }
       })
     );
     if (docInput) docInput.addEventListener("change", async (e) => {
@@ -1976,6 +1981,12 @@
       docInput.value = "";
       await handleDocUpload(file, pendingDocType);
       pendingDocType = null;
+    });
+    if (expInput) expInput.addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      expInput.value = "";
+      await handleExperienceBatch(files);
     });
 
     // filtro Match Score en SECOP
@@ -3847,6 +3858,120 @@
       toast("Perfil actualizado con datos del documento", "ok");
     });
     $("#empCancelExtract").addEventListener("click", () => {
+      preview.classList.add("hidden");
+      preview.innerHTML = "";
+    });
+  }
+
+  /* =====================================================================
+     CARGA DE MÚLTIPLES CERTIFICADOS DE EXPERIENCIA
+     ===================================================================== */
+  async function handleExperienceBatch(files) {
+    const preview = $("#empExtractedPreview");
+    if (!preview) return;
+    preview.classList.remove("hidden");
+    preview.innerHTML =
+      '<div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3">' +
+      '<div class="licita-spinner"></div>' +
+      '<p class="text-sm text-slate-600">Procesando ' + files.length + ' certificado(s)…</p></div>';
+
+    const results = [];
+    for (const file of files) {
+      try {
+        const res = await LICITA.parsers.extract(file);
+        const text = res.text || "";
+        if (!text || text.length < 50) {
+          results.push({ file: file.name, error: "PDF sin texto seleccionable" });
+          continue;
+        }
+        const ext = LICITA.empresaDocs.extract("experiencia", text);
+        results.push({ file: file.name, data: ext });
+      } catch (err) {
+        results.push({ file: file.name, error: err.message || String(err) });
+      }
+    }
+    renderExperiencePreview(results);
+  }
+
+  function renderExperiencePreview(results) {
+    const preview = $("#empExtractedPreview");
+    const okList = results.filter((r) => r.data);
+    const failList = results.filter((r) => r.error);
+
+    const cards = okList.map((r, i) => {
+      const d = r.data;
+      const idx = i;
+      return (
+        '<div class="bg-white border border-emerald-200 rounded-xl p-3" data-exp-card="' + idx + '">' +
+        '<div class="flex items-center justify-between gap-2 mb-2">' +
+        '<p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 truncate max-w-xs">' + escapeHtml(r.file) + "</p>" +
+        '<label class="flex items-center gap-1.5 cursor-pointer">' +
+        '<input type="checkbox" data-exp-include="' + idx + '" checked class="w-4 h-4">' +
+        '<span class="text-[11px] text-slate-600">Incluir</span></label></div>' +
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' +
+        '<input type="text" data-exp-entidad="' + idx + '" class="field text-xs" placeholder="Entidad" value="' + escapeHtml(d.entidad || "") + '">' +
+        '<input type="text" data-exp-objeto="' + idx + '" class="field text-xs" placeholder="Objeto del contrato" value="' + escapeHtml(d.objeto || "") + '">' +
+        '<input type="number" data-exp-valor="' + idx + '" class="field text-xs" placeholder="Valor (COP)" value="' + (d.valor || "") + '">' +
+        '<input type="number" data-exp-anio="' + idx + '" class="field text-xs" placeholder="Año" value="' + (d.anio || "") + '">' +
+        "</div></div>"
+      );
+    }).join("");
+
+    const failsHtml = failList.length
+      ? '<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-3">' +
+        '<p class="text-xs font-bold text-amber-800 mb-1">No se pudo procesar:</p>' +
+        '<ul class="text-[11px] text-amber-700 space-y-0.5">' +
+        failList.map((f) => "<li>• " + escapeHtml(f.file) + " — " + escapeHtml(f.error) + "</li>").join("") +
+        "</ul></div>"
+      : "";
+
+    if (!okList.length) {
+      preview.innerHTML =
+        '<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-700">' +
+        '<b>No se pudo extraer información de ningún certificado.</b><br>' +
+        'Verifica que los PDFs tengan texto seleccionable (no sean fotos/escaneos).</div>' + failsHtml;
+      return;
+    }
+
+    preview.innerHTML =
+      '<div class="bg-white border-2 border-emerald-300 rounded-xl p-4 shadow-sm">' +
+      '<div class="flex items-center justify-between gap-3 mb-3 flex-wrap">' +
+      '<div class="flex items-center gap-2"><span class="text-xl">📁</span>' +
+      '<div><p class="text-sm font-bold text-slate-900">' + okList.length + ' certificado(s) procesado(s)</p>' +
+      '<p class="text-[11px] text-slate-500">Revisa y ajusta antes de agregar al historial</p></div></div>' +
+      '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">' + okList.length + " contratos</span>" +
+      "</div>" +
+      '<div class="space-y-2 mb-4">' + cards + "</div>" +
+      failsHtml +
+      '<div class="flex gap-2 flex-wrap">' +
+      '<button type="button" id="empApplyExp" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:shadow-lg text-white font-semibold px-4 py-2 rounded-lg text-sm transition-all">Agregar al historial</button>' +
+      '<button type="button" id="empCancelExp" class="border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium px-4 py-2 rounded-lg text-sm transition-colors">Descartar</button>' +
+      "</div></div>";
+
+    $("#empApplyExp").addEventListener("click", () => {
+      const u = Auth.currentUser();
+      const p = currentProfile();
+      const exp = p.experiencia || [];
+      let added = 0;
+      okList.forEach((r, i) => {
+        const cb = $('[data-exp-include="' + i + '"]');
+        if (!cb || !cb.checked) return;
+        exp.unshift({
+          entidad: ($('[data-exp-entidad="' + i + '"]') || {}).value || "",
+          objeto: ($('[data-exp-objeto="' + i + '"]') || {}).value || "",
+          valor: Number(($('[data-exp-valor="' + i + '"]') || {}).value) || 0,
+          anio: Number(($('[data-exp-anio="' + i + '"]') || {}).value) || null,
+        });
+        added++;
+      });
+      p.experiencia = exp;
+      LICITA.empresa.save(u, p);
+      preview.classList.add("hidden");
+      preview.innerHTML = "";
+      renderEmpresa();
+      toast(added + " contrato(s) agregado(s) al historial", "ok");
+    });
+    $("#empCancelExp").addEventListener("click", () => {
       preview.classList.add("hidden");
       preview.innerHTML = "";
     });
