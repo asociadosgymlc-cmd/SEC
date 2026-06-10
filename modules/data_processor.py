@@ -80,7 +80,7 @@ def build_comparison_dataframe(quotes: List[Quote]) -> pd.DataFrame:
     if not quotes:
         return pd.DataFrame()
 
-    all_descriptions = []
+    all_descriptions: List[str] = []
     for q in quotes:
         for item in q.items:
             desc = item.descripcion.strip()
@@ -89,23 +89,23 @@ def build_comparison_dataframe(quotes: List[Quote]) -> pd.DataFrame:
 
     rows = []
     for desc in all_descriptions:
-        row: dict = {"Descripción": desc}
+        row: dict = {"Descripción del Ítem": desc}
         for q in quotes:
             matched = next(
                 (it for it in q.items if it.descripcion.strip() == desc), None
             )
             if matched:
-                row[f"{q.proveedor}\nP.Unit."] = matched.precio_unitario
-                row[f"{q.proveedor}\nP.Total"] = matched.precio_total
+                row[f"{q.proveedor} — P.Unitario"] = matched.precio_unitario
+                row[f"{q.proveedor} — P.Total"] = matched.precio_total
             else:
-                row[f"{q.proveedor}\nP.Unit."] = None
-                row[f"{q.proveedor}\nP.Total"] = None
+                row[f"{q.proveedor} — P.Unitario"] = None
+                row[f"{q.proveedor} — P.Total"] = None
         rows.append(row)
 
-    totals_row: dict = {"Descripción": "TOTAL COTIZACIÓN"}
+    totals_row: dict = {"Descripción del Ítem": "TOTAL COTIZACIÓN (con IVA)"}
     for q in quotes:
-        totals_row[f"{q.proveedor}\nP.Unit."] = None
-        totals_row[f"{q.proveedor}\nP.Total"] = q.total
+        totals_row[f"{q.proveedor} — P.Unitario"] = None
+        totals_row[f"{q.proveedor} — P.Total"] = q.total
 
     rows.append(totals_row)
     return pd.DataFrame(rows)
@@ -114,7 +114,7 @@ def build_comparison_dataframe(quotes: List[Quote]) -> pd.DataFrame:
 def find_best_price_per_item(quotes: List[Quote]) -> dict:
     best: dict = {}
 
-    all_descriptions = []
+    all_descriptions: List[str] = []
     for q in quotes:
         for item in q.items:
             desc = item.descripcion.strip()
@@ -150,7 +150,7 @@ def get_summary_dataframe(quotes: List[Quote]) -> pd.DataFrame:
 
 
 def validate_quote(quote: Quote) -> List[str]:
-    errors = []
+    errors: List[str] = []
     if not quote.proveedor.strip():
         errors.append("El nombre del proveedor es obligatorio.")
     if not quote.ruc.strip():
@@ -163,7 +163,7 @@ def validate_quote(quote: Quote) -> List[str]:
         if not item.descripcion.strip():
             errors.append(f"El ítem {i} no tiene descripción.")
         if item.cantidad <= 0:
-            errors.append(f"El ítem {i} tiene cantidad inválida.")
+            errors.append(f"El ítem {i} tiene cantidad inválida (debe ser mayor a cero).")
         if item.precio_unitario <= 0:
-            errors.append(f"El ítem {i} tiene precio unitario inválido.")
+            errors.append(f"El ítem {i} tiene precio unitario inválido (debe ser mayor a cero).")
     return errors

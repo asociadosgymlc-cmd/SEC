@@ -4,7 +4,6 @@ import re
 import io
 from typing import List, Optional, Tuple
 
-import pdfplumber
 import pandas as pd
 
 from modules.data_processor import Quote, LineItem
@@ -16,9 +15,15 @@ def _clean(text: str) -> str:
 
 def _parse_number(value: str) -> float:
     cleaned = re.sub(r"[^\d.,]", "", value or "")
-    cleaned = cleaned.replace(",", ".")
+    if not cleaned:
+        return 0.0
     parts = cleaned.split(".")
-    if len(parts) > 2:
+    comma_parts = cleaned.split(",")
+    if len(parts) > 1 and len(comma_parts) > 1:
+        cleaned = cleaned.replace(",", "")
+    elif len(comma_parts) == 2 and len(comma_parts[1]) <= 2:
+        cleaned = cleaned.replace(",", ".")
+    elif len(parts) > 2:
         cleaned = "".join(parts[:-1]) + "." + parts[-1]
     try:
         return float(cleaned)
@@ -37,6 +42,7 @@ def _extract_ruc(text: str) -> str:
     patterns = [
         r"R\.?U\.?C\.?\s*[:\-]?\s*(\d{10,13})",
         r"RUC\s*[:\-]?\s*(\d{10,13})",
+        r"ruc\s*[:\-]?\s*(\d{10,13})",
     ]
     for p in patterns:
         m = re.search(p, text, re.IGNORECASE)
@@ -52,9 +58,7 @@ def _extract_date(text: str) -> str:
     )
     if m:
         return _clean(m.group(1))
-    m = re.search(
-        r"(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})", text
-    )
+    m = re.search(r"(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})", text)
     if m:
         return _clean(m.group(1))
     return ""
@@ -63,8 +67,9 @@ def _extract_date(text: str) -> str:
 def _extract_quote_number(text: str) -> str:
     patterns = [
         r"(?:N[°oº]|No\.?|N[uú]mero)\s*(?:de\s+)?cotizaci[oó]n\s*[:\-]?\s*([A-Z0-9\-\/]+)",
-        r"cotizaci[oó]n\s*[:\-]?\s*([A-Z0-9\-\/]+)",
+        r"cotizaci[oó]n\s*(?:N[°oº])?\s*[:\-]?\s*([A-Z0-9\-\/]+)",
         r"oferta\s*(?:N[°oº])?\s*[:\-]?\s*([A-Z0-9\-\/]+)",
+        r"proforma\s*(?:N[°oº])?\s*[:\-]?\s*([A-Z0-9\-\/]+)",
     ]
     for p in patterns:
         m = re.search(p, text, re.IGNORECASE)
@@ -104,18 +109,31 @@ def _parse_table_row(row: List[Optional[str]], headers: List[str]) -> Optional[L
                     return i
         return -1
 
-    desc_idx = col_idx("descripcion", "descripción", "detalle", "producto", "servicio", "item", "ítem")
+    desc_idx = col_idx(
+        "descripcion", "descripción", "detalle", "producto",
+        "servicio", "item", "ítem", "bien"
+    )
     qty_idx = col_idx("cantidad", "qty", "cant")
     unit_idx = col_idx("unidad", "u/m", "u.m", "um", "medida")
-    pu_idx = col_idx("p.unit", "p. unit", "precio unit", "valor unit", "p/u", "unitario")
-    pt_idx = col_idx("p.total", "p. total", "precio total", "valor total", "total")
+    pu_idx = col_idx(
+        "p.unit", "p. unit", "precio unit", "valor unit",
+        "p/u", "unitario", "precio uni"
+    )
+    pt_idx = col_idx(
+        "p.total", "p. total", "precio total", "valor total",
+        "total item", "importe"
+    )
     cpc_idx = col_idx("cpc", "unspsc", "código", "codigo", "cod")
 
     if desc_idx == -1:
         return None
 
     descripcion = cell(desc_idx)
-    if not descripcion or descripcion.lower() in ("descripción", "descripcion", "detalle", "item", "ítem"):
+    skip_values = {
+        "descripción", "descripcion", "detalle", "item", "ítem",
+        "bien", "servicio", "producto", ""
+    }
+    if not descripcion or descripcion.lower() in skip_values:
         return None
 
     item = LineItem()
@@ -143,8 +161,8 @@ def _parse_line_items_from_text(text: str) -> List[LineItem]:
 
     pattern = re.compile(
         r"([A-Z0-9\.]{4,20})?\s+"
-        r"(.{5,80?}?)\s+"
-        r"(UND|UNIDAD|KG|LITRO|LT|M2|M3|ML|GL|CAJA|PAR|JGO|SRV|SVC|UN|U)\s+"
+        r"(.{5,80}?)\s+"
+        r"(UND|UNIDAD|KG|KGS|LITRO|LT|LTS|M2|M3|ML|GL|CAJA|PAR|JGO|SRV|SVC|UN|U|METRO|MTR)\s+"
         r"(\d+[\.,]?\d*)\s+"
         r"(\d+[\.,]\d{2})\s+"
         r"(\d+[\.,]\d{2})",
@@ -166,11 +184,12 @@ def _parse_line_items_from_text(text: str) -> List[LineItem]:
 
 
 def extract_from_pdf(file_bytes: bytes) -> Quote:
+    import pdfplumber
     quote = Quote(origen="pdf")
     full_text = ""
 
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-        all_tables: List[Tuple] = []
+        all_tables: List[List] = []
         for page in pdf.pages:
             page_text = page.extract_text() or ""
             full_text += "\n" + page_text
@@ -180,12 +199,12 @@ def extract_from_pdf(file_bytes: bytes) -> Quote:
                     all_tables.append(table)
 
     quote.proveedor = _extract_field(
-        r"(?:raz[oó]n\s+social|empresa|proveedor|nombre)\s*[:\-]?\s*(.+?)(?:\n|RUC|$)",
+        r"(?:raz[oó]n\s+social|empresa|proveedor|nombre\s+empresa|nombre)\s*[:\-]?\s*(.+?)(?:\n|RUC|$)",
         full_text
     )
     quote.ruc = _extract_ruc(full_text)
     quote.direccion = _extract_field(
-        r"direcci[oó]n\s*[:\-]?\s*(.+?)(?:\n|tel[eé]fono|fax|$)",
+        r"direcci[oó]n\s*[:\-]?\s*(.+?)(?:\n|tel[eé]fono|fax|correo|email|$)",
         full_text
     )
     quote.telefono = _extract_field(
@@ -203,7 +222,10 @@ def extract_from_pdf(file_bytes: bytes) -> Quote:
         has_desc = any(
             kw in h.lower()
             for h in headers
-            for kw in ("descripcion", "descripción", "detalle", "producto", "servicio")
+            for kw in (
+                "descripcion", "descripción", "detalle",
+                "producto", "servicio", "bien", "item"
+            )
         )
         if not has_desc:
             continue
@@ -218,9 +240,16 @@ def extract_from_pdf(file_bytes: bytes) -> Quote:
         items = _parse_line_items_from_text(full_text)
         quote.items.extend(items)
 
-    subtotal_match = re.search(r"subtotal\s*[:\$]?\s*([\d\.,]+)", full_text, re.IGNORECASE)
-    iva_match = re.search(r"iva\s*(?:12%?)?\s*[:\$]?\s*([\d\.,]+)", full_text, re.IGNORECASE)
-    total_match = re.search(r"total\s*(?:general|a\s+pagar)?\s*[:\$]?\s*([\d\.,]+)", full_text, re.IGNORECASE)
+    subtotal_match = re.search(
+        r"subtotal\s*[:\$]?\s*([\d\.,]+)", full_text, re.IGNORECASE
+    )
+    iva_match = re.search(
+        r"iva\s*(?:12%?)?\s*[:\$]?\s*([\d\.,]+)", full_text, re.IGNORECASE
+    )
+    total_match = re.search(
+        r"total\s*(?:general|a\s+pagar|factura)?\s*[:\$]?\s*([\d\.,]+)",
+        full_text, re.IGNORECASE
+    )
 
     if subtotal_match:
         quote.subtotal = _parse_number(subtotal_match.group(1))
@@ -244,14 +273,14 @@ def extract_from_excel(file_bytes: bytes) -> Quote:
     except Exception:
         return quote
 
-    header_sheet = None
-    items_sheet = None
+    header_sheet: Optional[str] = None
+    items_sheet: Optional[str] = None
 
     for name in sheet_names:
         nl = name.lower()
-        if any(kw in nl for kw in ("cotiz", "oferta", "proforma", "encabez", "datos")):
+        if any(kw in nl for kw in ("cotiz", "oferta", "proforma", "encabez", "datos", "info")):
             header_sheet = name
-        if any(kw in nl for kw in ("item", "ítem", "detalle", "producto", "precio")):
+        if any(kw in nl for kw in ("item", "ítem", "detalle", "producto", "precio", "bien")):
             items_sheet = name
 
     if header_sheet is None and sheet_names:
@@ -261,40 +290,57 @@ def extract_from_excel(file_bytes: bytes) -> Quote:
 
     def search_cell_value(df: pd.DataFrame, keyword: str) -> str:
         for _, row in df.iterrows():
-            for i, cell in enumerate(row):
-                cell_str = str(cell).lower() if cell is not None else ""
-                if keyword in cell_str:
+            for i, cell_val in enumerate(row):
+                cell_str = str(cell_val).lower() if cell_val is not None else ""
+                if keyword.lower() in cell_str:
                     if i + 1 < len(row):
                         val = row.iloc[i + 1]
-                        if val is not None and str(val).strip() not in ("nan", ""):
+                        if val is not None and str(val).strip() not in ("nan", "", "None"):
                             return _clean(str(val))
         return ""
 
     try:
-        df_header = pd.read_excel(io.BytesIO(file_bytes), sheet_name=header_sheet, header=None)
+        df_header = pd.read_excel(
+            io.BytesIO(file_bytes), sheet_name=header_sheet, header=None
+        )
         full_text = df_header.to_string()
 
-        quote.proveedor = search_cell_value(df_header, "proveedor") or \
-                          search_cell_value(df_header, "razón social") or \
-                          search_cell_value(df_header, "empresa")
+        quote.proveedor = (
+            search_cell_value(df_header, "proveedor")
+            or search_cell_value(df_header, "razón social")
+            or search_cell_value(df_header, "razon social")
+            or search_cell_value(df_header, "empresa")
+        )
         quote.ruc = search_cell_value(df_header, "ruc")
-        quote.direccion = search_cell_value(df_header, "dirección") or \
-                          search_cell_value(df_header, "direccion")
-        quote.telefono = search_cell_value(df_header, "teléfono") or \
-                         search_cell_value(df_header, "telefono")
-        quote.fecha = search_cell_value(df_header, "fecha") or _extract_date(full_text)
-        quote.numero_cotizacion = search_cell_value(df_header, "cotización") or \
-                                   search_cell_value(df_header, "cotizacion") or \
-                                   search_cell_value(df_header, "n°") or \
-                                   _extract_quote_number(full_text)
+        quote.direccion = (
+            search_cell_value(df_header, "dirección")
+            or search_cell_value(df_header, "direccion")
+        )
+        quote.telefono = (
+            search_cell_value(df_header, "teléfono")
+            or search_cell_value(df_header, "telefono")
+            or search_cell_value(df_header, "tel")
+        )
+        quote.fecha = (
+            search_cell_value(df_header, "fecha")
+            or _extract_date(full_text)
+        )
+        quote.numero_cotizacion = (
+            search_cell_value(df_header, "cotización")
+            or search_cell_value(df_header, "cotizacion")
+            or search_cell_value(df_header, "n°")
+            or search_cell_value(df_header, "no.")
+            or _extract_quote_number(full_text)
+        )
         quote.vigencia = search_cell_value(df_header, "vigencia")
     except Exception:
         pass
 
     try:
-        df_items = pd.read_excel(io.BytesIO(file_bytes), sheet_name=items_sheet)
+        df_items = pd.read_excel(
+            io.BytesIO(file_bytes), sheet_name=items_sheet
+        )
         df_items.columns = [str(c).strip() for c in df_items.columns]
-
         col_lower = {c.lower(): c for c in df_items.columns}
 
         def find_col(*keywords: str) -> Optional[str]:
@@ -304,36 +350,72 @@ def extract_from_excel(file_bytes: bytes) -> Quote:
                         return orig
             return None
 
-        desc_col = find_col("descripcion", "descripción", "detalle", "producto", "servicio")
+        desc_col = find_col(
+            "descripcion", "descripción", "detalle", "producto", "servicio", "bien"
+        )
         qty_col = find_col("cantidad", "cant", "qty")
         unit_col = find_col("unidad", "u/m", "um", "medida")
-        pu_col = find_col("precio unit", "p.unit", "unitario", "p/u", "valor unit")
-        pt_col = find_col("precio total", "p.total", "valor total", "total item")
+        pu_col = find_col(
+            "precio unit", "p.unit", "unitario", "p/u", "valor unit", "precio uni"
+        )
+        pt_col = find_col(
+            "precio total", "p.total", "valor total", "total item", "importe"
+        )
         cpc_col = find_col("cpc", "unspsc", "código", "codigo", "cod")
 
         if desc_col:
             for _, row in df_items.iterrows():
-                desc = _clean(str(row[desc_col])) if row[desc_col] is not None else ""
-                if not desc or desc.lower() in ("nan", "descripcion", "descripción", "detalle"):
+                raw_desc = row[desc_col]
+                desc = _clean(str(raw_desc)) if raw_desc is not None else ""
+                skip_vals = {
+                    "nan", "descripcion", "descripción", "detalle",
+                    "producto", "bien", "servicio", "none", ""
+                }
+                if desc.lower() in skip_vals:
                     continue
 
                 item = LineItem()
                 item.descripcion = desc
-                item.codigo_cpc = _clean(str(row[cpc_col])) if cpc_col and row[cpc_col] is not None else ""
-                item.unidad = _clean(str(row[unit_col])) if unit_col and row[unit_col] is not None else ""
+                item.codigo_cpc = (
+                    _clean(str(row[cpc_col]))
+                    if cpc_col and row[cpc_col] is not None
+                    and str(row[cpc_col]).strip() not in ("nan", "None", "")
+                    else ""
+                )
+                item.unidad = (
+                    _clean(str(row[unit_col]))
+                    if unit_col and row[unit_col] is not None
+                    and str(row[unit_col]).strip() not in ("nan", "None", "")
+                    else ""
+                )
 
                 try:
-                    item.cantidad = float(row[qty_col]) if qty_col and row[qty_col] is not None else 0.0
+                    item.cantidad = (
+                        float(row[qty_col])
+                        if qty_col and row[qty_col] is not None
+                        and str(row[qty_col]).strip() not in ("nan", "None", "")
+                        else 0.0
+                    )
                 except (ValueError, TypeError):
                     item.cantidad = 0.0
 
                 try:
-                    item.precio_unitario = float(row[pu_col]) if pu_col and row[pu_col] is not None else 0.0
+                    item.precio_unitario = (
+                        float(row[pu_col])
+                        if pu_col and row[pu_col] is not None
+                        and str(row[pu_col]).strip() not in ("nan", "None", "")
+                        else 0.0
+                    )
                 except (ValueError, TypeError):
                     item.precio_unitario = 0.0
 
                 try:
-                    item.precio_total = float(row[pt_col]) if pt_col and row[pt_col] is not None else 0.0
+                    item.precio_total = (
+                        float(row[pt_col])
+                        if pt_col and row[pt_col] is not None
+                        and str(row[pt_col]).strip() not in ("nan", "None", "")
+                        else 0.0
+                    )
                 except (ValueError, TypeError):
                     item.precio_total = 0.0
 
