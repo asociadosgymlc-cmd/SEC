@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#0b1220" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>LICITA · Plataforma jurídica para contratación pública</title>
+  <meta name="description" content="LICITA — plataforma jurídica de Asociados GYM LC para el análisis de pliegos y la redacción de observaciones en procesos de contratación pública colombiana." />
+  <meta name="author" content="Asociados GYM LC" />
+  <link rel="canonical" href="https://asociadosgymlc-cmd.github.io/SEC/" />
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="LICITA · IA jurídica para contratación pública en Colombia" />
+  <meta property="og:description" content="Encuentra procesos SECOP, detecta riesgos con IA y redacta observaciones listas para radicar." />
+  <meta property="og:locale" content="es_CO" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['"Source Serif 4"', 'Georgia', 'serif']
+          },
+          colors: {
+            ink: { 900: '#0b1220', 800: '#111a2e', 700: '#1c2740' }
+          }
+        }
+      }
+    };
+    // Aplica el tema antes del primer pintado para evitar parpadeo.
+    (function () {
+      try {
+        const t = localStorage.getItem('licita.theme');
+        if (t === 'dark') document.documentElement.classList.add('dark');
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+  <noscript>
+    <div style="padding:24px;background:#fef2f2;border-bottom:1px solid #fecaca;color:#991b1b;text-align:center;font-family:system-ui,sans-serif">
+      LICITA necesita JavaScript habilitado en tu navegador para funcionar. Por favor actívalo y recarga la página.
+    </div>
+  </noscript>
+  <a href="#mainContent" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-sky-700 focus:text-white focus:px-3 focus:py-2 focus:rounded">Saltar al contenido</a>
+
+  <!-- ====================================================================
+       Pantalla de inicio de sesión (oculta cuando hay sesión activa)
+       ==================================================================== -->
+  <!-- ====================================================================
+       LANDING PÚBLICA (la primera pantalla para visitantes)
+       ==================================================================== -->
+  <main id="mainContent" tabindex="-1"></main>
+  <div id="landingPage" class="bg-white">
+    <!-- Nav -->
+    <header id="landingNav" class="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-slate-100/80 transition-shadow duration-300">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
+        <a href="#" data-scroll="hero" class="flex items-center gap-2.5 group">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center shadow-md shadow-blue-200 group-hover:scale-105 transition-transform">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+          </div>
+          <div class="leading-none">
+            <span class="text-xl font-extrabold tracking-tight text-slate-900">LICITA</span>
+            <p class="text-[10px] text-slate-400 font-medium mt-0.5">Asociados GYM LC</p>
+          </div>
+        </a>
+        <nav class="hidden md:flex items-center gap-1 text-sm font-medium text-slate-600">
+          <a href="#" data-scroll="hero" class="px-3 py-2 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors">Inicio</a>
+          <a href="#" data-scroll="features" class="px-3 py-2 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors">Funcionalidades</a>
+          <a href="#" data-scroll="pricing" class="px-3 py-2 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors">Precios</a>
+          <a href="#" data-scroll="contact" class="px-3 py-2 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors">Contacto</a>
+        </nav>
+        <div class="flex items-center gap-2">
+          <button class="hidden sm:inline-flex text-sm font-medium text-slate-700 hover:text-sky-700 px-3 py-2 transition-colors" data-go-login>Iniciar sesión</button>
+          <button class="btn-shine text-sm font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:shadow-lg hover:shadow-blue-300/50 px-4 py-2 rounded-xl shadow-sm transition-all" data-go-register>Crear cuenta gratis</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section id="hero" class="relative overflow-hidden mesh-bg">
+      <div class="blob absolute top-10 -right-24 w-[28rem] h-[28rem] bg-sky-300/30 rounded-full blur-3xl"></div>
+      <div class="blob absolute bottom-0 -left-24 w-[26rem] h-[26rem] bg-indigo-300/30 rounded-full blur-3xl" style="animation-delay:-3s"></div>
+      <div class="blob absolute top-40 left-1/3 w-72 h-72 bg-amber-200/20 rounded-full blur-3xl" style="animation-delay:-6s"></div>
+
+      <div class="relative max-w-7xl mx-auto px-6 lg:px-10 pt-20 pb-24 lg:pt-28 lg:pb-32 grid lg:grid-cols-12 gap-12 items-center">
+        <div class="lg:col-span-6">
+          <span class="reveal inline-flex items-center gap-2 bg-white/70 backdrop-blur border border-sky-100 text-sky-800 text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Conectado a SECOP en vivo · Colombia
+          </span>
+          <h1 class="reveal text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 mt-6 leading-[1.02]" style="--d:80ms">
+            Aumenta tus<br>probabilidades de<br><span class="text-gradient">ganar licitaciones.</span>
+          </h1>
+          <p class="reveal text-lg text-slate-600 mt-6 leading-relaxed max-w-xl" style="--d:160ms">
+            Encuentra procesos en SECOP, anticipa lo que las entidades planean comprar, detecta riesgos del pliego con IA y recibe la observación lista para radicar. Todo en una sola plataforma.
+          </p>
+          <div class="reveal mt-8 flex flex-wrap gap-3" style="--d:240ms">
+            <button class="btn-shine bg-gradient-to-r from-sky-600 to-blue-700 text-white font-semibold px-6 py-3.5 rounded-2xl shadow-lg shadow-blue-300/40 hover:shadow-xl hover:shadow-blue-400/50 hover:-translate-y-0.5 transition-all flex items-center gap-2" data-go-register>
+              Empezar gratis
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </button>
+            <button class="bg-white/80 backdrop-blur border border-slate-200 hover:border-slate-300 text-slate-700 font-medium px-6 py-3.5 rounded-2xl transition-all hover:-translate-y-0.5 flex items-center gap-2" data-scroll="features">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><circle stroke-linecap="round" stroke-linejoin="round" stroke-width="2" cx="12" cy="12" r="10"/></svg>
+              Ver cómo funciona
+            </button>
+          </div>
+          <ul class="reveal mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-500" style="--d:320ms">
+            <li class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg> 3 análisis gratis</li>
+            <li class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg> Sin tarjeta de crédito</li>
+            <li class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg> Listo en 2 minutos</li>
+          </ul>
+        </div>
+
+        <!-- Mock de la app con inclinación 3D -->
+        <div class="lg:col-span-6 tilt-wrap reveal-scale" style="--d:200ms">
+          <div class="tilt relative bg-white rounded-3xl border border-slate-200/80 overflow-hidden">
+            <div class="bg-slate-50/80 border-b border-slate-200 px-4 py-3 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-300"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-300"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-300"></span>
+              <span class="ml-3 text-xs text-slate-400 font-medium">licita.app · análisis</span>
+            </div>
+            <div class="p-5 layer-mid">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Nivel de riesgo</p>
+                  <p class="text-2xl font-bold text-rose-700">Crítico</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Hallazgos</p>
+                  <p class="text-2xl font-bold text-slate-900">4</p>
+                </div>
+              </div>
+              <div class="risk-meter mb-1.5"><div class="needle" style="left:78%"></div></div>
+              <div class="flex justify-between text-[10px] text-slate-400">
+                <span>Bajo</span><span>Medio</span><span>Alto</span><span>Crítico</span>
+              </div>
+              <div class="mt-4 space-y-2">
+                <div class="border border-slate-200 rounded-lg p-3 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-900">Exigencia de vinculación laboral exclusiva</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Art. 5 Ley 1150 de 2007 · Selección objetiva</p>
+                  </div>
+                </div>
+                <div class="border border-slate-200 rounded-lg p-3 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-900">Experiencia habilitante desproporcionada</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Decreto 1082 de 2015 · Proporcionalidad</p>
+                  </div>
+                </div>
+                <div class="border border-slate-200 rounded-lg p-3 flex items-start gap-2.5">
+                  <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-900">Restricción por domicilio geográfico</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Art. 13 y 209 Constitución Política</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Chips flotantes -->
+            <div class="layer-up floaty absolute -top-4 -left-5 bg-white rounded-2xl shadow-xl shadow-blue-200/50 border border-slate-100 px-3.5 py-2.5 flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center"><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg></div>
+              <div><p class="text-[10px] text-slate-400 font-medium leading-none">Observación</p><p class="text-xs font-bold text-slate-800 leading-tight mt-0.5">Lista en Word</p></div>
+            </div>
+            <div class="layer-up floaty-slow absolute -bottom-5 -right-4 bg-white rounded-2xl shadow-xl shadow-amber-200/50 border border-slate-100 px-3.5 py-2.5 flex items-center gap-2" style="animation-delay:-2s">
+              <div class="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center"><svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
+              <div><p class="text-[10px] text-slate-400 font-medium leading-none">Score IA</p><p class="text-xs font-bold text-slate-800 leading-tight mt-0.5">Oportunidad 84</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Marco de referencia (marquesina) -->
+    <section class="border-y border-slate-100 bg-white py-8 overflow-hidden">
+      <p class="text-center text-[11px] uppercase tracking-widest font-semibold text-slate-400 mb-5">Análisis fundamentado en el marco normativo colombiano</p>
+      <div class="marquee-mask relative">
+        <div class="marquee-track gap-12 text-slate-400 font-bold text-base whitespace-nowrap px-6">
+          <span>Ley 80 de 1993</span><span class="text-slate-200">●</span>
+          <span>Ley 1150 de 2007</span><span class="text-slate-200">●</span>
+          <span>Decreto 1082 de 2015</span><span class="text-slate-200">●</span>
+          <span>Estatuto Anticorrupción</span><span class="text-slate-200">●</span>
+          <span>Colombia Compra Eficiente</span><span class="text-slate-200">●</span>
+          <span>Consejo de Estado</span><span class="text-slate-200">●</span>
+          <span>Ley 80 de 1993</span><span class="text-slate-200">●</span>
+          <span>Ley 1150 de 2007</span><span class="text-slate-200">●</span>
+          <span>Decreto 1082 de 2015</span><span class="text-slate-200">●</span>
+          <span>Estatuto Anticorrupción</span><span class="text-slate-200">●</span>
+          <span>Colombia Compra Eficiente</span><span class="text-slate-200">●</span>
+          <span>Consejo de Estado</span><span class="text-slate-200">●</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-20 lg:py-24 bg-slate-50">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10">
+        <div class="text-center max-w-2xl mx-auto reveal">
+          <p class="text-[11px] uppercase tracking-widest font-semibold text-sky-700">Cómo te ayudamos</p>
+          <h2 class="text-3xl lg:text-5xl font-extrabold tracking-tight text-slate-900 mt-2">Todo para ganar<br>la licitación.</h2>
+          <p class="text-slate-600 mt-4 text-lg">Desde encontrar el proceso hasta entregar la observación redactada con respaldo jurisprudencial.</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 mt-14">
+          <div class="reveal lift bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+            <div class="w-14 h-14 bg-gradient-to-br from-sky-400 to-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-200">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Encuentra procesos</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">Busca en SECOP 1 y 2 en vivo: por objeto, entidad, lugar o competidor. Mira quién ha ganado contratos similares y a qué precio.</p>
+          </div>
+          <div class="reveal lift bg-white rounded-3xl p-8 border border-slate-200 shadow-sm" style="--d:120ms">
+            <div class="w-14 h-14 bg-gradient-to-br from-indigo-400 to-violet-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-200">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">La IA lee tu pliego</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">Sube el pliego en PDF o DOCX y el motor detecta cláusulas restrictivas: marcas, vinculación laboral, experiencia desproporcionada y más.</p>
+          </div>
+          <div class="reveal lift bg-white rounded-3xl p-8 border border-slate-200 shadow-sm" style="--d:240ms">
+            <div class="w-14 h-14 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-200">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Observación lista</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">Recibe la observación para radicar, con fundamento normativo y criterios jurisprudenciales — editable y descargable en Word.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Estadísticas -->
+    <section class="py-20 mesh-dark text-white relative overflow-hidden">
+      <div class="blob absolute top-0 right-1/4 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl"></div>
+      <div class="max-w-7xl mx-auto px-6 lg:px-10 relative">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
+          <div class="reveal">
+            <p class="stat-num text-5xl lg:text-6xl font-extrabold text-white" data-count="8">0</p>
+            <p class="text-xs uppercase tracking-wider text-sky-200/70 mt-2 font-semibold">Reglas jurídicas activas</p>
+          </div>
+          <div class="reveal" style="--d:100ms">
+            <p class="stat-num text-5xl lg:text-6xl font-extrabold text-white"><span data-count="7">0</span>+</p>
+            <p class="text-xs uppercase tracking-wider text-sky-200/70 mt-2 font-semibold">Normas mapeadas</p>
+          </div>
+          <div class="reveal" style="--d:200ms">
+            <p class="stat-num text-5xl lg:text-6xl font-extrabold text-white" data-count="5">0</p>
+            <p class="text-xs uppercase tracking-wider text-sky-200/70 mt-2 font-semibold">Criterios jurisprudenciales</p>
+          </div>
+          <div class="reveal" style="--d:300ms">
+            <p class="text-5xl lg:text-6xl font-extrabold text-white">&lt;2<span class="text-2xl align-top ml-1">min</span></p>
+            <p class="text-xs uppercase tracking-wider text-sky-200/70 mt-2 font-semibold">Por análisis</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonios (ilustrativos) -->
+    <section class="py-20 bg-white">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10">
+        <div class="text-center max-w-2xl mx-auto reveal">
+          <p class="text-[11px] uppercase tracking-widest font-semibold text-sky-700">Voces del sector</p>
+          <h2 class="text-3xl lg:text-5xl font-extrabold tracking-tight text-slate-900 mt-2">Pensado para abogados<br>y oferentes.</h2>
+          <p class="text-slate-500 text-xs mt-3">Casos de uso ilustrativos.</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 mt-12">
+          <div class="reveal lift bg-gradient-to-br from-slate-50 to-sky-50/50 rounded-3xl p-7 border border-slate-200">
+            <svg class="w-8 h-8 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M9.583 6.667a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5zm10 0a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5z"/></svg>
+            <p class="text-[15px] text-slate-700 mt-4 leading-relaxed">"LICITA cambió la forma en que revisamos pliegos: lo que tomaba media tarde ahora son minutos, con la observación lista para firmar."</p>
+            <div class="mt-5 pt-4 border-t border-slate-200 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold">EL</div>
+              <div><p class="text-sm font-semibold text-slate-900">Equipo legal</p><p class="text-xs text-slate-500">Constructora colombiana</p></div>
+            </div>
+          </div>
+          <div class="reveal lift bg-gradient-to-br from-slate-50 to-indigo-50/50 rounded-3xl p-7 border border-slate-200" style="--d:120ms">
+            <svg class="w-8 h-8 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M9.583 6.667a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5zm10 0a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5z"/></svg>
+            <p class="text-[15px] text-slate-700 mt-4 leading-relaxed">"Detectamos cláusulas direccionadas en cuestión de segundos. La cita normativa y la observación redactada son un ahorro brutal."</p>
+            <div class="mt-5 pt-4 border-t border-slate-200 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center text-white text-sm font-bold">GC</div>
+              <div><p class="text-sm font-semibold text-slate-900">Gerente comercial</p><p class="text-xs text-slate-500">Empresa de ingeniería</p></div>
+            </div>
+          </div>
+          <div class="reveal lift bg-gradient-to-br from-slate-50 to-emerald-50/50 rounded-3xl p-7 border border-slate-200" style="--d:240ms">
+            <svg class="w-8 h-8 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M9.583 6.667a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5zm10 0a4.583 4.583 0 00-4.583 4.583V18h6V11.25h-3a3.083 3.083 0 013.083-3.083V6.667h-1.5z"/></svg>
+            <p class="text-[15px] text-slate-700 mt-4 leading-relaxed">"Por fin tenemos un panel donde monitorear los procesos de cada cliente y centralizar las observaciones."</p>
+            <div class="mt-5 pt-4 border-t border-slate-200 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white text-sm font-bold">AC</div>
+              <div><p class="text-sm font-semibold text-slate-900">Abogado contratista</p><p class="text-xs text-slate-500">Despacho jurídico</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-20 lg:py-24 bg-slate-50">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10">
+        <div class="text-center max-w-2xl mx-auto reveal">
+          <p class="text-[11px] uppercase tracking-widest font-semibold text-sky-700">Planes</p>
+          <h2 class="text-3xl lg:text-5xl font-extrabold tracking-tight text-slate-900 mt-2">Tarifas claras,<br>sin sorpresas.</h2>
+          <p class="text-slate-600 mt-4 text-lg">Empieza gratis con 3 análisis. Cancela cuando quieras.</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 mt-14 items-start">
+          <div class="reveal lift bg-white rounded-3xl p-7 border border-slate-200 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Esencial</p>
+            <p class="font-serif text-4xl font-bold text-slate-900 mt-2">$ 89.000<span class="text-base text-slate-500 font-medium">/mes</span></p>
+            <p class="text-xs text-slate-500 mt-1">Para profesionales independientes</p>
+            <ul class="mt-5 space-y-2.5 text-sm text-slate-700">
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>1 usuario</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>20 análisis al mes</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Exportación Word</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Marco normativo completo</li>
+            </ul>
+            <button class="mt-6 w-full border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium py-2.5 rounded-lg transition-colors" data-scroll="contact">Empezar</button>
+          </div>
+          <div class="reveal lift bg-gradient-to-br from-sky-600 to-blue-700 text-white rounded-3xl p-7 shadow-2xl shadow-blue-300/50 relative md:-translate-y-3 md:scale-[1.03]" style="--d:120ms">
+            <span class="absolute top-4 right-4 text-[10px] font-bold uppercase tracking-wider bg-white/15 px-2 py-1 rounded">Más elegido</span>
+            <p class="text-xs font-semibold uppercase tracking-wider text-sky-200">Profesional</p>
+            <p class="font-serif text-4xl font-bold mt-2">$ 249.000<span class="text-base text-sky-200 font-medium">/mes</span></p>
+            <p class="text-xs text-sky-200 mt-1">Para firmas con clientes recurrentes</p>
+            <ul class="mt-5 space-y-2.5 text-sm">
+              <li class="flex gap-2"><svg class="w-4 h-4 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Hasta 10 clientes con acceso</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Análisis ilimitados</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Panel de monitoreo</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Historial por cliente</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Soporte prioritario</li>
+            </ul>
+            <button class="mt-6 w-full bg-white text-blue-700 hover:bg-sky-50 font-semibold py-2.5 rounded-lg transition-colors" data-scroll="contact">Comenzar</button>
+          </div>
+          <div class="reveal lift bg-white rounded-3xl p-7 border border-slate-200 shadow-sm" style="--d:240ms">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Empresarial</p>
+            <p class="font-serif text-4xl font-bold text-slate-900 mt-2">A medida</p>
+            <p class="text-xs text-slate-500 mt-1">Despachos grandes y firmas con SLA</p>
+            <ul class="mt-5 space-y-2.5 text-sm text-slate-700">
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Clientes ilimitados</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Reglas personalizadas</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Capacitación al equipo</li>
+              <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>SLA y dominio propio</li>
+            </ul>
+            <button class="mt-6 w-full border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium py-2.5 rounded-lg transition-colors" data-scroll="contact">Hablemos</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="py-20 bg-white">
+      <div class="max-w-3xl mx-auto px-6 lg:px-10">
+        <div class="text-center">
+          <p class="text-[11px] uppercase tracking-widest font-semibold text-sky-700">Solicitar acceso</p>
+          <h2 class="font-serif text-3xl lg:text-4xl font-bold text-slate-900 mt-2">Cuéntanos de tu firma</h2>
+          <p class="text-slate-600 mt-3">Te responderemos con tus credenciales y un plan a medida.</p>
+        </div>
+        <form id="contactForm" class="mt-10 bg-slate-50 rounded-2xl p-7 border border-slate-200 space-y-4">
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-medium text-slate-600">Nombre</label>
+              <input type="text" id="ct-name" class="field mt-1" placeholder="Tu nombre" required>
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">Empresa</label>
+              <input type="text" id="ct-org" class="field mt-1" placeholder="Empresa o despacho">
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">WhatsApp</label>
+              <input type="tel" id="ct-phone" class="field mt-1" placeholder="+57 ...">
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">Correo</label>
+              <input type="email" id="ct-email" class="field mt-1" placeholder="tucorreo@empresa.com" required>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-slate-600">Asunto</label>
+            <input type="text" id="ct-subject" class="field mt-1" placeholder="Plan, demo, integración...">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-slate-600">Mensaje</label>
+            <textarea id="ct-message" class="field mt-1 h-28 resize-none" placeholder="Cuéntanos de tu firma y los procesos que manejan"></textarea>
+          </div>
+          <button type="submit" class="w-full bg-gradient-to-r from-sky-600 to-blue-700 text-white font-semibold py-3 rounded-lg hover:from-sky-700 hover:to-blue-800 shadow-sm transition-all">Enviar solicitud</button>
+          <p class="text-[11px] text-slate-400 text-center">Al enviar abriremos tu cliente de correo con el mensaje precargado.</p>
+        </form>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-ink-900 text-white">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div class="col-span-2">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0"/></svg>
+            </div>
+            <div>
+              <p class="text-lg font-extrabold tracking-tight">LICITA</p>
+              <p class="text-[10px] text-sky-200/70 font-medium">Asociados GYM LC</p>
+            </div>
+          </div>
+          <p class="text-sm text-sky-200/70 mt-4 max-w-md leading-relaxed">Plataforma jurídica para el análisis de pliegos y la redacción de observaciones en procesos de contratación pública colombiana.</p>
+          <p class="text-xs text-sky-200/50 mt-4">Herramienta de apoyo. Las observaciones deben revisarse por un profesional del derecho antes de su radicación.</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-sky-200/80">Producto</p>
+          <ul class="mt-3 space-y-1.5 text-sm text-sky-100/70">
+            <li><a href="#" data-scroll="hero" class="hover:text-white">Inicio</a></li>
+            <li><a href="#" data-scroll="features" class="hover:text-white">Funcionalidades</a></li>
+            <li><a href="#" data-scroll="pricing" class="hover:text-white">Precios</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-sky-200/80">Cuenta</p>
+          <ul class="mt-3 space-y-1.5 text-sm text-sky-100/70">
+            <li><a href="#" data-go-login class="hover:text-white">Iniciar sesión</a></li>
+            <li><a href="#" data-scroll="contact" class="hover:text-white">Solicitar acceso</a></li>
+            <li><a href="mailto:asociadosgym.lc@gmail.com" class="hover:text-white">Soporte</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-6 lg:px-10 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-sky-200/50">
+          <p>© <span id="footerYear"></span> Asociados GYM LC · Todos los derechos reservados</p>
+          <div class="flex items-center gap-4">
+            <a href="#" class="hover:text-white">Términos</a>
+            <a href="#" class="hover:text-white">Privacidad</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <div id="loginScreen" class="fixed inset-0 z-[80] hidden bg-white">
+    <!-- Lado izquierdo: marca -->
+    <div class="hidden md:flex md:w-1/2 lg:w-3/5 relative bg-gradient-to-br from-ink-900 via-ink-800 to-blue-900 text-white p-12 flex-col justify-between overflow-hidden">
+      <div class="absolute inset-0 opacity-[0.07] bg-[radial-gradient(circle_at_20%_20%,#fff_1px,transparent_1px)] [background-size:24px_24px]"></div>
+      <div class="relative">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-white/10 backdrop-blur border border-white/15 flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+          </div>
+          <div>
+            <p class="text-2xl font-extrabold tracking-tight">LICITA</p>
+            <p class="text-xs text-sky-200/70 font-medium">Plataforma jurídica · Contratación pública</p>
+          </div>
+        </div>
+      </div>
+      <div class="relative max-w-md">
+        <p class="font-serif text-3xl lg:text-4xl leading-tight font-bold">Inteligencia jurídica al servicio de la contratación pública.</p>
+        <p class="mt-4 text-sm text-sky-100/70 leading-relaxed">Carga un pliego, detecta riesgos contra el marco normativo colombiano y redacta tus observaciones con respaldo jurisprudencial.</p>
+        <ul class="mt-6 space-y-1.5 text-sm text-sky-100/80">
+          <li class="flex items-center gap-2"><span class="w-1 h-1 rounded-full bg-sky-300"></span>Ley 80 de 1993 · Ley 1150 de 2007</li>
+          <li class="flex items-center gap-2"><span class="w-1 h-1 rounded-full bg-sky-300"></span>Decreto 1082 de 2015 · Estatuto Anticorrupción</li>
+          <li class="flex items-center gap-2"><span class="w-1 h-1 rounded-full bg-sky-300"></span>Doctrina del Consejo de Estado y Corte Constitucional</li>
+        </ul>
+      </div>
+      <div class="relative text-xs text-sky-200/50">© <span id="brandYear"></span> Asociados GYM LC · Todos los derechos reservados</div>
+    </div>
+
+    <!-- Lado derecho: formulario -->
+    <div class="flex-1 flex items-center justify-center p-6 sm:p-10">
+      <div class="w-full max-w-sm">
+        <div class="md:hidden flex items-center gap-2 mb-6">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9"/></svg>
+          </div>
+          <p class="text-xl font-extrabold tracking-tight text-slate-900">LICITA</p>
+        </div>
+        <button type="button" id="backToLanding" class="text-xs font-medium text-slate-500 hover:text-sky-700 transition-colors mb-4 flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          Volver al inicio
+        </button>
+
+        <!-- Vista de LOGIN -->
+        <div id="authLoginView">
+          <h2 class="text-2xl font-bold text-slate-900">Iniciar sesión</h2>
+          <p class="text-sm text-slate-500 mt-1">Bienvenido de vuelta a LICITA.</p>
+
+          <form id="loginForm" class="mt-7 space-y-4" autocomplete="off">
+            <div>
+              <label class="text-xs font-medium text-slate-600">Usuario o correo</label>
+              <input id="loginUser" type="text" class="field mt-1" placeholder="cliente.empresa o tucorreo@empresa.com" autocomplete="username" required aria-label="Usuario o correo electrónico" />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">Contraseña</label>
+              <div class="relative mt-1">
+                <input id="loginPass" type="password" class="field pr-10" placeholder="••••••••" autocomplete="current-password" required aria-label="Contraseña" />
+                <button type="button" id="togglePass" class="absolute inset-y-0 right-0 w-10 flex items-center justify-center text-slate-400 hover:text-slate-700" aria-label="Mostrar u ocultar contraseña">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+              </div>
+            </div>
+            <p id="loginError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2"></p>
+            <button type="submit" id="loginBtn" class="w-full bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-semibold py-2.5 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2">
+              <span id="loginBtnLabel">Entrar a la plataforma</span>
+            </button>
+          </form>
+
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-200"></span></div>
+            <div class="relative flex justify-center"><span class="bg-white px-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400">o</span></div>
+          </div>
+
+          <button type="button" id="goRegisterBtn" class="w-full border-2 border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Crear cuenta gratis · 3 análisis incluidos
+          </button>
+          <p class="text-[11px] text-slate-400 text-center mt-2">Sin tarjeta · Solo correo y contraseña</p>
+
+          <p class="text-[11px] text-slate-400 text-center mt-6 leading-relaxed">¿Problemas para entrar? Escribe a <a class="text-sky-700 hover:underline" href="mailto:asociadosgym.lc@gmail.com">asociadosgym.lc@gmail.com</a>.</p>
+        </div>
+
+        <!-- Vista de REGISTRO -->
+        <div id="authRegisterView" class="hidden">
+          <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">⚡ 3 análisis gratis</span>
+          <h2 class="text-2xl font-bold text-slate-900 mt-3">Crear cuenta gratis</h2>
+          <p class="text-sm text-slate-500 mt-1">Empieza a analizar pliegos con IA sin pagar nada. Solo necesitamos tu correo.</p>
+
+          <form id="registerForm" class="mt-6 space-y-4" autocomplete="off">
+            <div>
+              <label class="text-xs font-medium text-slate-600">Nombre (opcional)</label>
+              <input id="regName" type="text" class="field mt-1" placeholder="Tu nombre" autocomplete="name" />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">Correo electrónico</label>
+              <input id="regEmail" type="email" class="field mt-1" placeholder="tucorreo@empresa.com" autocomplete="email" inputmode="email" required aria-label="Correo electrónico" />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-600">Contraseña</label>
+              <div class="relative mt-1">
+                <input id="regPass" type="password" class="field pr-10" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6" aria-label="Contraseña" />
+                <button type="button" id="toggleRegPass" class="absolute inset-y-0 right-0 w-10 flex items-center justify-center text-slate-400 hover:text-slate-700" aria-label="Mostrar u ocultar contraseña">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+              </div>
+            </div>
+            <p id="regError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2"></p>
+            <button type="submit" id="registerBtn" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold py-2.5 rounded-lg shadow-sm transition-all">
+              <span id="registerBtnLabel">Crear cuenta y empezar</span>
+            </button>
+            <p class="text-[10px] text-slate-400 text-center leading-relaxed">Al registrarte aceptas las condiciones de uso de la plataforma. Tu cuenta queda guardada en este navegador.</p>
+          </form>
+
+          <button type="button" id="goLoginBtn" class="mt-5 w-full text-xs font-medium text-slate-500 hover:text-sky-700 transition-colors">¿Ya tienes cuenta? Inicia sesión</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       Aplicación principal (oculta hasta tener sesión)
+       ==================================================================== -->
+  <div id="appRoot" class="hidden">
+
+    <!-- ============= Sidebar ============= -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 z-50 flex flex-col">
+      <div class="flex items-center h-16 px-6 border-b border-slate-200">
+        <div class="w-9 h-9 bg-gradient-to-br from-sky-500 to-blue-700 rounded-lg flex items-center justify-center mr-3 shadow-sm">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+        </div>
+        <div>
+          <span class="text-xl font-extrabold text-slate-900 tracking-tight">LICITA</span>
+          <p class="text-[10px] text-slate-400 -mt-1 font-medium">Asociados GYM LC</p>
+        </div>
+      </div>
+      <nav class="px-4 py-4 space-y-0.5 flex-1 overflow-y-auto" id="navMenu">
+        <p class="px-3 pt-2 pb-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tu actividad</p>
+        <a href="#" data-section="dashboard" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </a>
+        <a href="#" data-section="empresa" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          Mi empresa
+        </a>
+        <a href="#" data-section="pipeline" class="nav-link justify-between">
+          <span class="flex items-center gap-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+            Pipeline
+          </span>
+          <span id="pipelineBadge" class="hidden text-[10px] font-bold bg-sky-500 text-white px-1.5 rounded-full">0</span>
+        </a>
+        <a href="#" data-section="analisis" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Análisis de Pliego
+        </a>
+        <a href="#" data-section="secop" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Buscar SECOP 2
+        </a>
+        <a href="#" data-section="alertas" class="nav-link justify-between">
+          <span class="flex items-center gap-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            Alertas
+          </span>
+          <span id="alertsBadge" class="hidden text-[10px] font-bold bg-rose-500 text-white px-1.5 rounded-full">0</span>
+        </a>
+        <a href="#" data-section="historial" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Historial
+        </a>
+        <a href="#" data-section="marco" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          Marco Normativo
+        </a>
+        <a href="#" data-section="paa" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          Plan Anual (PAA)
+        </a>
+        <a href="#" data-section="formacion" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          Formación
+        </a>
+
+        <div data-admin-only class="hidden">
+          <p class="px-3 pt-5 pb-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Administración</p>
+          <a href="#" data-section="clientes" class="nav-link">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            Clientes
+          </a>
+          <a href="#" data-section="monitoreo" class="nav-link">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h12M9 19a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2m0 13a2 2 0 002 2h2a2 2 0 002-2M9 19V6m0 0h12M9 6L9 4"/></svg>
+            Monitoreo
+          </a>
+        </div>
+      </nav>
+      <div class="px-4 py-4 border-t border-slate-200">
+        <div id="sessionCard" class="rounded-xl p-3 bg-slate-50 border border-slate-200 flex items-center gap-3"></div>
+        <button id="logoutBtn" class="mt-3 w-full text-xs font-medium text-slate-500 hover:text-rose-600 transition-colors flex items-center justify-center gap-2 py-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Cerrar sesión
+        </button>
+      </div>
+    </aside>
+
+    <!-- ============= Main ============= -->
+    <div class="ml-64">
+      <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+        <div class="flex items-center justify-between px-8 py-3.5">
+          <div class="flex items-center gap-3">
+            <button id="mobileNavBtn" class="md:hidden theme-toggle" aria-label="Abrir menú de navegación">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <div>
+              <h2 id="page-title" class="text-lg font-bold text-slate-900">Dashboard</h2>
+              <p id="page-sub" class="text-xs text-slate-400">Resumen de tu actividad</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="cmdkBtn" class="hidden sm:inline-flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg transition-colors" aria-label="Abrir buscador rápido">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              Buscar
+              <kbd class="text-[10px] font-bold bg-white border border-slate-200 px-1.5 py-0.5 rounded">⌘K</kbd>
+            </button>
+            <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema">
+              <svg id="themeIconDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+              <svg id="themeIconLight" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </button>
+            <button id="newAnalysisBtn" class="hidden sm:flex items-center gap-2 text-sm font-medium bg-slate-900 text-white px-3.5 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Nuevo análisis
+            </button>
+            <div class="flex items-center gap-3 pl-3 border-l border-slate-200">
+              <div class="text-right hidden sm:block">
+                <p id="headerUserName" class="text-sm font-medium text-slate-700 leading-tight">—</p>
+                <p id="headerUserRole" class="text-[11px] text-slate-400 leading-tight">—</p>
+              </div>
+              <div id="headerAvatar" class="w-9 h-9 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold">·</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ===== Dashboard ===== -->
+      <section id="dashboard-section" class="p-8">
+        <!-- Pulso del mercado · feed en vivo desde SECOP 2 -->
+        <div id="pulseWidget" class="hidden mb-6"></div>
+
+        <!-- Daily Brief banner -->
+        <div id="dailyBriefBanner" class="hidden mb-6"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="statsGrid"></div>
+
+        <!-- Mapa de oportunidades por departamento -->
+        <div id="mapWidget" class="hidden mb-6"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <h3 class="text-base font-semibold text-slate-900">Procesos en seguimiento</h3>
+                <p class="text-xs text-slate-400">Haz clic en un proceso para precargarlo en el análisis</p>
+              </div>
+              <button id="addProcessBtn" data-admin-only class="hidden text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors">+ Agregar</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead><tr class="border-b border-slate-200">
+                  <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Proceso</th>
+                  <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Entidad</th>
+                  <th class="text-right text-[11px] font-semibold text-slate-400 uppercase py-2.5">Cuantía</th>
+                  <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Riesgo</th>
+                </tr></thead>
+                <tbody id="processesBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-1">Distribución de riesgo</h3>
+            <p class="text-xs text-slate-400 mb-4">Procesos monitoreados por nivel</p>
+            <div id="riskChart" class="space-y-3.5"></div>
+          </div>
+        </div>
+
+        <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Accesos rápidos</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="quickActions"></div>
+      </section>
+
+      <!-- ===== Análisis de Pliego ===== -->
+      <section id="analisis-section" class="p-8 hidden">
+        <div id="quotaBanner" class="hidden mb-5"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-1 space-y-5">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+              <h3 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2"><span class="step-badge">1</span> Cargar pliego</h3>
+              <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:border-sky-400 hover:bg-sky-50/40 transition-colors">
+                <input type="file" id="fileInput" class="hidden" accept=".pdf,.docx,.txt" />
+                <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                <p class="text-sm text-slate-600" id="fileText">Arrastra o haz clic para cargar PDF, DOCX o TXT</p>
+              </div>
+              <div id="fileMeta" class="hidden mt-3 text-xs bg-slate-50 rounded-lg p-3 border border-slate-200"></div>
+              <button id="scanPliegoBtn" class="hidden mt-3 w-full text-sm font-medium border border-sky-200 text-sky-700 bg-sky-50 hover:bg-sky-100 py-2 rounded-lg transition-colors">Escanear pliego completo</button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
+              <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2"><span class="step-badge">2</span> Datos del proceso</h3>
+              <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="f-proceso" class="field" placeholder="No. de proceso" />
+                <select id="f-modalidad" class="field">
+                  <option value="minima_cuantia">Mínima Cuantía</option>
+                  <option value="seleccion_abreviada">Selección Abreviada</option>
+                  <option value="licitacion">Licitación Pública</option>
+                  <option value="concurso_meritos">Concurso de Méritos</option>
+                  <option value="contratacion_directa">Contratación Directa</option>
+                </select>
+              </div>
+              <input type="text" id="f-entidad" class="field" placeholder="Entidad contratante" />
+              <input type="text" id="f-objeto" class="field" placeholder="Objeto del contrato" />
+              <input type="text" id="f-proponente" class="field" placeholder="Nombre del observante (quien firma)" />
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
+              <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2"><span class="step-badge">3</span> Requisito objetado</h3>
+              <input type="text" id="f-numeral" class="field" placeholder="Numeral, p. ej. 19 del Anexo CTM" />
+              <textarea id="f-texto" class="field h-32 resize-none" placeholder="Pega aquí el texto exacto del requisito que deseas objetar…"></textarea>
+              <button id="analyzeBtn" class="w-full bg-gradient-to-r from-sky-600 to-blue-700 text-white font-semibold py-2.5 rounded-lg hover:from-sky-700 hover:to-blue-800 transition-all shadow-sm flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Analizar con IA
+              </button>
+              <button id="loadSampleBtn" class="w-full text-xs text-slate-500 hover:text-sky-700 transition-colors">Cargar requisito de ejemplo</button>
+            </div>
+          </div>
+
+          <div class="lg:col-span-2">
+            <div id="emptyState" class="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col items-center justify-center py-24 text-center">
+              <div class="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </div>
+              <h3 class="text-lg font-semibold text-slate-900">Listo para analizar</h3>
+              <p class="text-sm text-slate-400 mt-1 max-w-sm">Completa el requisito objetado y la IA detectará riesgos jurídicos, citará el marco normativo y redactará tu observación.</p>
+            </div>
+            <div id="loadingState" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 py-24 flex flex-col items-center justify-center">
+              <div class="licita-spinner mb-5"></div>
+              <p id="loadingText" class="text-sm font-medium text-slate-600">Analizando…</p>
+              <div id="loadingSteps" class="mt-4 space-y-1.5 text-xs text-slate-400"></div>
+            </div>
+            <div id="resultsPanel" class="hidden space-y-5"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Buscar SECOP 1 / 2 ===== -->
+      <section id="secop-section" class="p-8 hidden">
+        <!-- Toggle: buscar en LICITA vs vista oficial SECOP II embebida -->
+        <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            <button data-secop-mode="search" class="secop-mode text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              Buscar (LICITA)
+            </button>
+            <button data-secop-mode="official" class="secop-mode text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h12M9 19a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              SECOP II oficial
+            </button>
+          </div>
+          <a href="https://community.secop.gov.co/Public/Tendering/ContractNoticeManagement/Index" target="_blank" rel="noopener" class="text-xs font-medium text-slate-500 hover:text-sky-700 transition-colors flex items-center gap-1">
+            Abrir en pantalla completa
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        </div>
+
+        <!-- Vista oficial SECOP II -->
+        <div id="secopOfficialView" class="hidden">
+          <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-50 via-indigo-50 to-violet-50 border border-sky-200 p-5 mb-5">
+            <div class="flex items-start gap-4 flex-wrap">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h12M9 19a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-sky-700">Portal oficial · community.secop.gov.co</p>
+                <h3 class="text-xl font-bold text-slate-900 mt-0.5 leading-tight">SECOP II — Búsqueda nativa</h3>
+                <p class="text-sm text-slate-600 mt-1.5">Vista oficial de Colombia Compra Eficiente. Si el portal bloquea el embebido (algunas vistas lo restringen), usa <b>"Abrir en pantalla completa"</b> arriba para abrirlo en nueva pestaña.</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm relative">
+            <iframe
+              id="secopOfficialFrame"
+              title="SECOP II · Búsqueda oficial"
+              src="https://community.secop.gov.co/Public/Tendering/ContractNoticeManagement/Index"
+              class="w-full block"
+              style="height:78vh;min-height:600px;border:0"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen></iframe>
+            <div id="secopOfficialFallback" class="hidden absolute inset-0 bg-slate-50 flex flex-col items-center justify-center text-center p-8">
+              <div class="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mb-3"><svg class="w-7 h-7 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+              <h4 class="text-base font-bold text-slate-900">SECOP II bloquea el embebido</h4>
+              <p class="text-sm text-slate-500 mt-1 max-w-md">Por política de seguridad del portal oficial. Ábrelo en una nueva pestaña con un clic.</p>
+              <a href="https://community.secop.gov.co/Public/Tendering/ContractNoticeManagement/Index" target="_blank" rel="noopener" class="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-sky-600 to-blue-700 hover:shadow-lg text-white font-semibold px-5 py-2.5 rounded-lg transition-all">Abrir SECOP II oficial<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vista buscador LICITA -->
+        <div id="secopSearchView">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
+          <!-- Tabs dataset -->
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg mb-4 w-fit">
+            <button data-ds="procesos" class="sec-tab text-xs sm:text-sm font-semibold px-3.5 py-1.5 rounded-md transition-colors">
+              <span class="hidden sm:inline">Procesos vigentes · </span>SECOP 2
+            </button>
+            <button data-ds="contratos" class="sec-tab text-xs sm:text-sm font-semibold px-3.5 py-1.5 rounded-md transition-colors">
+              <span class="hidden sm:inline">Históricos · </span>SECOP 1
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="relative flex-1 min-w-[220px]">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="sec-q" type="text" class="field pl-9" placeholder="Buscar por objeto del contrato…" />
+            </div>
+            <button id="sec-toggle-filters" class="text-sm font-medium text-slate-600 hover:text-sky-700 px-3 py-2 rounded-lg border border-slate-200 hover:border-sky-300 transition-colors flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+              Filtros
+            </button>
+            <button id="sec-search" class="text-sm font-semibold text-white bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 px-4 py-2 rounded-lg shadow-sm transition-all">Buscar</button>
+          </div>
+
+          <div id="sec-filters" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Entidad</label>
+              <input id="sec-entidad" type="text" class="field mt-1" placeholder="p. ej. Alcaldía" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Departamento</label>
+              <select id="sec-departamento" class="field mt-1"><option value="">Todos</option></select>
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Ciudad</label>
+              <input id="sec-ciudad" type="text" class="field mt-1" placeholder="p. ej. Ibagué" />
+            </div>
+            <div data-only-procesos>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Modalidad</label>
+              <select id="sec-modalidad" class="field mt-1"><option value="">Todas</option></select>
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Tipo de contrato</label>
+              <select id="sec-tipo" class="field mt-1"><option value="">Todos</option></select>
+            </div>
+            <div data-only-procesos>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Estado</label>
+              <select id="sec-estado" class="field mt-1"><option value="">Todos</option></select>
+            </div>
+            <div data-only-contratos class="hidden">
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Proveedor / contratista</label>
+              <input id="sec-proveedor" type="text" class="field mt-1" placeholder="p. ej. nombre o NIT del competidor" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Precio mín. (COP)</label>
+              <input id="sec-pmin" type="number" class="field mt-1" placeholder="0" min="0" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Precio máx. (COP)</label>
+              <input id="sec-pmax" type="number" class="field mt-1" placeholder="Sin tope" min="0" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Publicado desde</label>
+              <input id="sec-fdesde" type="date" class="field mt-1" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Publicado hasta</label>
+              <input id="sec-fhasta" type="date" class="field mt-1" />
+            </div>
+            <div>
+              <label class="text-[11px] font-medium text-slate-500 uppercase">Ordenar por</label>
+              <select id="sec-orden" class="field mt-1"></select>
+            </div>
+            <div class="flex items-end">
+              <button id="sec-clear" class="text-xs text-slate-500 hover:text-rose-600 transition-colors">Limpiar filtros</button>
+            </div>
+          </div>
+
+          <div class="mt-3 flex flex-wrap gap-1.5" id="sec-quickchips"></div>
+        </div>
+
+        <!-- Filtro Match Score (visible cuando hay perfil empresarial) -->
+        <div id="sec-matchfilter" class="hidden bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-200 rounded-xl p-3 mb-3 flex items-center justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div>
+              <p class="text-sm font-bold text-slate-900">Filtro inteligente por Match</p>
+              <p class="text-[11px] text-slate-500">Solo procesos que encajan con tu perfil</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="sec-matchmin" class="text-xs font-medium bg-white border border-slate-300 rounded-lg px-2 py-1.5">
+              <option value="0">Mostrar todos</option>
+              <option value="50">Match ≥ 50% (Moderado+)</option>
+              <option value="60">Match ≥ 60%</option>
+              <option value="70" selected>Match ≥ 70% (Bueno+)</option>
+              <option value="80">Match ≥ 80% (Excelente)</option>
+            </select>
+            <label class="switch"><input id="sec-matchtoggle" type="checkbox"><span class="slider"></span></label>
+          </div>
+        </div>
+        <div id="sec-status" class="hidden text-sm text-slate-500 mb-3"></div>
+        <div id="sec-error" class="hidden bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-3 mb-3"></div>
+
+        <div id="sec-loading" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center">
+          <div class="licita-spinner mb-4"></div>
+          <p class="text-sm font-medium text-slate-600">Consultando SECOP 2…</p>
+        </div>
+
+        <div id="sec-empty" class="bg-white rounded-xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center text-center">
+          <div class="w-14 h-14 rounded-2xl bg-sky-50 flex items-center justify-center mb-3">
+            <svg class="w-7 h-7 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+          <h3 class="text-base font-semibold text-slate-900">Buscar en SECOP 2 en vivo</h3>
+          <p class="text-sm text-slate-400 mt-1 max-w-md">Conectado al dataset oficial de Colombia Compra Eficiente (datos.gov.co). Escribe un objeto, ajusta filtros y presiona Buscar.</p>
+        </div>
+
+        <div id="sec-results" class="hidden space-y-3"></div>
+
+        <div id="sec-pagination" class="hidden mt-5 flex items-center justify-between flex-wrap gap-3">
+          <p id="sec-pageinfo" class="text-xs text-slate-500"></p>
+          <div class="flex gap-2">
+            <button id="sec-prev" class="text-sm font-medium border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">← Anterior</button>
+            <button id="sec-next" class="text-sm font-medium border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Siguiente →</button>
+          </div>
+        </div>
+        </div><!-- /secopSearchView -->
+      </section>
+
+      <!-- ===== Alertas inteligentes ===== -->
+      <section id="alertas-section" class="p-6 lg:p-8 hidden">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-50 via-pink-50 to-amber-50 border border-rose-200 p-6 lg:p-8 mb-6">
+          <div class="absolute -top-12 -right-12 w-64 h-64 bg-rose-200/40 rounded-full blur-3xl"></div>
+          <div class="relative flex items-start justify-between gap-4 flex-wrap">
+            <div class="max-w-xl">
+              <span class="inline-flex items-center gap-2 bg-white/80 backdrop-blur border border-rose-100 text-rose-800 text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                Notificaciones de mercado
+              </span>
+              <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-3 tracking-tight leading-tight">Alertas inteligentes</h2>
+              <p class="text-sm text-slate-600 mt-2">Guarda tus búsquedas y entérate cuántos procesos nuevos aparecen cada vez que vuelves a LICITA.</p>
+            </div>
+            <button id="alertNewBtn" class="bg-gradient-to-r from-rose-500 to-pink-600 hover:shadow-lg hover:shadow-rose-200 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Nueva alerta
+            </button>
+          </div>
+        </div>
+
+        <div id="alertsEmpty" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center text-center">
+          <div class="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center mb-3">
+            <svg class="w-7 h-7 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          </div>
+          <h3 class="text-base font-semibold text-slate-900">Aún no tienes alertas</h3>
+          <p class="text-sm text-slate-400 mt-1 max-w-md">Crea una alerta con palabras clave de tu nicho. Cada vez que entres te diremos cuántos procesos nuevos aparecieron.</p>
+        </div>
+        <div id="alertsList" class="space-y-3"></div>
+      </section>
+
+      <!-- ===== Pipeline CRM ===== -->
+      <section id="pipeline-section" class="p-6 lg:p-8 hidden">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-50 via-emerald-50 to-amber-50 border border-sky-200 p-5 lg:p-7 mb-6">
+          <div class="absolute -top-12 -right-12 w-64 h-64 bg-emerald-200/30 rounded-full blur-3xl"></div>
+          <div class="relative flex items-start justify-between gap-4 flex-wrap">
+            <div class="min-w-0 flex-1">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-sky-700">Pipeline · CRM de oportunidades</p>
+              <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight leading-tight">Gestiona cada proceso como una venta.</h2>
+              <p class="text-sm text-slate-600 mt-2 max-w-xl">Arrastra las oportunidades por las etapas: Interesado → Analizando → Ofertando → Adjudicado. Mide tu tasa real de adjudicación.</p>
+            </div>
+            <div id="pipelineSummary" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+          </div>
+        </div>
+        <div id="pipelineBoard" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"></div>
+      </section>
+
+      <!-- ===== Mi Empresa (perfil del proponente) ===== -->
+      <section id="empresa-section" class="p-6 lg:p-8 hidden">
+        <!-- Hero -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-50 via-indigo-50 to-emerald-50 border border-sky-200 p-6 lg:p-8 mb-6">
+          <div class="absolute -top-12 -right-12 w-64 h-64 bg-sky-200/30 rounded-full blur-3xl"></div>
+          <div class="relative flex items-start gap-4 flex-wrap">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 flex-shrink-0">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-sky-700">Perfil empresarial · Habilita el Match Score</p>
+              <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">Hagamos a LICITA tu copiloto.</h2>
+              <p class="text-sm text-slate-600 mt-2 max-w-2xl">Completa tu perfil para que cada proceso de SECOP traiga un <b>Match Score</b> personalizado. Te diremos en porcentaje qué tan bien encaja con tu capacidad, sector y geografía — y por qué.</p>
+            </div>
+            <div id="empCompletion" class="bg-white/80 backdrop-blur border border-sky-100 rounded-2xl px-4 py-3 text-center min-w-[120px]">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Perfil</p>
+              <p id="empCompletionPct" class="text-3xl font-extrabold text-sky-700 leading-none mt-1">0%</p>
+              <p class="text-[10px] text-slate-500 mt-1">completo</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector multi-empresa -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 mb-5 flex items-center gap-3 flex-wrap">
+          <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Empresa activa</label>
+          <select id="empSelector" class="field flex-1 min-w-[180px] max-w-md"></select>
+          <button type="button" id="empNew" class="text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-2 rounded-lg transition-colors flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nueva empresa
+          </button>
+          <button type="button" id="empDelete" class="text-xs font-medium text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-lg transition-colors">Eliminar</button>
+        </div>
+
+        <!-- Carga inteligente de documentos -->
+        <div class="bg-gradient-to-br from-emerald-50 via-sky-50 to-violet-50 border border-emerald-200 rounded-2xl p-5 mb-5">
+          <div class="flex items-start gap-3 mb-4">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-200 flex-shrink-0">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Onboarding inteligente</p>
+              <h3 class="text-base font-bold text-slate-900">Sube tus documentos y autocompleta el perfil</h3>
+              <p class="text-xs text-slate-600 mt-0.5">Soporta RUT (DIAN), RUP (Cámara de Comercio) y Cámara de Comercio. Solo PDF con texto (no escaneos sin OCR).</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <button type="button" data-emp-doc="rut" class="emp-dropzone group">
+              <svg class="w-8 h-8 text-slate-300 mx-auto mb-2 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <p class="text-sm font-bold text-slate-900">RUT</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">NIT, razón social, ciudad</p>
+            </button>
+            <button type="button" data-emp-doc="rup" class="emp-dropzone group">
+              <svg class="w-8 h-8 text-slate-300 mx-auto mb-2 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h12M9 19a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              <p class="text-sm font-bold text-slate-900">RUP</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Indicadores financieros</p>
+            </button>
+            <button type="button" data-emp-doc="camara" class="emp-dropzone group">
+              <svg class="w-8 h-8 text-slate-300 mx-auto mb-2 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+              <p class="text-sm font-bold text-slate-900">Cámara Comercio</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Representante, objeto social</p>
+            </button>
+            <button type="button" data-emp-doc="experiencia" class="emp-dropzone group">
+              <svg class="w-8 h-8 text-slate-300 mx-auto mb-2 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+              <p class="text-sm font-bold text-slate-900">Experiencia</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Certificados de contratos · multi</p>
+            </button>
+          </div>
+          <input type="file" id="empDocInput" accept=".pdf" class="hidden" />
+          <input type="file" id="empExpInput" accept=".pdf" multiple class="hidden" />
+          <div id="empExtractedPreview" class="hidden mt-4"></div>
+        </div>
+
+        <form id="empForm" class="space-y-5">
+          <!-- Identificación -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-4"><span class="step-badge">1</span> Identificación</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="sm:col-span-2">
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Razón social</label>
+                <input id="emp-razonSocial" type="text" class="field mt-1" placeholder="p. ej. Constructora ABC S.A.S." />
+              </div>
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">NIT</label>
+                <input id="emp-nit" type="text" class="field mt-1" placeholder="900.123.456-7" />
+              </div>
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Tipo</label>
+                <select id="emp-tipo" class="field mt-1">
+                  <option value="juridica">Persona jurídica</option>
+                  <option value="natural">Persona natural</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input id="emp-esMipyme" type="checkbox" class="w-4 h-4" />
+                  <span class="text-sm text-slate-700">Soy MIPYME (Ley 2069 de 2020) — habilita estímulos en cuantías &lt; $500M</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sectores -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1"><span class="step-badge">2</span> Sectores donde compites</h3>
+            <p class="text-xs text-slate-500 mb-4">Marca todos los aplican (mínimo 1). Define el match contra el objeto del proceso.</p>
+            <div id="empSectores" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+          </div>
+
+          <!-- Geografía -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1"><span class="step-badge">3</span> Departamentos donde operas</h3>
+            <p class="text-xs text-slate-500 mb-4">Los procesos en estos departamentos suman puntos al match.</p>
+            <div id="empDeptos" class="flex flex-wrap gap-1.5"></div>
+          </div>
+
+          <!-- Financiera -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1"><span class="step-badge">4</span> Capacidad financiera</h3>
+            <p class="text-xs text-slate-500 mb-4">Valores actuales para validar habilitantes típicos del Decreto 1082/2015.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Patrimonio (COP)</label>
+                <input id="emp-patrimonio" type="number" class="field mt-1" placeholder="0" min="0" />
+              </div>
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Capital de trabajo (COP)</label>
+                <input id="emp-capital" type="number" class="field mt-1" placeholder="0" min="0" />
+              </div>
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Índice de liquidez</label>
+                <input id="emp-liquidez" type="number" step="0.01" class="field mt-1" placeholder="1.5" min="0" />
+              </div>
+              <div>
+                <label class="text-[11px] font-medium text-slate-500 uppercase">Índice de endeudamiento (%)</label>
+                <input id="emp-endeudamiento" type="number" step="0.01" class="field mt-1" placeholder="60" min="0" max="100" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Experiencia -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <div class="flex items-center justify-between gap-3 flex-wrap mb-1">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2"><span class="step-badge">5</span> Contratos ejecutados</h3>
+              <button type="button" id="empAddContrato" class="text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Agregar contrato
+              </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">Tu experiencia comparable es la prueba de habilitación. Al menos 3 mejora el match.</p>
+            <div id="empContratos" class="space-y-2"></div>
+            <div id="empContratosEmpty" class="text-xs text-slate-400 text-center py-6">Aún no agregaste contratos.</div>
+          </div>
+
+          <!-- Personal -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1"><span class="step-badge">6</span> Personal clave (opcional)</h3>
+            <p class="text-xs text-slate-500 mb-3">Notas sobre tu equipo profesional — útil para la futura verificación de hojas de vida.</p>
+            <textarea id="emp-personal" class="field h-20 resize-none" placeholder="p. ej. Ing. Civil 10 años · Arquitecto 8 años · Contador público..."></textarea>
+          </div>
+
+          <div class="flex flex-wrap gap-3 items-center justify-between">
+            <button type="submit" class="bg-gradient-to-r from-sky-600 to-blue-700 hover:shadow-lg hover:shadow-blue-200 text-white font-bold px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Guardar perfil
+            </button>
+            <p class="text-[11px] text-slate-400">Se guarda solo en tu navegador. Cero envío a servidores externos.</p>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===== Historial ===== -->
+      <section id="historial-section" class="p-8 hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-slate-900">Análisis realizados</h3>
+              <p class="text-xs text-slate-400">Almacenados localmente. Solo tú los ves.</p>
+            </div>
+            <button id="clearHistoryBtn" class="text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-colors">Vaciar historial</button>
+          </div>
+          <div id="historyList" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <!-- ===== Marco Normativo ===== -->
+      <section id="marco-section" class="p-8 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-4">Normas aplicables</h3>
+            <div id="normsList" class="space-y-3"></div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-4">Criterios jurisprudenciales</h3>
+            <div id="jurisList" class="space-y-3"></div>
+          </div>
+        </div>
+        <p id="disclaimerText" class="text-xs text-slate-400 mt-5 text-center max-w-3xl mx-auto"></p>
+      </section>
+
+      <!-- ===== Plan Anual de Adquisiciones (PAA) =====
+           Vista oficial = dashboard Power BI publicado.
+           Vista buscador = búsqueda + filtros sobre SECOP (alternativa). -->
+      <section id="paa-section" class="p-6 lg:p-8 hidden">
+        <!-- Toggle de vista: dashboard oficial vs buscador -->
+        <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            <button data-paa-mode="dashboard" class="paa-mode text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h12M9 19a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              Dashboard oficial
+            </button>
+            <button data-paa-mode="search" class="paa-mode text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              Buscar y filtrar
+            </button>
+          </div>
+          <a id="paaPowerBiOpen" href="https://app.powerbi.com/view?r=eyJrIjoiNjkwMzhkMjItNjZjZC00YzA3LWI1MDMtMGEyNzlmYWRjNDYxIiwidCI6IjdiMDkwNDFlLTI0NTEtNDlkMC04Y2IxLTc5ZDVlM2Q4YzFiZSIsImMiOjR9" target="_blank" rel="noopener" class="text-xs font-medium text-slate-500 hover:text-sky-700 transition-colors flex items-center gap-1">
+            Abrir en pantalla completa
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        </div>
+
+        <!-- Vista 1: Dashboard oficial Power BI -->
+        <div id="paaDashboardView">
+          <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-50 via-indigo-50 to-violet-50 border border-sky-200 p-5 lg:p-6 mb-5">
+            <div class="flex items-start gap-4 flex-wrap">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h12M9 19a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-sky-700">Dashboard oficial · Power BI</p>
+                <h3 class="text-xl font-bold text-slate-900 mt-0.5 leading-tight">Plan Anual de Adquisiciones</h3>
+                <p class="text-sm text-slate-600 mt-1.5">Vista oficial publicada por la entidad — datos reales del PAA con todos los filtros que ya conoces. Si necesitas búsqueda libre por palabra clave, usa el modo <b>Buscar y filtrar</b>.</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <iframe
+              id="paaPowerBiFrame"
+              title="Plan Anual de Adquisiciones · Dashboard oficial Power BI"
+              src="https://app.powerbi.com/view?r=eyJrIjoiNjkwMzhkMjItNjZjZC00YzA3LWI1MDMtMGEyNzlmYWRjNDYxIiwidCI6IjdiMDkwNDFlLTI0NTEtNDlkMC04Y2IxLTc5ZDVlM2Q4YzFiZSIsImMiOjR9"
+              class="w-full block"
+              style="height:78vh;min-height:600px;border:0"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen></iframe>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3 text-center">Si el dashboard tarda en cargar, recárgalo con el botón <b>"Abrir en pantalla completa"</b> arriba.</p>
+        </div>
+
+        <!-- Vista 2: Buscador (resto del módulo) -->
+        <div id="paaSearchView" class="hidden">
+        <!-- Hero buscador estilo Apple -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 border border-amber-200 p-6 lg:p-10 mb-6">
+          <div class="absolute -top-16 -right-16 w-72 h-72 bg-amber-200/40 rounded-full blur-3xl"></div>
+          <div class="absolute -bottom-16 -left-16 w-80 h-80 bg-rose-200/40 rounded-full blur-3xl"></div>
+          <div class="relative max-w-2xl mx-auto text-center">
+            <span class="inline-flex items-center gap-2 bg-white/80 backdrop-blur border border-amber-100 text-amber-800 text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+              Inteligencia anticipada · Datos oficiales
+            </span>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-4 tracking-tight leading-[1.1]">Plan Anual de<br>Adquisiciones.</h2>
+            <p class="text-base text-slate-600 mt-3">Lo que las entidades planearon comprar este año. Anticípate con meses de ventaja.</p>
+            <div class="relative mt-7">
+              <svg class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="paa-q" type="text"
+                class="w-full pl-12 pr-32 py-4 text-base bg-white rounded-2xl border border-slate-200 shadow-lg shadow-amber-100/50 focus:outline-none focus:border-amber-400 focus:shadow-xl focus:shadow-amber-200/60 transition-all"
+                placeholder="Escribe lo que vendes: software, obra, aseo, papelería…"
+                aria-label="Buscar en el plan anual de adquisiciones" />
+              <button id="paa-search"
+                class="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md transition-all">
+                Buscar
+              </button>
+            </div>
+            <div id="paa-chips" class="mt-5 flex flex-wrap gap-2 justify-center"></div>
+            <p class="text-[11px] text-slate-500 mt-4">Datos públicos del Plan Anual de Adquisiciones · datos.gov.co</p>
+          </div>
+        </div>
+
+        <!-- Filtros avanzados colapsables -->
+        <details id="paa-adv" class="mb-5 bg-white rounded-2xl border border-slate-200">
+          <summary class="cursor-pointer px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between rounded-2xl">
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+              Filtros avanzados
+            </span>
+            <span class="text-xs text-slate-400">Entidad, departamento, modalidad, valor</span>
+          </summary>
+          <div class="px-5 pb-5 pt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <input id="paa-entidad" type="text" class="field" placeholder="Entidad contratante" />
+            <select id="paa-departamento" class="field"><option value="">Todos los departamentos</option></select>
+            <select id="paa-modalidad" class="field"><option value="">Todas las modalidades</option></select>
+            <input id="paa-pmin" type="number" class="field" placeholder="Valor mínimo (COP)" min="0" />
+          </div>
+        </details>
+
+        <!-- Estado: cargando / error / vacío inicial -->
+        <div id="paa-loading" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center">
+          <div class="licita-spinner mb-4"></div>
+          <p class="text-sm font-medium text-slate-600">Consultando el Plan Anual…</p>
+        </div>
+        <div id="paa-error" class="hidden bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-2xl p-4 mb-3"></div>
+        <div id="paa-empty" class="bg-white rounded-2xl shadow-sm border border-slate-200 py-16 flex flex-col items-center justify-center text-center">
+          <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mb-3">
+            <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="text-base font-semibold text-slate-900">Empieza con una palabra</h3>
+          <p class="text-sm text-slate-400 mt-1 max-w-md">O elige un chip de arriba. Verás cuántos procesos se planean, qué entidades lideran y cuándo abrirán.</p>
+        </div>
+
+        <!-- Stats analíticos (4 tarjetas grandes) -->
+        <div id="paa-analytics" class="hidden grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5"></div>
+
+        <!-- Gráficas: top entidades + distribución mensual -->
+        <div id="paa-charts" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5"></div>
+
+        <!-- Toggle lista / calendario -->
+        <div id="paa-view-toggle" class="hidden items-center gap-1 bg-slate-100 p-1 rounded-xl w-fit mb-4">
+          <button data-paa-view="lista" class="paa-vtab text-xs font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            Lista
+          </button>
+          <button data-paa-view="calendario" class="paa-vtab text-xs font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Calendario
+          </button>
+        </div>
+
+        <!-- Resultados como tarjetas con indicador de días -->
+        <div id="paa-results" class="hidden space-y-3"></div>
+
+        <!-- Vista calendario -->
+        <div id="paa-calendar" class="hidden"></div>
+
+        <div id="paa-pagination" class="hidden mt-5 flex items-center justify-between flex-wrap gap-3">
+          <p id="paa-pageinfo" class="text-xs text-slate-500"></p>
+          <div class="flex gap-2">
+            <button id="paa-prev" class="text-sm font-medium border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">← Anterior</button>
+            <button id="paa-next" class="text-sm font-medium border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Siguiente →</button>
+          </div>
+        </div>
+        </div><!-- /paaSearchView -->
+      </section>
+
+      <!-- ===== Formación / Cursos ===== -->
+      <section id="formacion-section" class="p-8 hidden">
+        <div id="cursosCatalog">
+          <div class="bg-gradient-to-r from-sky-50 via-indigo-50 to-violet-50 border border-sky-100 rounded-2xl p-5 mb-6 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-200">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-sky-700">Formación incluida</p>
+              <h3 class="text-base font-bold text-slate-900 mt-0.5">Aprende a ganar licitaciones con criterio jurídico</h3>
+              <p class="text-sm text-slate-600 mt-1 leading-relaxed">Cursos cortos, prácticos y aplicables al día siguiente. Al terminar cada uno descargas tu certificado en Word.</p>
+            </div>
+          </div>
+          <div id="cursosGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        </div>
+
+        <div id="cursoDetail" class="hidden">
+          <button id="curso-back" class="text-sm font-medium text-slate-500 hover:text-sky-700 transition-colors flex items-center gap-1 mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Todos los cursos
+          </button>
+          <div id="cursoHeader" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-5"></div>
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
+            <aside class="lg:col-span-1">
+              <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sticky top-20">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-2">Lecciones</p>
+                <ul id="cursoLeccionesList" class="space-y-1"></ul>
+              </div>
+            </aside>
+            <main class="lg:col-span-3">
+              <div id="cursoContenido" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-7"></div>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Clientes (admin) ===== -->
+      <section id="clientes-section" class="p-8 hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+            <div>
+              <h3 class="text-base font-semibold text-slate-900">Clientes de la firma</h3>
+              <p class="text-xs text-slate-400">Crea, edita y administra las credenciales de tus clientes.</p>
+            </div>
+            <button id="addClientBtn" class="text-sm font-medium bg-sky-600 hover:bg-sky-700 text-white px-3.5 py-2 rounded-lg transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Nuevo cliente
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead><tr class="border-b border-slate-200">
+                <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Usuario / Cliente</th>
+                <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Contacto</th>
+                <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Rol</th>
+                <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Plan IA</th>
+                <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Estado</th>
+                <th class="text-left text-[11px] font-semibold text-slate-400 uppercase py-2.5">Último ingreso</th>
+                <th class="text-center text-[11px] font-semibold text-slate-400 uppercase py-2.5">Análisis</th>
+                <th class="text-right text-[11px] font-semibold text-slate-400 uppercase py-2.5">Acciones</th>
+              </tr></thead>
+              <tbody id="clientsBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Monitoreo (admin) ===== -->
+      <section id="monitoreo-section" class="p-8 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" id="monStats"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-1">Actividad reciente</h3>
+            <p class="text-xs text-slate-400 mb-4">Últimos análisis realizados por tus clientes</p>
+            <div id="monFeed" class="space-y-3"></div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-1">Por cliente</h3>
+            <p class="text-xs text-slate-400 mb-4">Total de análisis por usuario</p>
+            <div id="monPerClient" class="space-y-3"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ============= Modales ============= -->
+  <div id="processModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-pop">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">Agregar proceso a seguimiento</h3>
+      <div class="space-y-3">
+        <input type="text" id="m-id" class="field" placeholder="No. de proceso" />
+        <input type="text" id="m-objeto" class="field" placeholder="Objeto del contrato" />
+        <input type="text" id="m-entidad" class="field" placeholder="Entidad contratante" />
+        <input type="number" id="m-cuantia" class="field" placeholder="Cuantía (COP)" />
+        <select id="m-riesgo" class="field">
+          <option value="Bajo">Riesgo Bajo</option>
+          <option value="Medio" selected>Riesgo Medio</option>
+          <option value="Alto">Riesgo Alto</option>
+          <option value="Crítico">Riesgo Crítico</option>
+        </select>
+      </div>
+      <div class="flex gap-3 mt-5">
+        <button id="m-cancel" class="flex-1 border border-slate-300 text-slate-600 text-sm py-2.5 rounded-lg hover:bg-slate-50 transition-colors">Cancelar</button>
+        <button id="m-save" class="flex-1 bg-sky-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-sky-700 transition-colors">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="clientModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-pop">
+      <h3 id="clientModalTitle" class="text-lg font-semibold text-slate-900 mb-1">Nuevo cliente</h3>
+      <p class="text-xs text-slate-500 mb-4">Estas serán las credenciales que entregarás a tu cliente.</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-2">
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Nombre del cliente</label>
+          <input type="text" id="c-name" class="field mt-1" placeholder="p. ej. Constructora ABC S.A.S." />
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Usuario</label>
+          <input type="text" id="c-username" class="field mt-1" placeholder="cliente.abc" autocomplete="off" />
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Contraseña</label>
+          <div class="flex gap-1.5 mt-1">
+            <input type="text" id="c-password" class="field" placeholder="Mínimo 6 caracteres" autocomplete="off" />
+            <button type="button" id="c-genpass" class="px-2.5 text-xs font-medium border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 whitespace-nowrap">Generar</button>
+          </div>
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Correo de contacto</label>
+          <input type="email" id="c-email" class="field mt-1" placeholder="cliente@correo.com" />
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Empresa / organización</label>
+          <input type="text" id="c-org" class="field mt-1" placeholder="Empresa del cliente" />
+        </div>
+        <div class="col-span-2">
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Notas internas</label>
+          <textarea id="c-notes" class="field mt-1 h-20 resize-none" placeholder="NIT, persona de contacto, etc."></textarea>
+        </div>
+      </div>
+      <p id="c-error" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2 mt-3"></p>
+      <div class="flex gap-3 mt-5">
+        <button id="c-cancel" class="flex-1 border border-slate-300 text-slate-600 text-sm py-2.5 rounded-lg hover:bg-slate-50 transition-colors">Cancelar</button>
+        <button id="c-save" class="flex-1 bg-sky-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-sky-700 transition-colors">Guardar cliente</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="credentialsModal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-slate-900/60 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-pop">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+          <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">Cliente creado</h3>
+          <p class="text-xs text-slate-500">Entrega estas credenciales a tu cliente.</p>
+        </div>
+      </div>
+      <div id="credentialsBox" class="bg-slate-50 border border-slate-200 rounded-lg p-4 font-mono text-sm space-y-1.5"></div>
+      <div class="flex gap-3 mt-4">
+        <button id="cred-copy" class="flex-1 bg-sky-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-sky-700 transition-colors">Copiar</button>
+        <button id="cred-close" class="flex-1 border border-slate-300 text-slate-600 text-sm py-2.5 rounded-lg hover:bg-slate-50 transition-colors">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Command Palette · ⌘K -->
+  <div id="cmdkModal" class="fixed inset-0 z-[80] hidden items-start justify-center bg-slate-900/60 p-4 pt-[15vh]">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-pop">
+      <div class="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
+        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="cmdkInput" type="text" class="flex-1 bg-transparent text-base outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400" placeholder="¿A dónde quieres ir? buscar, alerta, PAA, calcular, curso…" autocomplete="off" />
+        <kbd class="text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded">ESC</kbd>
+      </div>
+      <div id="cmdkList" class="max-h-[60vh] overflow-y-auto p-2"></div>
+      <div class="border-t border-slate-100 px-4 py-2 flex items-center gap-3 text-[10px] text-slate-400">
+        <span class="flex items-center gap-1"><kbd class="text-[10px] bg-slate-100 px-1 rounded">↑↓</kbd> navegar</span>
+        <span class="flex items-center gap-1"><kbd class="text-[10px] bg-slate-100 px-1 rounded">↵</kbd> abrir</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Logros -->
+  <div id="achModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/60 p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-6 animate-pop">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-200">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+        </div>
+        <div><h3 class="text-lg font-bold text-slate-900">Tus logros</h3><p id="achSubtitle" class="text-xs text-slate-500">0 desbloqueados de 0</p></div>
+      </div>
+      <div id="achList" class="space-y-2 max-h-80 overflow-y-auto"></div>
+      <button id="achClose" class="mt-4 w-full text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Modal: nueva alerta -->
+  <div id="alertModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-pop">
+      <h3 class="text-lg font-semibold text-slate-900">Crear alerta</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-4">Te avisaremos cada vez que entres si hay procesos nuevos que coinciden.</p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Nombre de la alerta</label>
+          <input type="text" id="al-name" class="field mt-1" placeholder="Ej. Obras en Antioquia" />
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Palabras clave del objeto</label>
+          <input type="text" id="al-texto" class="field mt-1" placeholder="p. ej. mantenimiento, software, aseo" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[11px] font-medium text-slate-500 uppercase">Departamento</label>
+            <select id="al-depto" class="field mt-1"><option value="">Todos</option></select>
+          </div>
+          <div>
+            <label class="text-[11px] font-medium text-slate-500 uppercase">Modalidad</label>
+            <select id="al-mod" class="field mt-1"><option value="">Todas</option></select>
+          </div>
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Entidad (opcional)</label>
+          <input type="text" id="al-entidad" class="field mt-1" placeholder="Nombre de la entidad" />
+        </div>
+      </div>
+      <p id="al-error" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2 mt-3"></p>
+      <div class="flex gap-3 mt-5">
+        <button id="al-cancel" class="flex-1 border border-slate-300 text-slate-600 text-sm py-2.5 rounded-lg hover:bg-slate-50 transition-colors">Cancelar</button>
+        <button id="al-save" class="flex-1 bg-gradient-to-r from-rose-500 to-pink-600 text-white text-sm font-semibold py-2.5 rounded-lg hover:shadow-lg transition-all">Crear alerta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: calculadora de oferta -->
+  <div id="calcModal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-slate-900/60 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-pop">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-200">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m-6 4h6m-2 4h2M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">Calculadora de oferta</h3>
+          <p class="text-xs text-slate-500">Sugiere precio basado en adjudicaciones reales</p>
+        </div>
+      </div>
+      <div class="space-y-3 mt-4">
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Presupuesto base (COP)</label>
+          <input type="number" id="calc-base" class="field mt-1" placeholder="p. ej. 100000000" />
+        </div>
+        <div>
+          <label class="text-[11px] font-medium text-slate-500 uppercase">Palabras clave del objeto</label>
+          <input type="text" id="calc-texto" class="field mt-1" placeholder="p. ej. mantenimiento puesta tierra" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[11px] font-medium text-slate-500 uppercase">Departamento</label>
+            <input type="text" id="calc-depto" class="field mt-1" placeholder="Opcional" />
+          </div>
+          <div>
+            <label class="text-[11px] font-medium text-slate-500 uppercase">Tipo de contrato</label>
+            <input type="text" id="calc-tipo" class="field mt-1" placeholder="Opcional" />
+          </div>
+        </div>
+        <button id="calc-run" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:shadow-lg text-white font-semibold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Buscar adjudicaciones similares
+        </button>
+      </div>
+      <div id="calc-result" class="mt-4"></div>
+      <button id="calc-close" class="mt-4 w-full text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors">Cerrar</button>
+    </div>
+  </div>
+
+  <div id="premiumModal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-slate-900/60 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-7 animate-pop">
+      <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 mx-auto mb-3 shadow-lg shadow-orange-200">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <h3 class="text-xl font-bold text-slate-900 text-center">Activa IA Premium</h3>
+      <p class="text-sm text-slate-500 text-center mt-1 leading-relaxed">Desbloquea el análisis profundo de pliegos, la competencia histórica y el score detallado de cada proceso.</p>
+
+      <ul class="mt-5 space-y-2 text-sm text-slate-700">
+        <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Análisis profundo del pliego (8 reglas jurídicas)</li>
+        <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Competencia histórica · ¿quién ha ganado contratos similares?</li>
+        <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Score de oportunidad y recomendaciones</li>
+        <li class="flex gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>Observaciones redactadas y descargables en Word</li>
+      </ul>
+
+      <div class="grid grid-cols-3 gap-2 mt-5">
+        <button class="text-xs font-semibold border border-slate-200 hover:border-amber-300 hover:bg-amber-50 py-3 rounded-lg transition-colors text-center" data-plan-req="30 días · $49.000">
+          <p class="text-[10px] text-slate-400 uppercase tracking-wider">30 días</p>
+          <p class="text-base font-extrabold text-slate-900 mt-0.5">$49.000</p>
+        </button>
+        <button class="text-xs font-semibold border-2 border-amber-300 bg-amber-50 hover:bg-amber-100 py-3 rounded-lg transition-colors text-center relative" data-plan-req="90 días · $129.000">
+          <span class="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold text-white bg-amber-600 px-2 py-0.5 rounded-full">Recomendado</span>
+          <p class="text-[10px] text-amber-700 uppercase tracking-wider">90 días</p>
+          <p class="text-base font-extrabold text-amber-900 mt-0.5">$129.000</p>
+        </button>
+        <button class="text-xs font-semibold border border-slate-200 hover:border-amber-300 hover:bg-amber-50 py-3 rounded-lg transition-colors text-center" data-plan-req="1 año · $399.000">
+          <p class="text-[10px] text-slate-400 uppercase tracking-wider">1 año</p>
+          <p class="text-base font-extrabold text-slate-900 mt-0.5">$399.000</p>
+        </button>
+      </div>
+      <p class="text-[11px] text-slate-400 text-center mt-3">Cualquier plan se activa en cuanto Asociados GYM LC recibe el pago.</p>
+      <button id="prem-close" class="mt-4 w-full text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors">Ahora no — seguir gratis</button>
+    </div>
+  </div>
+
+  <div id="toastWrap" class="fixed bottom-6 right-6 z-[70] space-y-2"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+    var yr = new Date().getFullYear();
+    document.getElementById("brandYear").textContent = yr;
+    var fy = document.getElementById("footerYear"); if (fy) fy.textContent = yr;
+  </script>
+  <script src="assets/js/knowledge.js?v=20260613"></script>
+  <script src="assets/js/docs.js?v=20260613"></script>
+  <script src="assets/js/analyzer.js?v=20260613"></script>
+  <script src="assets/js/parsers.js?v=20260613"></script>
+  <script src="assets/js/secop.js?v=20260613"></script>
+  <script src="assets/js/cursos.js?v=20260613"></script>
+  <script src="assets/js/intel.js?v=20260613"></script>
+  <script src="assets/js/empresa.js?v=20260613"></script>
+  <script src="assets/js/empresa-docs.js?v=20260613"></script>
+  <script src="assets/js/pipeline.js?v=20260613"></script>
+  <script src="assets/js/auth.js?v=20260613"></script>
+  <script src="assets/js/app.js?v=20260613"></script>
+</body>
+</html>
