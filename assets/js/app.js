@@ -155,7 +155,7 @@
     if (name === "secop") initSecopOnce();
     if (name === "analisis") renderQuotaBanner();
     if (name === "paa") initPaaOnce();
-    if (name === "formacion") showCursosCatalog();
+    if (name === "formacion") showCursosCatalog();  if (name === "relatoria") { if (LICITA.relatoria) LICITA.relatoria.init(); };  if (name === "relatoria") { if (LICITA.relatoria) LICITA.relatoria.init(); };
     if (name === "alertas") renderAlerts();
     if (name === "dashboard") { renderPulse(); renderMap(); }
     if (name === "empresa") renderEmpresa();
