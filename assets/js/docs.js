@@ -43,6 +43,20 @@ LICITA.docs = (function () {
     );
     L.push("Modalidad: " + modalidadLabel(m.modalidad));
     if (m.objeto) L.push("Objeto: " + m.objeto);
+    // Puntos clave del proceso extraídos del pliego (si están disponibles).
+    // Da peso jurídico a la observación: situamos el contexto antes del análisis.
+    if (m.processKey) {
+      const pk = m.processKey;
+      const ctx = [];
+      if (pk.presupuesto) ctx.push("Presupuesto oficial: $" + Number(pk.presupuesto).toLocaleString("es-CO") + " COP");
+      if (pk.plazo) ctx.push("Plazo de ejecución: " + pk.plazo.cantidad + " " + pk.plazo.unidad);
+      if (pk.lugar) ctx.push("Lugar de ejecución: " + pk.lugar);
+      if (ctx.length) {
+        L.push("");
+        L.push("Datos relevantes del proceso (extraídos del pliego):");
+        ctx.forEach((c) => L.push("  · " + c));
+      }
+    }
     L.push("");
     L.push("Respetados señores:");
     L.push("");
