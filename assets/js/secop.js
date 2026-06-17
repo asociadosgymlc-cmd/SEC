@@ -61,9 +61,6 @@ LICITA.secop = (function () {
       key: "paa",
       label: "Procesos en planeación · SECOP 2",
       sub: "Procesos en estado Borrador, próximos a abrir",
-      // Usa el dataset comprobado de SECOP 2 procesos. El filtro estado=Borrador
-      // (forzado en runPaaSearch) trae los procesos que las entidades están
-      // preparando hoy y abrirán pronto. Es información de anticipación real.
       endpoint: BASE + "p6dx-8zbt.json",
       f: {
         id: "id_del_proceso",
@@ -146,9 +143,6 @@ LICITA.secop = (function () {
     "Consultoría", "Interventoría", "Arrendamiento", "Seguros",
   ];
 
-  /* Campos donde el cuadro principal de texto busca con OR. Permite que el
-   * usuario escriba un objeto, un número de proceso, una entidad o un lugar
-   * sin tener que abrir filtros avanzados. */
   const SEARCH_FIELDS = {
     procesos: [
       "descripci_n_del_procedimiento",
@@ -182,8 +176,6 @@ LICITA.secop = (function () {
 
   function esc(value) { return String(value).replace(/'/g, "''"); }
 
-  /* Devuelve la variante sin tildes ni eñes para tolerar capturas
-   * sucias en datos públicos. Si no hay diferencia, retorna un solo valor. */
   function accentVariants(s) {
     const upper = String(s).toUpperCase();
     const noAcc = upper
@@ -235,7 +227,12 @@ LICITA.secop = (function () {
       c.push(f.fecha + " >= '" + filters.fechaDesde + "T00:00:00.000'");
     if (filters.fechaHasta && f.fecha)
       c.push(f.fecha + " <= '" + filters.fechaHasta + "T23:59:59.000'");
-    // Defensa final: no devolver una expresión que contenga undefined.
+    // Filtro por AÑO (estilo PAA SECOP oficial): genera rango anual sobre fecha.
+    if (filters.anio && /^\d{4}$/.test(String(filters.anio)) && f.fecha) {
+      const y = String(filters.anio);
+      c.push(f.fecha + " >= '" + y + "-01-01T00:00:00.000'");
+      c.push(f.fecha + " <= '" + y + "-12-31T23:59:59.000'");
+    }
     const expr = c.join(" AND ");
     return expr.includes("undefined") ? "" : expr;
   }
@@ -264,7 +261,6 @@ LICITA.secop = (function () {
     return fetchSoda(ds.endpoint, params);
   }
 
-  /* Consulta agrupada para el mapa de oportunidades. */
   async function aggregate(dsKey, opts) {
     const ds = DATASETS[dsKey];
     const f = ds.f;
@@ -295,7 +291,6 @@ LICITA.secop = (function () {
     return parseInt((j[0] || {}).count || "0", 10);
   }
 
-  /* Normaliza un registro al modelo común usado por la UI. */
   function normalize(dsKey, p) {
     const f = DATASETS[dsKey].f;
     const url = (() => {
@@ -330,9 +325,6 @@ LICITA.secop = (function () {
     };
   }
 
-  /* Candidatos conocidos del dataset PAA en datos.gov.co. Los IDs cambian
-   * con el tiempo en Socrata. Probamos varios en paralelo y usamos el
-   * primero que responda con datos reales. */
   const PAA_CANDIDATES = [
     { id: "xvdy-vrsj", name: "Plan Anual de Adquisiciones" },
     { id: "4dyc-vyat", name: "PAA - Entidades estatales" },
@@ -342,8 +334,6 @@ LICITA.secop = (function () {
     { id: "crbs-icmf", name: "PAA (legado)" },
   ];
 
-  /* Descubre el endpoint real del PAA probando candidatos en paralelo.
-   * Devuelve el primero que responda con al menos un registro. */
   async function discoverPaaDataset() {
     const probes = PAA_CANDIDATES.map((c) => {
       const url = BASE + c.id + ".json";
@@ -363,8 +353,6 @@ LICITA.secop = (function () {
     return { winner, results };
   }
 
-  /* Sondeo del dataset: pide 1 fila y devuelve los nombres de campos reales.
-   * Permite mapear dinámicamente cuando el dataset cambió de estructura. */
   async function probeDataset(dsKey) {
     const ds = DATASETS[dsKey];
     if (!ds) return { ok: false, error: "Dataset desconocido" };
@@ -384,8 +372,6 @@ LICITA.secop = (function () {
     }
   }
 
-  /* Detecta campos comunes en cualquier dataset de contratación pública
-   * usando una lista de candidatos por concepto. */
   function detectFields(keys) {
     const lower = keys.map((k) => k.toLowerCase());
     const find = (candidates) => {
@@ -442,15 +428,12 @@ LICITA.secop = (function () {
     };
   }
 
-  /* Permite que el código de app.js sobreescriba el mapeo de campos de un
-   * dataset cuando el sondeo descubre nombres distintos a los asumidos. */
   function setDatasetFields(dsKey, fields) {
     const ds = DATASETS[dsKey];
     if (!ds) return;
     ds.f = Object.assign({}, ds.f, fields);
   }
 
-  /* Cambia el endpoint en caliente — usado para activar el fallback PAA → SECOP 2. */
   function setDatasetEndpoint(dsKey, endpoint) {
     const ds = DATASETS[dsKey];
     if (!ds) return;
