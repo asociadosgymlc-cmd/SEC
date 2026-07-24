@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - claude/build-licita-platform-hlKvd
   workflow_dispatch:
 
 permissions:
