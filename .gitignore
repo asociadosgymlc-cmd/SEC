@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Runtime data (Chroma vector store, caches)
+data/
+*.sqlite3
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Local secrets
+.env
+.env.local
