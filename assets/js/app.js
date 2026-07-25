@@ -4386,6 +4386,7 @@
     if (btnRun) btnRun.addEventListener("click", runForense);
     if (btnClear) btnClear.addEventListener("click", function () {
       $("#forEntidad").value = "";
+      var nitInput = $("#forNit"); if (nitInput) nitInput.value = "";
       $("#forAnio").value = "";
       $("#forResultado").innerHTML = "";
       $("#forEstado").textContent = "";
@@ -4394,15 +4395,21 @@
 
   async function runForense() {
     var entidad = ($("#forEntidad").value || "").trim();
+    var nitInput = $("#forNit");
+    var nit = nitInput ? (nitInput.value || "").trim() : "";
     var anio = ($("#forAnio").value || "").trim();
     var estado = $("#forEstado");
     var host = $("#forResultado");
-    if (!entidad) { estado.textContent = "Ingresa una entidad."; return; }
-    estado.textContent = "Consultando SECOP · esto puede tardar hasta 15s...";
+    if (!entidad && !nit) { estado.textContent = "Ingresa entidad o NIT."; return; }
+    estado.textContent = nit
+      ? "Consultando SECOP por NIT (rápido)..."
+      : "Resolviendo NIT desde procesos SECOP 2, luego consultando contratos...";
     host.innerHTML = '<div class="flex items-center justify-center py-10"><div class="licita-spinner"></div></div>';
     try {
-      var opts = anio ? { anio: parseInt(anio, 10) } : {};
-      var r = await LICITA.forensics.analisis360Entidad(entidad, opts);
+      var opts = {};
+      if (nit) opts.nit = nit;
+      if (anio) opts.anio = parseInt(anio, 10);
+      var r = await LICITA.forensics.analisis360Entidad(entidad || nit, opts);
       estado.textContent = "";
       host.innerHTML = renderForense(r);
     } catch (e) {
