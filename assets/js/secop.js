@@ -237,10 +237,28 @@ LICITA.secop = (function () {
     return expr.includes("undefined") ? "" : expr;
   }
 
+  const FETCH_TIMEOUT_MS = 15000;
+
   async function fetchSoda(endpoint, params) {
-    const r = await fetch(endpoint + "?" + params.toString(), {
-      headers: { Accept: "application/json" },
-    });
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    let r;
+    try {
+      r = await fetch(endpoint + "?" + params.toString(), {
+        headers: { Accept: "application/json" },
+        signal: ctrl.signal,
+      });
+    } catch (e) {
+      clearTimeout(t);
+      if (e && e.name === "AbortError") {
+        throw new Error(
+          "SECOP no respondió en " + (FETCH_TIMEOUT_MS / 1000) + "s. " +
+          "Reintenta con un filtro más específico (año, departamento o NIT)."
+        );
+      }
+      throw e;
+    }
+    clearTimeout(t);
     if (!r.ok) {
       const txt = await r.text().catch(() => "");
       throw new Error(

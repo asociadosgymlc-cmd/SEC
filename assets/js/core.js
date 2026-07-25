@@ -516,7 +516,7 @@ LICITA.core = (function () {
     },
     async respuestaForense(proceso) {
       if (!LICITA.forensics) return "El módulo forense no está cargado. Recarga la página con Ctrl+Shift+R.";
-      if (!proceso || !proceso.entidad) return "No veo entidad en el proceso cargado. Ve a <b>Análisis Forense</b> desde el sidebar y escribe la entidad manualmente.";
+      if (!proceso || !proceso.entidad) return "No veo entidad en el proceso cargado. Ve a <b>Análisis Forense</b> (menú lateral · ícono escudo) y escribe la entidad + año.";
       Consejero.addBot('<span class="text-xs text-slate-500">Consultando SECOP 1 histórico...</span>');
       try {
         const r = await LICITA.forensics.analisis360Entidad(proceso.entidad);

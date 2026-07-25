@@ -126,6 +126,7 @@
     analisis: { title: "Análisis de Pliego", sub: "Carga un pliego y detecta riesgos jurídicos con IA" },
     secop: { title: "Buscar en SECOP 2", sub: "Procesos publicados en vivo · Colombia Compra Eficiente" },
     paa: { title: "Plan Anual de Adquisiciones", sub: "Anticipa lo que las entidades planean comprar este año" },
+    forense: { title: "Análisis Forense", sub: "HHI, adiciones art. 40 Ley 80, adjudicaciones anómalas · datos.gov.co" },
     alertas: { title: "Alertas inteligentes", sub: "Búsquedas guardadas que te avisan de procesos nuevos" },
     historial: { title: "Historial", sub: "Tus análisis guardados" },
     marco: { title: "Marco Normativo", sub: "Normas y criterios que aplica el motor" },
@@ -155,6 +156,7 @@
     if (name === "secop") initSecopOnce();
     if (name === "analisis") renderQuotaBanner();
     if (name === "paa") initPaaOnce();
+    if (name === "forense") initForenseOnce();
     if (name === "formacion") showCursosCatalog();  if (name === "relatoria") { if (LICITA.relatoria) LICITA.relatoria.init(); };  if (name === "relatoria") { if (LICITA.relatoria) LICITA.relatoria.init(); };
     if (name === "alertas") renderAlerts();
     if (name === "dashboard") { renderPulse(); renderMap(); }
@@ -4365,6 +4367,92 @@
         }, 100);
       })
     );
+  }
+
+  /* ------------------------ Análisis Forense (UI) --------------------- */
+  var forenseInited = false;
+  function initForenseOnce() {
+    if (forenseInited) return;
+    if (!LICITA.forensics) {
+      $("#forResultado").innerHTML =
+        '<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-800">' +
+        'El módulo <code>forensics.js</code> no está cargado. Recarga la página con Ctrl+Shift+R.' +
+        '</div>';
+      return;
+    }
+    forenseInited = true;
+    var btnRun = $("#forRun");
+    var btnClear = $("#forClear");
+    if (btnRun) btnRun.addEventListener("click", runForense);
+    if (btnClear) btnClear.addEventListener("click", function () {
+      $("#forEntidad").value = "";
+      $("#forAnio").value = "";
+      $("#forResultado").innerHTML = "";
+      $("#forEstado").textContent = "";
+    });
+  }
+
+  async function runForense() {
+    var entidad = ($("#forEntidad").value || "").trim();
+    var anio = ($("#forAnio").value || "").trim();
+    var estado = $("#forEstado");
+    var host = $("#forResultado");
+    if (!entidad) { estado.textContent = "Ingresa una entidad."; return; }
+    estado.textContent = "Consultando SECOP · esto puede tardar hasta 15s...";
+    host.innerHTML = '<div class="flex items-center justify-center py-10"><div class="licita-spinner"></div></div>';
+    try {
+      var opts = anio ? { anio: parseInt(anio, 10) } : {};
+      var r = await LICITA.forensics.analisis360Entidad(entidad, opts);
+      estado.textContent = "";
+      host.innerHTML = renderForense(r);
+    } catch (e) {
+      estado.textContent = "";
+      host.innerHTML =
+        '<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-800">' +
+        '<b>No se pudo completar:</b> ' + escapeHtml(e.message) +
+        '</div>';
+    }
+  }
+
+  function renderForense(r) {
+    var scoreColor = r.scoreRiesgo >= 70 ? "rose" : r.scoreRiesgo >= 40 ? "amber" : "emerald";
+    var html = '<div class="bg-white border border-slate-200 rounded-2xl p-5">' +
+      '<div class="flex items-center gap-4">' +
+      '<div class="text-5xl font-extrabold text-' + scoreColor + '-600">' + r.scoreRiesgo + '</div>' +
+      '<div><p class="text-xs uppercase text-slate-500 font-semibold">Score de riesgo</p>' +
+      '<p class="font-bold text-lg">' + escapeHtml(r.veredicto) + '</p>' +
+      '<p class="text-xs text-slate-500">' + escapeHtml(r.entidad) + '</p></div></div>';
+    if (r.alertas && r.alertas.length) {
+      html += '<div class="mt-4 space-y-2">';
+      r.alertas.forEach(function (a) {
+        var col = a.nivel === "critico" ? "rose" : "amber";
+        html += '<div class="bg-' + col + '-50 border border-' + col + '-200 rounded-lg p-3 text-sm">' +
+          '<b class="text-' + col + '-800">' + escapeHtml(a.tipo) + '</b>: ' + escapeHtml(a.resumen) +
+          '<div class="text-xs text-' + col + '-700 mt-1">' + escapeHtml(a.metrica) + '</div></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<p class="mt-3 text-sm text-emerald-700">Sin alertas críticas detectadas.</p>';
+    }
+    html += '</div>';
+    if (r.captura && r.captura.encontrados) {
+      html += '<div class="bg-white border border-slate-200 rounded-2xl p-5">' +
+        '<h3 class="font-bold text-slate-800">Concentración de mercado</h3>' +
+        '<p class="text-xs text-slate-500">Contratos analizados: ' + r.captura.encontrados +
+        ' · Proveedores únicos: ' + r.captura.totalProveedores +
+        ' · HHI: <b>' + r.captura.hhi + '</b> · Top-5 = ' + Math.round(r.captura.top5Share * 100) + '%</p>' +
+        '<p class="text-sm mt-2">' + escapeHtml(r.captura.veredicto) + '</p></div>';
+    }
+    if (r.adiciones && r.adiciones.alertas && r.adiciones.alertas.length) {
+      html += '<div class="bg-white border border-slate-200 rounded-2xl p-5">' +
+        '<h3 class="font-bold text-slate-800">Contratos con adición > 50% (art. 40 Ley 80)</h3>' +
+        '<ul class="mt-2 text-xs space-y-1">';
+      r.adiciones.alertas.slice(0, 5).forEach(function (a) {
+        html += '<li>· <b>' + Math.round(a.adicionPct) + '%</b> ' + escapeHtml((a.objeto || "").slice(0, 90)) + '</li>';
+      });
+      html += '</ul></div>';
+    }
+    return html;
   }
 
   /* ------------------------------ init -------------------------------- */
