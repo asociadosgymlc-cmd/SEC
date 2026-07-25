@@ -422,7 +422,12 @@ LICITA.core = (function () {
       const id = "cns-typing";
       const host = document.getElementById("cnsMessages");
       if (on) {
-        if (!document.getElementById(id)) host.insertAdjacentHTML("beforeend", '<div id="' + id + '" class="flex justify-start"><div class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-2 rounded-2xl rounded-bl-sm text-xs text-slate-500">Analizando...</div></div>');
+        if (!document.getElementById(id)) host.insertAdjacentHTML("beforeend",
+          '<div id="' + id + '" class="flex justify-start"><div class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-3 rounded-2xl rounded-bl-sm flex gap-1 items-center">' +
+          '<div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>' +
+          '<div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:0.2s"></div>' +
+          '<div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay:0.4s"></div>' +
+          '</div></div>');
         host.scrollTop = host.scrollHeight;
       } else { const t = document.getElementById(id); if (t) t.remove(); }
     },
