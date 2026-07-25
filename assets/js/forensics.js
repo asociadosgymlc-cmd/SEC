@@ -39,11 +39,33 @@ LICITA.forensics = (function () {
     ADJUDICACION_EXCESO:   1.05,
   };
 
+  const ENTIDADES_GRANDES = [
+    /alcald[íi]a\s+de\s+(bogot|medell|cali|barranquilla|cartagena|bucaramanga|c[úu]cuta|ibagu[ée]|pereira|manizales|santa\s*marta)/i,
+    /gobernaci[óo]n\s+de\s+(antioquia|cundinamarca|valle|atl[áa]ntico|santander|bol[íi]var)/i,
+    /ministerio\s+de/i,
+    /fondo\s+nacional/i,
+  ];
+  function esEntidadGrande(n) {
+    if (!n) return false;
+    return ENTIDADES_GRANDES.some((re) => re.test(n));
+  }
+  async function _fetchContratosEntidad(nombreEntidad, opts, limite) {
+    if (esEntidadGrande(nombreEntidad) && !(opts && opts.anio)) {
+      throw new Error(
+        "Entidad grande detectada (" + nombreEntidad + "). Requiere filtrar por año " +
+        "(opts.anio) para evitar timeouts. Ej: analisis360Entidad(nombre, {anio: 2025})"
+      );
+    }
+    const filters = { entidad: nombreEntidad, limite: limite || 300 };
+    if (opts && opts.anio) filters.anio = opts.anio;
+    return await SECOP.search("contratos", filters);
+  }
+
   async function analizarCapturaEntidad(nombreEntidad, opts) {
     if (!nombreEntidad) throw new Error("Se requiere nombre de entidad");
-    const filters = { entidad: nombreEntidad, limite: 1000 };
-    if (opts && opts.anio) filters.anio = opts.anio;
-    const raw = await SECOP.search("contratos", filters);
+    const raw = (opts && opts.preFetched)
+      ? opts.preFetched
+      : await _fetchContratosEntidad(nombreEntidad, opts, 500);
     if (!raw.length) return { encontrados: 0 };
 
     const porProveedor = {};
@@ -142,9 +164,9 @@ LICITA.forensics = (function () {
   }
 
   async function detectarAnomaliasAdjudicacion(nombreEntidad, opts) {
-    const filters = { entidad: nombreEntidad, limite: 500 };
-    if (opts && opts.anio) filters.anio = opts.anio;
-    const raw = await SECOP.search("contratos", filters);
+    const raw = (opts && opts.preFetched)
+      ? opts.preFetched
+      : await _fetchContratosEntidad(nombreEntidad, opts, 300);
     const anomalias = [];
     raw.forEach((c) => {
       const n = SECOP.normalize("contratos", c);
@@ -166,9 +188,9 @@ LICITA.forensics = (function () {
   }
 
   async function detectarAdicionesExcesivas(nombreEntidad, opts) {
-    const filters = { entidad: nombreEntidad, limite: 500 };
-    if (opts && opts.anio) filters.anio = opts.anio;
-    const raw = await SECOP.search("contratos", filters);
+    const raw = (opts && opts.preFetched)
+      ? opts.preFetched
+      : await _fetchContratosEntidad(nombreEntidad, opts, 300);
     const alertas = [];
     raw.forEach((c) => {
       const n = SECOP.normalize("contratos", c);
@@ -333,11 +355,22 @@ LICITA.forensics = (function () {
 
   async function analisis360Entidad(nombreEntidad, opts) {
     if (!nombreEntidad) throw new Error("Se requiere entidad");
-    const [captura, modalidades, anomalias, adiciones] = await Promise.all([
-      analizarCapturaEntidad(nombreEntidad, opts).catch(() => null),
-      analizarModalidades(nombreEntidad, opts).catch(() => null),
-      detectarAnomaliasAdjudicacion(nombreEntidad, opts).catch(() => null),
-      detectarAdicionesExcesivas(nombreEntidad, opts).catch(() => null),
+    // 1 sola fetch de contratos (era 3 duplicadas antes) + 1 de procesos en paralelo
+    let contratosRaw = [];
+    let modalidades = null;
+    try {
+      [contratosRaw, modalidades] = await Promise.all([
+        _fetchContratosEntidad(nombreEntidad, opts, 500),
+        analizarModalidades(nombreEntidad, opts).catch(() => null),
+      ]);
+    } catch (e) {
+      throw new Error("No se pudo consultar SECOP: " + e.message);
+    }
+    const optsShared = Object.assign({}, opts || {}, { preFetched: contratosRaw });
+    const [captura, anomalias, adiciones] = await Promise.all([
+      analizarCapturaEntidad(nombreEntidad, optsShared).catch(() => null),
+      detectarAnomaliasAdjudicacion(nombreEntidad, optsShared).catch(() => null),
+      detectarAdicionesExcesivas(nombreEntidad, optsShared).catch(() => null),
     ]);
     const alertas = [];
     if (captura && captura.alarma) alertas.push({
