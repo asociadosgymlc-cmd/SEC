@@ -299,32 +299,59 @@ class ViabilityAnalyzer:
         hallazgos = []
         reglas = [
             ("liquidez",              "Liquidez",                ">=", False),
-            ("endeudamiento",         "Endeudamiento (%)",       "<=", False),
+            ("endeudamiento",         "Endeudamiento (%)",       "<=", True),
             ("razon_cobertura",       "Razón Cobertura Intereses", ">=", False),
             ("rentabilidad_patrimonio", "Rentabilidad Patrimonio (%)", ">=", True),
             ("rentabilidad_activo",   "Rentabilidad Activo (%)", ">=", True),
             ("k_contratacion",        "K Contratación (SMMLV)",  ">=", False),
         ]
+        def _pct(v: float) -> float:
+            # El RUP certifica estos índices como fracción (0,42); los pliegos usan % o fracción.
+            return v * 100 if -1 <= v <= 1 else v
+
         for key, nombre, op, es_porcentaje in reglas:
             if key not in exigidos:
                 continue
             exigido = exigidos[key]
+            if es_porcentaje:
+                exigido = _pct(exigido)
             cliente = rup.get(key)
+
+            if key == "razon_cobertura" and isinstance(cliente, str) and cliente.upper().startswith("INDETERMINAD"):
+                hallazgos.append(HallazgoCruce(
+                    indicador=nombre,
+                    exigido=f"{op} {exigido}",
+                    cliente="Indeterminado",
+                    semaforo=VERDE,
+                    observacion="Sin gastos de intereses: cumple, salvo que el pliego diga expresamente lo contrario.",
+                ))
+                continue
+            if key == "k_contratacion" and cliente is None:
+                hallazgos.append(HallazgoCruce(
+                    indicador=nombre,
+                    exigido=f"{op} {exigido}",
+                    cliente="No viene en el RUP",
+                    semaforo=AMARILLO,
+                    observacion=(
+                        "La capacidad residual no se certifica en el RUP: se calcula con los "
+                        "contratos en ejecución y el formato del pliego. Calcularla antes del cierre."
+                    ),
+                ))
+                continue
             if cliente is None:
                 hallazgos.append(HallazgoCruce(
                     indicador=nombre,
                     exigido=f"{op} {exigido}",
-                    cliente="No reportado en RUP",
+                    cliente="No encontrado en el RUP",
                     semaforo=ROJO,
-                    observacion="El RUP del cliente no reporta este indicador. Verificar renovación.",
+                    observacion="El indicador no aparece en el certificado. Revisar el RUP a mano antes de decidir.",
                     subsanable=False,
                 ))
                 continue
 
-            # Normalizar % si el cliente lo entrega como fracción (0.12 → 12.0)
             cliente_norm = float(cliente)
-            if es_porcentaje and cliente_norm < 1 and exigido > 1:
-                cliente_norm *= 100
+            if es_porcentaje:
+                cliente_norm = _pct(cliente_norm)
 
             cumple = (op == ">=" and cliente_norm >= exigido) or \
                      (op == "<=" and cliente_norm <= exigido)
@@ -338,9 +365,9 @@ class ViabilityAnalyzer:
             else:
                 sem = ROJO
                 obs = (
-                    f"NO cumple. Déficit del {margen_pct:.1f}%. "
-                    "Insubsanable sin modificar el RUP vigente — "
-                    "evaluar renovación extraordinaria o Unión Temporal."
+                    f"NO cumple. Déficit del {margen_pct:.1f}%. Los indicadores del RUP salen del "
+                    "último cierre fiscal y no se pueden mejorar para este proceso: la vía es un "
+                    "consorcio o unión temporal, o una observación al pliego si el indicador es desproporcionado."
                 )
             hallazgos.append(HallazgoCruce(
                 indicador=nombre,
@@ -367,7 +394,9 @@ class ViabilityAnalyzer:
                 semaforo=AMARILLO,
                 observacion="No se extrajeron códigos UNSPSC del pliego. Verificar manualmente.",
             )
-        set_cliente = set(unspsc_cliente or [])
+        # El RUP clasifica a nivel clase (6 dígitos); el pliego suele listar el código de 8.
+        set_cliente = {str(c)[:6] for c in (unspsc_cliente or [])}
+        unspsc_pliego = list(dict.fromkeys(str(c)[:6] for c in unspsc_pliego))
         coincidentes = [c for c in unspsc_pliego if c in set_cliente]
         pct = len(coincidentes) / len(unspsc_pliego) if unspsc_pliego else 0
 
@@ -409,7 +438,11 @@ class ViabilityAnalyzer:
                 semaforo=AMARILLO,
                 observacion="Verificar manualmente el requisito de experiencia.",
             )
-        total_cliente = sum(float(c.get("valor_smmlv", 0)) for c in (contratos_cliente or []))
+        # En consorcios y uniones temporales se acredita el valor según el % de participación.
+        total_cliente = sum(
+            float(c.get("valor_smmlv", 0)) * float(c.get("participacion", 100)) / 100
+            for c in (contratos_cliente or [])
+        )
         if total_cliente >= valor_minimo_smmlv:
             margen = (total_cliente - valor_minimo_smmlv) / valor_minimo_smmlv * 100
             sem = VERDE if margen >= 20 else AMARILLO
@@ -530,6 +563,7 @@ class ViabilityAnalyzer:
 
     def evaluar(self, numero_proceso: str, rup_cliente: dict) -> InformeViabilidad:
         inf = InformeViabilidad(numero_proceso=numero_proceso)
+        inf.riesgos.extend(rup_cliente.get("advertencias", []))
 
         logger.info("Fase 1 · fetch documentos")
         docs = self.fetch_documentos(numero_proceso)
@@ -595,12 +629,22 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Analiza viabilidad de un proceso SECOP II")
     parser.add_argument("numero_proceso", help="Número del proceso (ej: LP-DNP-001-2026)")
-    parser.add_argument("--rup", required=True, help="Ruta al JSON con datos del RUP cliente")
+    fuente = parser.add_mutually_exclusive_group(required=True)
+    fuente.add_argument("--rup", help="Ruta al JSON con datos del RUP cliente")
+    fuente.add_argument("--rup-pdf", help="Ruta al certificado RUP en PDF")
     parser.add_argument("--salida", default=None, help="Archivo .md de salida (opcional)")
     args = parser.parse_args()
 
-    with open(args.rup, encoding="utf-8") as fh:
-        rup = json.load(fh)
+    if args.rup_pdf:
+        from modules.rup_extractor import extraer_rup_pdf
+        with open(args.rup_pdf, "rb") as fh:
+            extraido = extraer_rup_pdf(fh.read())
+        for w in extraido.advertencias + [f"No encontrado en el RUP: {f}" for f in extraido.faltantes]:
+            print("⚠️ " + w)
+        rup = extraido.to_rup_dict()
+    else:
+        with open(args.rup, encoding="utf-8") as fh:
+            rup = json.load(fh)
 
     analyzer = ViabilityAnalyzer()
     informe = analyzer.evaluar(args.numero_proceso, rup)

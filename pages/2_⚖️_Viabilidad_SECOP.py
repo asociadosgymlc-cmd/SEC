@@ -14,6 +14,7 @@ import json
 
 import streamlit as st
 
+from modules.rup_extractor import extraer_rup_pdf
 from modules.viability_analyzer import (
     ViabilityAnalyzer, VERDE, AMARILLO, ROJO,
 )
@@ -33,7 +34,40 @@ st.caption(
 
 with st.sidebar:
     st.header("📋 RUP del Cliente")
-    tab_manual, tab_json = st.tabs(["Manual", "Subir JSON"])
+    tab_pdf, tab_manual, tab_json = st.tabs(["Certificado PDF", "Manual", "Subir JSON"])
+
+    with tab_pdf:
+        rup_pdf = st.file_uploader(
+            "Certificado RUP (PDF de la Cámara de Comercio)",
+            type=["pdf"],
+            help="El certificado digital, no un escaneo. LICITA extrae indicadores, UNSPSC y experiencia.",
+        )
+        if rup_pdf:
+            try:
+                extraido = extraer_rup_pdf(rup_pdf.getvalue())
+            except Exception as exc:
+                st.error(f"No se pudo leer el certificado: {exc}")
+            else:
+                st.session_state["rup_data"] = extraido.to_rup_dict()
+                if extraido.razon_social or extraido.nit:
+                    st.success(f"{extraido.razon_social or 'Proponente'} · NIT {extraido.nit or '—'}")
+                filas = [
+                    ("Liquidez", extraido.liquidez),
+                    ("Endeudamiento (%)", extraido.endeudamiento),
+                    ("Cobertura de intereses", extraido.razon_cobertura),
+                    ("Rentabilidad patrimonio (%)", extraido.rentabilidad_patrimonio),
+                    ("Rentabilidad activo (%)", extraido.rentabilidad_activo),
+                    ("Patrimonio (COP)", f"{extraido.patrimonio:,.0f}" if extraido.patrimonio else None),
+                ]
+                for nombre, valor in filas:
+                    st.write(f"**{nombre}:** {valor if valor is not None else '—'}")
+                st.write(f"**Códigos UNSPSC:** {len(extraido.unspsc_codes)}")
+                total_exp = sum(c.valor_smmlv * c.participacion / 100 for c in extraido.experiencia_contratos)
+                st.write(f"**Experiencia:** {len(extraido.experiencia_contratos)} contratos · {total_exp:,.0f} SMMLV")
+                for f in extraido.faltantes:
+                    st.warning(f"No encontrado en el certificado: {f}. Revísalo a mano; el informe lo marcará.")
+                for w in extraido.advertencias:
+                    st.warning(w)
 
     with tab_json:
         uploaded = st.file_uploader(
