@@ -137,10 +137,14 @@ class SecopClient:
         order: Optional[str] = None,
         limit: int = 1000,
         offset: int = 0,
+        q: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Consulta un dataset con SoQL. Devuelve DataFrame listo para
         pandas/embeddings/joins.
+
+        `q` es búsqueda de texto completo de Socrata: usa índice, a diferencia
+        de `LIKE` en `where`, que recorre la tabla entera en datasets grandes.
         """
         dataset_id = self._resolve_dataset(dataset_key)
         kwargs = {"limit": limit, "offset": offset}
@@ -150,6 +154,8 @@ class SecopClient:
             kwargs["where"] = where
         if order:
             kwargs["order"] = order
+        if q:
+            kwargs["q"] = q
 
         rows = self._get_with_retry(dataset_id, **kwargs)
         return pd.DataFrame.from_records(rows)

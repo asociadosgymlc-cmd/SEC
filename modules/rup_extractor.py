@@ -106,6 +106,9 @@ def _parse_num(raw: str, dinero: bool = False) -> Optional[float]:
         return None
 
 
+parse_numero = _parse_num
+
+
 def _buscar_num(texto: str, etiqueta: str, ventana: int = 60, dinero: bool = False) -> Optional[float]:
     m = re.search(etiqueta + r"[^0-9\-]{0," + str(ventana) + r"}" + _NUM, texto)
     return _parse_num(m.group(1), dinero) if m else None

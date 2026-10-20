@@ -37,6 +37,7 @@ CLI:
 """
 from __future__ import annotations
 
+import datetime as dt
 import io
 import json
 import logging
@@ -54,6 +55,8 @@ except ImportError as exc:
 
 import requests
 
+from modules.minima_cuantia import AnalisisPrecio, MinimaCuantia
+from modules.rup_extractor import parse_numero
 from modules.secop_client import SecopClient
 
 logger = logging.getLogger(__name__)
@@ -66,6 +69,19 @@ logger = logging.getLogger(__name__)
 VERDE = "🟢 VERDE"
 AMARILLO = "🟡 AMARILLO"
 ROJO = "🔴 ROJO"
+NO_APLICA = "⚪ NO APLICA"
+
+# SMMLV 2026. Solo se usa para pasar de pesos a SMMLV cuando el requisito y los
+# contratos vienen en unidades distintas. Se puede cambiar con LICITA_SMMLV o en la página.
+SMMLV_DEFAULT = float(os.getenv("LICITA_SMMLV", "1750905"))
+
+
+@dataclass
+class RequisitoExperiencia:
+    valor_smmlv: Optional[float] = None
+    no_exige: bool = False
+    descripcion: str = ""
+    en_pesos: bool = False   # el documento lo expresa en pesos (p. ej. % del presupuesto)
 
 
 @dataclass
@@ -95,6 +111,8 @@ class InformeViabilidad:
     presupuesto_oficial: float = 0.0
     duracion: str = ""
     objeto: str = ""
+    modalidad: str = ""
+    precio: Optional[AnalisisPrecio] = None
     financiero: list[HallazgoCruce] = field(default_factory=list)
     unspsc: HallazgoCruce = None
     experiencia: HallazgoCruce = None
@@ -135,7 +153,6 @@ PATRONES_FINANCIEROS = {
 }
 
 PATRON_UNSPSC = re.compile(r"\b(\d{8})\b")
-PATRON_SMMLV = re.compile(r"(?i)(\d+(?:[.,]\d+)?)\s*SMMLV")
 PATRON_PRESUPUESTO = re.compile(
     r"(?i)presupuesto\s+oficial[\s\S]{0,80}?\$?\s*([\d.,]+)"
 )
@@ -179,12 +196,47 @@ class ViabilityAnalyzer:
                 )
         return df.to_dict("records") if not df.empty else []
 
+    def fetch_metadata_proceso(self, numero_proceso: str) -> dict:
+        """
+        Datos estructurados del proceso en p6dx-8zbt: modalidad, presupuesto, objeto.
+        Más confiables que leerlos del PDF. Devuelve {} si no se encuentra.
+        """
+        numero = numero_proceso.replace("'", "''")
+        with SecopClient(app_token=self.app_token) as cli:
+            for campo in ("id_del_proceso", "referencia_del_proceso"):
+                try:
+                    df = cli.consultar(
+                        dataset_key="procesos_secop2",
+                        where=f"{campo} = '{numero}'",
+                        limit=1,
+                    )
+                except Exception:
+                    continue
+                if not df.empty:
+                    return df.iloc[0].to_dict()
+        return {}
+
+    @staticmethod
+    def detectar_modalidad(texto: str, metadata: dict) -> str:
+        modalidad = str(metadata.get("modalidad_de_contratacion", "") or "")
+        if modalidad:
+            return modalidad
+        if re.search(r"(?i)m[íi]nima\s+cuant[íi]a", texto):
+            return "Mínima cuantía"
+        return ""
+
+    @staticmethod
+    def es_minima_cuantia(modalidad: str) -> bool:
+        return bool(re.search(r"(?i)m[íi]nima\s+cuant[íi]a", modalidad or ""))
+
     def filtrar_relevantes(self, documentos: list[dict]) -> list[dict]:
-        """Deja solo pliego definitivo y anexo técnico."""
+        """Deja pliego definitivo y anexo técnico; en mínima cuantía, invitación y estudios previos."""
         patrones_relevantes = [
             r"pliego\s+(?:de\s+condiciones\s+)?definitiv",
             r"anexo\s+t[ée]cnico",
             r"documento\s+tipo",
+            r"invitaci[óo]n",
+            r"estudios?\s+previos?",
         ]
         relevantes = []
         for d in documentos:
@@ -251,24 +303,67 @@ class ViabilityAnalyzer:
         return unicos
 
     @staticmethod
-    def extraer_experiencia_minima_smmlv(texto: str) -> Optional[float]:
-        """Busca el valor en SMMLV de experiencia específica requerida."""
-        matches = PATRON_SMMLV.findall(texto)
-        valores = []
-        for m in matches:
-            try:
-                valores.append(float(m.replace(",", ".")))
-            except ValueError:
-                continue
-        if not valores:
+    def extraer_requisito_experiencia(
+        texto: str,
+        presupuesto: float = 0.0,
+        smmlv: float = SMMLV_DEFAULT,
+    ) -> RequisitoExperiencia:
+        """
+        Busca el valor exigido junto a la palabra "experiencia", no en todo el documento
+        (si no, se confunde con la capacidad residual u otros valores en SMMLV).
+        """
+        if re.search(
+            r"(?i)no\s+se\s+(?:exige|exigir[áa]|requiere|requerir[áa]|solicita|solicitar[áa])"
+            r"\s+(?:acreditar\s+)?experiencia",
+            texto,
+        ):
+            return RequisitoExperiencia(no_exige=True, descripcion="La invitación no exige experiencia")
+
+        cerca = r"[\s\S]{0,400}?"
+        especifica = r"(?i)experiencia\s+(?:espec[íi]fica|m[íi]nima|requerida|habilitante|del\s+proponente)"
+        en_smmlv = (
+            r"(\d[\d.,]*)\)?\s*(?:\([^)]{0,60}\)\s*)?(?:SMMLV|SMLMV|salarios\s+m[íi]nimos)"
+        )
+        en_pct = (
+            r"(\d{1,3}(?:[.,]\d+)?)\s*%\s*\)?\s*(?:del?\s+)?(?:valor\s+del\s+)?presupuesto"
+        )
+        igual_presupuesto = (
+            r"(?:igual\s+o\s+superior|mayor\s+o\s+igual|superior)\s+al?\s+"
+            r"(?:valor\s+del\s+)?presupuesto\s+oficial"
+        )
+
+        def _smmlv(etiqueta: str) -> Optional[RequisitoExperiencia]:
+            m = re.search(etiqueta + cerca + en_smmlv, texto, re.I)
+            if not m:
+                return None
+            v = parse_numero(m.group(1), dinero=True)  # "1.500 SMMLV" = mil quinientos
+            if v and 1 <= v <= 1_000_000:
+                return RequisitoExperiencia(valor_smmlv=v, descripcion=f"{v:,.0f} SMMLV")
             return None
-        # Toma el valor más común que esté dentro de un rango razonable (10-100000)
-        valores_filtrados = [v for v in valores if 10 <= v <= 100_000]
-        if not valores_filtrados:
-            return None
-        # El valor típico es la mediana (evita outliers)
-        valores_filtrados.sort()
-        return valores_filtrados[len(valores_filtrados) // 2]
+
+        req = _smmlv(especifica)
+        if req:
+            return req
+
+        m = re.search(r"(?i)experiencia" + cerca + en_pct, texto)
+        if m and presupuesto > 0:
+            pct = parse_numero(m.group(1)) or 0
+            if 0 < pct <= 1000:
+                cop = presupuesto * pct / 100
+                return RequisitoExperiencia(
+                    valor_smmlv=cop / smmlv,
+                    descripcion=f"{pct:g}% del presupuesto",
+                    en_pesos=True,
+                )
+
+        if presupuesto > 0 and re.search(r"(?i)experiencia" + cerca + igual_presupuesto, texto):
+            return RequisitoExperiencia(
+                valor_smmlv=presupuesto / smmlv,
+                descripcion="100% del presupuesto",
+                en_pesos=True,
+            )
+
+        return _smmlv(r"(?i)experiencia") or RequisitoExperiencia()
 
     @staticmethod
     def extraer_presupuesto(texto: str) -> float:
@@ -342,9 +437,12 @@ class ViabilityAnalyzer:
                 hallazgos.append(HallazgoCruce(
                     indicador=nombre,
                     exigido=f"{op} {exigido}",
-                    cliente="No encontrado en el RUP",
+                    cliente="Sin dato",
                     semaforo=ROJO,
-                    observacion="El indicador no aparece en el certificado. Revisar el RUP a mano antes de decidir.",
+                    observacion=(
+                        "El cliente no tiene este indicador cargado. Sale del RUP o, si no hay RUP "
+                        "(mínima cuantía), de los estados financieros. Cargarlo antes de decidir."
+                    ),
                     subsanable=False,
                 ))
                 continue
@@ -423,43 +521,85 @@ class ViabilityAnalyzer:
             observacion=obs,
         )
 
+    @staticmethod
+    def _total_smmlv(contratos: list[dict], smmlv: float) -> float:
+        """Suma en SMMLV. Acepta valor_smmlv o valor_cop; pondera por % de participación (consorcios/UT)."""
+        total = 0.0
+        for c in contratos or []:
+            if c.get("valor_smmlv"):
+                v = float(c["valor_smmlv"])
+            elif c.get("valor_cop"):
+                v = float(c["valor_cop"]) / smmlv
+            else:
+                continue
+            total += v * float(c.get("participacion", 100) or 100) / 100
+        return total
+
+    @staticmethod
+    def _anios_constituida(fecha_constitucion: str) -> Optional[float]:
+        try:
+            f = dt.date.fromisoformat(str(fecha_constitucion)[:10])
+        except ValueError:
+            return None
+        return (dt.date.today() - f).days / 365.25
+
     def cruzar_experiencia(
         self,
-        valor_minimo_smmlv: Optional[float],
-        contratos_cliente: list[dict],
-        presupuesto: float,
+        requisito: RequisitoExperiencia,
+        cliente: dict,
+        smmlv: float = SMMLV_DEFAULT,
     ) -> HallazgoCruce:
-        """Valida que la experiencia del cliente supere lo exigido."""
-        if valor_minimo_smmlv is None:
+        """Experiencia propia y, en empresas de menos de 3 años, la de los socios."""
+        contratos = cliente.get("experiencia_contratos", []) or []
+        socios = cliente.get("experiencia_socios", []) or []
+        propia = self._total_smmlv(contratos, smmlv)
+        anios = self._anios_constituida(cliente.get("fecha_constitucion", ""))
+
+        def fmt(v_smmlv: float) -> str:
+            # Se muestra en la misma unidad en que el documento pide la experiencia
+            return f"${v_smmlv * smmlv:,.0f}" if requisito.en_pesos else f"{v_smmlv:,.0f} SMMLV"
+
+        texto_cliente = f"{fmt(propia)} ({len(contratos)} contrato(s))"
+
+        if requisito.no_exige:
+            return HallazgoCruce("Experiencia", "No exigida", texto_cliente, VERDE, requisito.descripcion + ".")
+        if requisito.valor_smmlv is None:
             return HallazgoCruce(
-                indicador="Experiencia específica",
-                exigido="No detectado en el pliego",
-                cliente=f"{len(contratos_cliente)} contratos aportables",
-                semaforo=AMARILLO,
-                observacion="Verificar manualmente el requisito de experiencia.",
+                "Experiencia", "No detectado en el documento", texto_cliente, AMARILLO,
+                "Verificar a mano qué experiencia pide el documento.",
             )
-        # En consorcios y uniones temporales se acredita el valor según el % de participación.
-        total_cliente = sum(
-            float(c.get("valor_smmlv", 0)) * float(c.get("participacion", 100)) / 100
-            for c in (contratos_cliente or [])
-        )
-        if total_cliente >= valor_minimo_smmlv:
-            margen = (total_cliente - valor_minimo_smmlv) / valor_minimo_smmlv * 100
+
+        exigido = requisito.valor_smmlv
+        etiqueta_exigido = f"≥ {fmt(exigido)}" + (f" ({requisito.descripcion})" if requisito.en_pesos else "")
+        if propia >= exigido:
+            margen = (propia - exigido) / exigido * 100
             sem = VERDE if margen >= 20 else AMARILLO
             obs = f"Cumple{' holgadamente' if sem == VERDE else ' ajustado'} (margen {margen:.1f}%)."
-        else:
-            deficit = (valor_minimo_smmlv - total_cliente) / valor_minimo_smmlv * 100
-            sem = ROJO
-            obs = (
-                f"Déficit del {deficit:.1f}% en SMMLV acreditables. "
-                "Evaluar Unión Temporal con empresa que aporte el resto."
-            )
+            return HallazgoCruce("Experiencia", etiqueta_exigido, texto_cliente, sem, obs)
+
+        # Empresas con menos de 3 años pueden acreditar la experiencia de sus socios
+        # (art. 6 Ley 1150 de 2007, modificado por el art. 221 Decreto Ley 019 de 2012).
+        if anios is not None and anios < 3 and socios:
+            con_socios = propia + self._total_smmlv(socios, smmlv)
+            texto_cliente += f" + socios = {fmt(con_socios)}"
+            if con_socios >= exigido:
+                return HallazgoCruce(
+                    "Experiencia", etiqueta_exigido, texto_cliente, AMARILLO,
+                    "Cumple sumando la experiencia de los socios, permitido porque la empresa tiene "
+                    f"{anios:.1f} años de constituida. Aportar certificados de cada socio y revisar "
+                    "que el documento no pida experiencia exclusiva de la persona jurídica.",
+                )
+
+        deficit = (exigido - propia) / exigido * 100
+        opciones = ["formar un consorcio o unión temporal con quien aporte la experiencia faltante"]
+        if anios is not None and anios < 3 and not socios:
+            opciones.insert(0, "cargar la experiencia de los socios: la empresa tiene menos de 3 años y la ley lo permite")
+        elif anios is None and not socios:
+            opciones.insert(0, "si la empresa tiene menos de 3 años, cargar fecha de constitución y experiencia de los socios")
+        opciones.append("buscar procesos con menor exigencia (en mínima cuantía muchas entidades piden poca o ninguna)")
         return HallazgoCruce(
-            indicador="Experiencia específica (SMMLV)",
-            exigido=f"≥ {valor_minimo_smmlv:.0f} SMMLV",
-            cliente=f"{total_cliente:.0f} SMMLV ({len(contratos_cliente)} contratos)",
-            semaforo=sem,
-            observacion=obs,
+            "Experiencia", etiqueta_exigido, texto_cliente, ROJO,
+            f"Falta el {deficit:.1f}% de la experiencia exigida. Opciones: " + "; ".join(opciones) + ".",
         )
 
     # -----------------------------------------------------------------
@@ -467,15 +607,20 @@ class ViabilityAnalyzer:
     # -----------------------------------------------------------------
 
     @staticmethod
-    def _veredicto(hallazgos: list[HallazgoCruce]) -> str:
+    def _veredicto(hallazgos: list[HallazgoCruce], minima: bool = False,
+                   precio: Optional[AnalisisPrecio] = None) -> str:
         n_rojo = sum(1 for h in hallazgos if h.semaforo == ROJO)
         n_amarillo = sum(1 for h in hallazgos if h.semaforo == AMARILLO)
         if n_rojo >= 2:
             return "🚫 **NO-GO** · Dos o más riesgos de rechazo insubsanable."
         if n_rojo == 1:
             return "⚠️ **GO CON RIESGO** · Un indicador rojo. Postular solo si se puede modificar vía observación."
+        if minima and precio and precio.disponible and precio.margen_max is not None and precio.margen_max < 0:
+            return "🚫 **NO-GO** · Habilitado, pero al precio que suele ganar no hay ganancia."
         if n_amarillo >= 3:
             return "⚠️ **GO CON ATENCIÓN** · Varios indicadores ajustados. Revisar márgenes antes del cierre."
+        if minima:
+            return "✅ **GO** · Habilitado. En mínima cuantía gana el menor precio: definir la oferta con el rango sugerido."
         return "✅ **GO** · Perfil habilitado. Enfocarse en propuesta técnica/económica."
 
     @staticmethod
@@ -492,13 +637,13 @@ class ViabilityAnalyzer:
                 )
             elif "UNSPSC" in h.indicador:
                 obs.append(
-                    f"Observar la exigencia estricta de UNSPSC exactos; el Decreto 1082 permite "
-                    "cobertura por códigos equivalentes o del mismo segmento."
+                    "Si el pliego exige códigos UNSPSC muy específicos sin relación clara con el objeto, "
+                    "observarlo pidiendo que admita las clases relacionadas que sí tiene el cliente."
                 )
             elif "Experiencia" in h.indicador:
                 obs.append(
-                    f"Observar el valor mínimo de experiencia en SMMLV por desproporción "
-                    "al presupuesto oficial (jurisprudencia Consejo de Estado · Sección Tercera)."
+                    "Si la experiencia exigida supera el presupuesto oficial o no guarda relación con "
+                    "el objeto, observarla por desproporcionada (art. 5 Ley 1150 de 2007)."
                 )
         return obs
 
@@ -512,6 +657,8 @@ class ViabilityAnalyzer:
         lineas.append(f"# Análisis de Viabilidad · Proceso {inf.numero_proceso}")
         lineas.append("")
         lineas.append(f"- **Objeto:** {inf.objeto or '—'}")
+        if inf.modalidad:
+            lineas.append(f"- **Modalidad:** {inf.modalidad}")
         if inf.presupuesto_oficial:
             lineas.append(f"- **Presupuesto Oficial:** $ {inf.presupuesto_oficial:,.0f}")
         if inf.duracion:
@@ -521,13 +668,39 @@ class ViabilityAnalyzer:
         lineas.append("## Veredicto")
         lineas.append(inf.veredicto)
         lineas.append("")
-        lineas.append("## Tabla Semáforo · Indicadores Financieros")
-        lineas.append("")
-        lineas.append("| Indicador | Exigido | Cliente | Semáforo | Observación |")
-        lineas.append("|---|---|---|---|---|")
-        for h in inf.financiero:
-            lineas.append(f"| {h.indicador} | {h.exigido} | {h.cliente} | {h.semaforo} | {h.observacion} |")
-        lineas.append("")
+        if ViabilityAnalyzer.es_minima_cuantia(inf.modalidad):
+            lineas.append(
+                "> **Mínima cuantía:** no se exige RUP. La entidad ordena las ofertas por precio y solo "
+                "revisa los requisitos habilitantes de la más barata; si no cumple, pasa a la siguiente. "
+                "Ofertar barato sin cumplir los requisitos no sirve, y cumplirlos sin precio competitivo tampoco."
+            )
+            lineas.append("")
+        if inf.precio:
+            p = inf.precio
+            lineas.append("## Precio")
+            lineas.append("")
+            if p.disponible:
+                busqueda = f" (búsqueda: *{p.palabras_busqueda}*)" if p.palabras_busqueda else ""
+                lineas.append(
+                    f"- {p.procesos_comparados} mínimas cuantías parecidas{busqueda} "
+                    f"se adjudicaron al **{p.pct_mediana}%** del presupuesto en la mitad de los casos "
+                    f"(entre {p.pct_p25}% y {p.pct_p75}% en la mitad central)."
+                )
+                if p.precio_max:
+                    lineas.append(f"- **Rango competitivo sugerido:** $ {p.precio_min:,.0f} – $ {p.precio_max:,.0f}")
+                if p.margen_min is not None:
+                    lineas.append(f"- **Margen sobre el costo estimado en ese rango:** {p.margen_min}% – {p.margen_max}%")
+            for w in p.advertencias:
+                lineas.append(f"- ⚠️ {w}")
+            lineas.append("")
+        if inf.financiero:
+            lineas.append("## Tabla Semáforo · Indicadores Financieros")
+            lineas.append("")
+            lineas.append("| Indicador | Exigido | Cliente | Semáforo | Observación |")
+            lineas.append("|---|---|---|---|---|")
+            for h in inf.financiero:
+                lineas.append(f"| {h.indicador} | {h.exigido} | {h.cliente} | {h.semaforo} | {h.observacion} |")
+            lineas.append("")
         lineas.append("## Capacidad Técnica")
         lineas.append("")
         lineas.append("| Indicador | Exigido | Cliente | Semáforo | Observación |")
@@ -544,7 +717,7 @@ class ViabilityAnalyzer:
                 lineas.append(f"- {o}")
             lineas.append("")
         if inf.riesgos:
-            lineas.append("## Riesgos de Rechazo")
+            lineas.append("## Riesgos y advertencias")
             lineas.append("")
             for r in inf.riesgos:
                 lineas.append(f"- {r}")
@@ -561,9 +734,23 @@ class ViabilityAnalyzer:
     # Orquestador
     # -----------------------------------------------------------------
 
-    def evaluar(self, numero_proceso: str, rup_cliente: dict) -> InformeViabilidad:
+    def evaluar(
+        self,
+        numero_proceso: str,
+        rup_cliente: dict,
+        costo_estimado: Optional[float] = None,
+        smmlv: float = SMMLV_DEFAULT,
+    ) -> InformeViabilidad:
         inf = InformeViabilidad(numero_proceso=numero_proceso)
         inf.riesgos.extend(rup_cliente.get("advertencias", []))
+
+        try:
+            meta = self.fetch_metadata_proceso(numero_proceso)
+        except Exception as exc:
+            logger.warning("Sin metadata del proceso: %s", exc)
+            meta = {}
+        inf.objeto = str(meta.get("descripci_n_del_procedimiento") or meta.get("nombre_del_procedimiento") or "")
+        inf.presupuesto_oficial = parse_numero(str(meta.get("precio_base") or "0")) or 0.0
 
         logger.info("Fase 1 · fetch documentos")
         docs = self.fetch_documentos(numero_proceso)
@@ -592,29 +779,42 @@ class ViabilityAnalyzer:
             inf.markdown = self.render_markdown(inf)
             return inf
 
-        inf.presupuesto_oficial = self.extraer_presupuesto(texto_combinado)
+        if not inf.presupuesto_oficial:
+            inf.presupuesto_oficial = self.extraer_presupuesto(texto_combinado)
         inf.duracion = self.extraer_duracion(texto_combinado)
+        inf.modalidad = self.detectar_modalidad(texto_combinado, meta)
+        minima = self.es_minima_cuantia(inf.modalidad)
 
         exigidos = self.extraer_indicadores(texto_combinado)
-        unspsc_pliego = self.extraer_unspsc(texto_combinado)
-        exp_minima = self.extraer_experiencia_minima_smmlv(texto_combinado)
+        requisito_exp = self.extraer_requisito_experiencia(texto_combinado, inf.presupuesto_oficial, smmlv)
 
-        logger.info("Fase 3 · cruce con RUP cliente")
+        logger.info("Fase 3 · cruce con datos del cliente")
         inf.financiero = self.cruzar_financieros(exigidos, rup_cliente)
-        inf.unspsc = self.cruzar_unspsc(
-            unspsc_pliego=unspsc_pliego[:30],
-            unspsc_cliente=rup_cliente.get("unspsc_codes", []),
-            presupuesto=inf.presupuesto_oficial,
-        )
-        inf.experiencia = self.cruzar_experiencia(
-            valor_minimo_smmlv=exp_minima,
-            contratos_cliente=rup_cliente.get("experiencia_contratos", []),
-            presupuesto=inf.presupuesto_oficial,
-        )
+        if minima:
+            inf.unspsc = HallazgoCruce(
+                "Códigos UNSPSC", "No se exige RUP", "—", NO_APLICA,
+                "En mínima cuantía no se exige RUP ni clasificación UNSPSC.",
+            )
+        else:
+            inf.unspsc = self.cruzar_unspsc(
+                unspsc_pliego=self.extraer_unspsc(texto_combinado)[:30],
+                unspsc_cliente=rup_cliente.get("unspsc_codes", []),
+                presupuesto=inf.presupuesto_oficial,
+            )
+        inf.experiencia = self.cruzar_experiencia(requisito_exp, rup_cliente, smmlv)
+
+        if minima and inf.objeto:
+            try:
+                inf.precio = MinimaCuantia(self.app_token).analizar_precio(
+                    inf.objeto, inf.presupuesto_oficial, costo_estimado,
+                    excluir_proceso=str(meta.get("id_del_proceso") or ""),
+                )
+            except Exception as exc:
+                inf.precio = AnalisisPrecio(disponible=False, advertencias=[f"No se pudo consultar el histórico de precios: {exc}"])
 
         todos = list(inf.financiero) + [inf.unspsc, inf.experiencia]
         todos = [h for h in todos if h is not None]
-        inf.veredicto = self._veredicto(todos)
+        inf.veredicto = self._veredicto(todos, minima=minima, precio=inf.precio)
         inf.oportunidades_observacion = self._oportunidades_observacion(todos)
         inf.markdown = self.render_markdown(inf)
         return inf
@@ -633,6 +833,8 @@ if __name__ == "__main__":
     fuente.add_argument("--rup", help="Ruta al JSON con datos del RUP cliente")
     fuente.add_argument("--rup-pdf", help="Ruta al certificado RUP en PDF")
     parser.add_argument("--salida", default=None, help="Archivo .md de salida (opcional)")
+    parser.add_argument("--costo", type=float, default=None, help="Costo estimado de ejecución en COP (mínima cuantía)")
+    parser.add_argument("--smmlv", type=float, default=SMMLV_DEFAULT, help="Valor del SMMLV vigente")
     args = parser.parse_args()
 
     if args.rup_pdf:
@@ -647,7 +849,7 @@ if __name__ == "__main__":
             rup = json.load(fh)
 
     analyzer = ViabilityAnalyzer()
-    informe = analyzer.evaluar(args.numero_proceso, rup)
+    informe = analyzer.evaluar(args.numero_proceso, rup, costo_estimado=args.costo, smmlv=args.smmlv)
 
     salida = args.salida or f"analisis_viabilidad_{args.numero_proceso}.md"
     with open(salida, "w", encoding="utf-8") as fh:
