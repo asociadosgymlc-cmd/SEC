@@ -59,6 +59,7 @@ DATASETS = {
     "contratos_secop1": "rpmr-utcd",     # Contratos SECOP I (histórico)
     "paa":              "c6dm-udt9",     # Plan Anual de Adquisiciones
     "tvec_ordenes":     "rgxm-mmea",     # Órdenes de compra TVEC
+    "archivos_descarga": "dmgg-8hin",    # Archivos descargables desde 2025 (pliegos, anexos)
 }
 
 # Columnas mínimas útiles para IA (evita traer todo el ancho de tabla)
