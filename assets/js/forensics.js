@@ -39,25 +39,51 @@ LICITA.forensics = (function () {
     ADJUDICACION_EXCESO:   1.05,
   };
 
-  const ENTIDADES_GRANDES = [
-    /alcald[íi]a\s+de\s+(bogot|medell|cali|barranquilla|cartagena|bucaramanga|c[úu]cuta|ibagu[ée]|pereira|manizales|santa\s*marta)/i,
-    /gobernaci[óo]n\s+de\s+(antioquia|cundinamarca|valle|atl[áa]ntico|santander|bol[íi]var)/i,
-    /ministerio\s+de/i,
-    /fondo\s+nacional/i,
-  ];
-  function esEntidadGrande(n) {
-    if (!n) return false;
-    return ENTIDADES_GRANDES.some((re) => re.test(n));
+  // El dataset histórico rpmr-utcd (SECOP 1) NO tiene índice sobre nombre_de_la_entidad,
+  // por lo que un `LIKE` sobre nombre hace escaneo lineal (>15s incluso para entidades chicas).
+  // El campo nit_de_la_entidad SÍ está indexado → filtro por `=` responde en <1s.
+  //
+  // Estrategia: si el llamador da NIT, úsalo directo. Si solo da nombre, resolver NIT primero
+  // consultando el dataset rápido (p6dx-8zbt · SECOP 2 · sí indexa nombre) y luego buscar
+  // contratos por NIT exacto.
+
+  async function _resolverNitDesdeNombre(nombreEntidad) {
+    // 1 sola consulta al dataset rápido para descubrir el NIT
+    const procesos = await SECOP.search("procesos", {
+      entidad: nombreEntidad,
+      limite: 20,
+    });
+    if (!procesos || !procesos.length) return null;
+    // Cuenta cuántas veces aparece cada NIT y devuelve el más frecuente
+    const nits = {};
+    procesos.forEach((p) => {
+      const n = SECOP.normalize("procesos", p);
+      if (n.nitEntidad) nits[n.nitEntidad] = (nits[n.nitEntidad] || 0) + 1;
+    });
+    const ranking = Object.entries(nits).sort((a, b) => b[1] - a[1]);
+    return ranking.length ? ranking[0][0] : null;
   }
+
   async function _fetchContratosEntidad(nombreEntidad, opts, limite) {
-    if (esEntidadGrande(nombreEntidad) && !(opts && opts.anio)) {
-      throw new Error(
-        "Entidad grande detectada (" + nombreEntidad + "). Requiere filtrar por año " +
-        "(opts.anio) para evitar timeouts. Ej: analisis360Entidad(nombre, {anio: 2025})"
-      );
-    }
-    const filters = { entidad: nombreEntidad, limite: limite || 300 };
+    const filters = { limite: limite || 300 };
     if (opts && opts.anio) filters.anio = opts.anio;
+
+    // Caso 1: NIT directo → búsqueda indexed, no requiere año
+    if (opts && opts.nit) {
+      filters.nit = String(opts.nit).trim();
+      return await SECOP.search("contratos", filters);
+    }
+
+    // Caso 2: solo nombre → resolver NIT desde el dataset rápido, luego usar exact match
+    const nitResuelto = await _resolverNitDesdeNombre(nombreEntidad).catch(() => null);
+    if (nitResuelto) {
+      filters.nit = nitResuelto;
+      return await SECOP.search("contratos", filters);
+    }
+
+    // Caso 3: no se pudo resolver NIT → fallback al LIKE lento (probablemente falle,
+    // pero por lo menos el timeout de 15s dispara un mensaje claro).
+    filters.entidad = nombreEntidad;
     return await SECOP.search("contratos", filters);
   }
 

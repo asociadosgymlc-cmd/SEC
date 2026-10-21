@@ -212,7 +212,10 @@ LICITA.secop = (function () {
         c.push("(" + ors.join(" OR ") + ")");
       }
     }
-    if (filters.entidad && f.entidad) c.push(likeAny(f.entidad, filters.entidad));
+    // NIT: exact match (usa índice de Socrata · rápido incluso en datasets grandes).
+    // Preferir sobre entidad LIKE cuando esté disponible.
+    if (filters.nit && f.nitEntidad) c.push(f.nitEntidad + "='" + esc(String(filters.nit).trim()) + "'");
+    else if (filters.entidad && f.entidad) c.push(likeAny(f.entidad, filters.entidad));
     if (filters.departamento && f.departamento) c.push(likeAny(f.departamento, filters.departamento));
     if (filters.ciudad && f.ciudad) c.push(likeAny(f.ciudad, filters.ciudad));
     if (filters.modalidad && f.modalidad) c.push(likeAny(f.modalidad, filters.modalidad));
