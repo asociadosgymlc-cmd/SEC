@@ -46,8 +46,7 @@ st.markdown(
     <div class="lc-header">
       <svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true">
         <rect width="48" height="48" rx="12" fill="#1e3a8a"/>
-        <path d="M14 12v24h20" stroke="#f59e0b" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="31" cy="17" r="5" fill="#ffffff"/>
+        <path d="M15 11V33H23L37 16" stroke="#f59e0b" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <div>
         <h1>Viabilidad SECOP II</h1>
