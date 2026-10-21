@@ -1469,19 +1469,6 @@
     $$(".secop-mode").forEach((b) =>
       b.classList.toggle("active", b.dataset.secopMode === mode)
     );
-    if (mode === "official") {
-      // Si tras 4s el iframe no cargó, mostramos el fallback con CTA.
-      const iframe = $("#secopOfficialFrame");
-      const fb = $("#secopOfficialFallback");
-      let loaded = false;
-      const onLoad = () => { loaded = true; };
-      if (iframe && fb) {
-        iframe.addEventListener("load", onLoad, { once: true });
-        setTimeout(() => {
-          if (!loaded) fb.classList.remove("hidden");
-        }, 4000);
-      }
-    }
   }
 
   function initSecopOnce() {
