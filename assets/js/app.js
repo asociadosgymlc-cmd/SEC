@@ -4471,7 +4471,7 @@
     var estado = $("#forEstado");
     var host = $("#forResultado");
     if (!entidad) { estado.textContent = "Ingresa una entidad."; return; }
-    estado.textContent = "Consultando SECOP · esto puede tardar hasta 15s...";
+    estado.textContent = "Consultando SECOP · puede tardar hasta 30s en entidades grandes...";
     host.innerHTML = '<div class="flex items-center justify-center py-10"><div class="licita-spinner"></div></div>';
     try {
       var opts = anio ? { anio: parseInt(anio, 10) } : {};
@@ -4489,7 +4489,11 @@
 
   function renderForense(r) {
     var scoreColor = r.scoreRiesgo >= 70 ? "rose" : r.scoreRiesgo >= 40 ? "amber" : "emerald";
-    var html = '<div class="bg-white border border-slate-200 rounded-2xl p-5">' +
+    var html = "";
+    if (r.avisoParcial) {
+      html += '<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">⚠ ' + escapeHtml(r.avisoParcial) + '</div>';
+    }
+    html += '<div class="bg-white border border-slate-200 rounded-2xl p-5">' +
       '<div class="flex items-center gap-4">' +
       '<div class="text-5xl font-extrabold text-' + scoreColor + '-600">' + r.scoreRiesgo + '</div>' +
       '<div><p class="text-xs uppercase text-slate-500 font-semibold">Score de riesgo</p>' +
@@ -4522,6 +4526,24 @@
         '<ul class="mt-2 text-xs space-y-1">';
       r.adiciones.alertas.slice(0, 5).forEach(function (a) {
         html += '<li>· <b>' + Math.round(a.adicionPct) + '%</b> ' + escapeHtml((a.objeto || "").slice(0, 90)) + '</li>';
+      });
+      html += '</ul></div>';
+    }
+    if (r.oferenteUnico && r.oferenteUnico.conDato >= 5) {
+      html += '<div class="bg-white border border-slate-200 rounded-2xl p-5">' +
+        '<h3 class="font-bold text-slate-800">Oferente único</h3>' +
+        '<p class="text-xs text-slate-500">' + r.oferenteUnico.unicos + ' de ' + r.oferenteUnico.conDato +
+        ' procesos adjudicados con datos de proponentes tuvieron un solo oferente (' + Math.round(r.oferenteUnico.pct * 100) + '%).</p>' +
+        '<p class="text-sm mt-2">' + escapeHtml(r.oferenteUnico.veredicto) + '</p></div>';
+    }
+    if (r.pliegosSastre && r.pliegosSastre.sospechosos && r.pliegosSastre.sospechosos.length) {
+      html += '<div class="bg-white border border-slate-200 rounded-2xl p-5">' +
+        '<h3 class="font-bold text-slate-800">⚠ Posible pliego "sastre"</h3>' +
+        '<p class="text-xs text-slate-500 mb-2">Oferente único + ganador recurrente con esta entidad — indicio estadístico, no prueba. Verificar institucionalmente.</p>' +
+        '<ul class="text-xs space-y-1.5">';
+      r.pliegosSastre.sospechosos.slice(0, 5).forEach(function (p) {
+        html += '<li class="border-b border-slate-100 pb-1.5">· <b>' + escapeHtml(p.proveedor || "—") + '</b> — ' +
+          escapeHtml((p.objeto || "").slice(0, 100)) + ' · ' + formatCOP(p.valor) + '</li>';
       });
       html += '</ul></div>';
     }

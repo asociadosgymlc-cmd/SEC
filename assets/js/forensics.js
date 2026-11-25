@@ -37,6 +37,8 @@ LICITA.forensics = (function () {
     EMPRESA_JOVEN_ANIOS:   2,
     CONTRATO_GIGANTE_COP:  500000000,
     ADJUDICACION_EXCESO:   1.05,
+    OFERENTE_UNICO_PCT:    0.40, // % de procesos adjudicados con un solo proponente
+    PLIEGO_SASTRE_MIN_CONTRATOS: 3, // veces que el mismo par entidad-proveedor se repite
   };
 
   const ENTIDADES_GRANDES = [
@@ -273,6 +275,83 @@ LICITA.forensics = (function () {
     return { total: raw.length, alertas };
   }
 
+  /* ---------------------------------------------------------------------
+   * Oferente único: procesos adjudicados donde SECOP reporta un solo
+   * proponente. Un proceso así no es, por sí solo, una irregularidad —
+   * pasa con frecuencia en mínima cuantía o sectores con poca oferta — pero
+   * un % alto en una misma entidad es un indicio de baja competencia real
+   * detrás de un proceso "abierto" en el papel.
+   * Campo fuente: proveedores_unicos_con (p6dx-8zbt, verificado en vivo).
+   * ------------------------------------------------------------------- */
+  async function detectarOferenteUnico(nombreEntidad, opts) {
+    if (!nombreEntidad) throw new Error("Se requiere entidad");
+    const filters = { entidad: nombreEntidad, limite: 500, estado: "Adjudicado" };
+    if (opts && opts.anio) filters.anio = opts.anio;
+    const raw = await SECOP.search("procesos", filters);
+    // Contratación Directa NO se diseñó para tener varios oferentes (son
+    // convenios interadministrativos, urgencia manifiesta, etc.) — incluirla
+    // infla el % y produce falsos positivos de "pliego sastre". Solo cuenta
+    // un oferente único como indicio en modalidades que sí son competitivas
+    // por diseño (verificado contra datos reales: gran parte del "oferente
+    // único" crudo en una entidad grande resultó ser contratación directa
+    // entre entidades públicas, no un pliego restrictivo).
+    const competitivo = raw.filter((p) => !/directa/i.test(p.modalidad_de_contratacion || ""));
+    const conDato = competitivo.filter((p) => p.proveedores_unicos_con != null && p.proveedores_unicos_con !== "");
+    const unicos = conDato.filter((p) => parseInt(p.proveedores_unicos_con, 10) === 1);
+    const procesos = unicos.map((p) => {
+      const n = SECOP.normalize("procesos", p);
+      return {
+        entidad: n.entidad, objeto: n.objeto, proveedor: n.proveedor,
+        nitProveedor: n.nitProveedor, modalidad: n.modalidad,
+        valor: n.valorAdjudicado || n.valor, url: n.url,
+      };
+    });
+    const pct = conDato.length > 0 ? unicos.length / conDato.length : 0;
+    return {
+      total: raw.length, conDato: conDato.length, unicos: unicos.length, pct,
+      procesos,
+      alarma: conDato.length >= 5 && pct > THRESHOLDS.OFERENTE_UNICO_PCT,
+      veredicto: conDato.length < 5
+        ? "Muestra insuficiente para evaluar"
+        : pct > THRESHOLDS.OFERENTE_UNICO_PCT
+          ? "ALARMA · " + Math.round(pct * 100) + "% de los procesos con un solo oferente"
+          : "Dentro de rangos típicos de competencia",
+    };
+  }
+
+  /* ---------------------------------------------------------------------
+   * Posible "pliego sastre": cruza oferente único con el ranking de pares
+   * entidad-proveedor recurrentes (redEntidadProveedor). Si el único
+   * proponente de un proceso es, además, un ganador recurrente con esa
+   * misma entidad, el indicio se refuerza — el pliego pudo estar calibrado
+   * a la medida de quien de todos modos ya ganaba ahí.
+   * AVISO: esto sigue siendo un indicio estadístico sobre datos públicos,
+   * no evidencia de direccionamiento. Requiere verificación institucional.
+   * ------------------------------------------------------------------- */
+  async function detectarPliegosSastre(nombreEntidad, opts) {
+    if (!nombreEntidad) throw new Error("Se requiere entidad");
+    const [oferenteUnico, red] = await Promise.all([
+      detectarOferenteUnico(nombreEntidad, opts),
+      redEntidadProveedor({ entidad: nombreEntidad }, opts).catch(() => ({ ranking: [] })),
+    ]);
+    const recurrentes = new Set(
+      (red.ranking || [])
+        .filter((r) => r.contratos >= THRESHOLDS.PLIEGO_SASTRE_MIN_CONTRATOS)
+        .map((r) => r.proveedor)
+    );
+    const sospechosos = (oferenteUnico.procesos || []).filter((p) =>
+      p.proveedor && recurrentes.has(p.proveedor.toUpperCase().trim())
+    );
+    return {
+      evaluados: oferenteUnico.unicos,
+      sospechosos,
+      alarma: sospechosos.length > 0,
+      veredicto: sospechosos.length > 0
+        ? sospechosos.length + " proceso(s) con un solo oferente, ganados por un proveedor que ya es recurrente con esta entidad"
+        : "Sin cruces sospechosos entre oferente único y ganadores recurrentes",
+    };
+  }
+
   async function topProveedoresDepartamento(departamento, opts) {
     if (!departamento) throw new Error("Se requiere departamento");
     const filters = { departamento, limite: 1000 };
@@ -301,10 +380,14 @@ LICITA.forensics = (function () {
   }
 
   async function redEntidadProveedor(filtros, opts) {
-    const filters = Object.assign({ limite: 1000 }, filtros || {});
-    if (opts && opts.anio) filters.anio = opts.anio;
-    const raw = await SECOP.search("contratos", filters);
-    if (!raw.length) return { encontrados: 0 };
+    const raw = (opts && opts.preFetched)
+      ? opts.preFetched
+      : await (async () => {
+          const filters = Object.assign({ limite: 1000 }, filtros || {});
+          if (opts && opts.anio) filters.anio = opts.anio;
+          return SECOP.search("contratos", filters);
+        })();
+    if (!raw.length) return { encontrados: 0, ranking: [] };
     const pares = {};
     raw.forEach((c) => {
       const n = SECOP.normalize("contratos", c);
@@ -355,23 +438,30 @@ LICITA.forensics = (function () {
 
   async function analisis360Entidad(nombreEntidad, opts) {
     if (!nombreEntidad) throw new Error("Se requiere entidad");
-    // 1 sola fetch de contratos (era 3 duplicadas antes) + 1 de procesos en paralelo
+    // "contratos" (SECOP 1) es la parte lenta/frágil sin App Token — una
+    // entidad grande puede agotar el timeout ahí. Antes, si esa única
+    // consulta fallaba, se perdía TODO el análisis, incluidos oferenteUnico
+    // y pliegosSastre, que no dependen de ella (usan "procesos", SECOP 2,
+    // más rápido). Ahora su fallo es parcial, no total.
     let contratosRaw = [];
-    let modalidades = null;
-    try {
-      [contratosRaw, modalidades] = await Promise.all([
-        _fetchContratosEntidad(nombreEntidad, opts, 500),
-        analizarModalidades(nombreEntidad, opts).catch(() => null),
-      ]);
-    } catch (e) {
-      throw new Error("No se pudo consultar SECOP: " + e.message);
-    }
+    let fetchContratosError = null;
+    const [contratosResult, modalidades] = await Promise.all([
+      _fetchContratosEntidad(nombreEntidad, opts, 500).catch((e) => { fetchContratosError = e; return []; }),
+      analizarModalidades(nombreEntidad, opts).catch(() => null),
+    ]);
+    contratosRaw = contratosResult;
     const optsShared = Object.assign({}, opts || {}, { preFetched: contratosRaw });
-    const [captura, anomalias, adiciones] = await Promise.all([
+    const [captura, anomalias, adiciones, oferenteUnico, pliegosSastre] = await Promise.all([
       analizarCapturaEntidad(nombreEntidad, optsShared).catch(() => null),
       detectarAnomaliasAdjudicacion(nombreEntidad, optsShared).catch(() => null),
       detectarAdicionesExcesivas(nombreEntidad, optsShared).catch(() => null),
+      detectarOferenteUnico(nombreEntidad, opts).catch(() => null),
+      detectarPliegosSastre(nombreEntidad, optsShared).catch(() => null),
     ]);
+    if (fetchContratosError && !oferenteUnico && !pliegosSastre && !modalidades) {
+      // Las dos fuentes (SECOP 1 y SECOP 2) fallaron — ahí sí no hay nada que mostrar.
+      throw new Error("No se pudo consultar SECOP: " + fetchContratosError.message);
+    }
     const alertas = [];
     if (captura && captura.alarma) alertas.push({
       nivel: "critico",
@@ -397,19 +487,36 @@ LICITA.forensics = (function () {
       resumen: adiciones.alertas.length + " contrato(s) con adición sobre el 50%",
       metrica: Math.round(adiciones.pctAlertas) + "% de los contratos",
     });
+    if (oferenteUnico && oferenteUnico.alarma) alertas.push({
+      nivel: "alto",
+      tipo: "Oferente único recurrente",
+      resumen: oferenteUnico.veredicto,
+      metrica: oferenteUnico.unicos + " de " + oferenteUnico.conDato + " procesos con datos de proponentes",
+    });
+    if (pliegosSastre && pliegosSastre.alarma) alertas.push({
+      nivel: "critico",
+      tipo: "Posible pliego \"sastre\"",
+      resumen: pliegosSastre.veredicto,
+      metrica: pliegosSastre.sospechosos.length + " proceso(s) a revisar",
+    });
     const scoreRiesgo = Math.min(100,
-      (captura && captura.alarma ? 30 : 0) +
-      (modalidades && modalidades.alarma ? 25 : 0) +
-      (anomalias && anomalias.anomalias.length ? 20 : 0) +
-      (adiciones && adiciones.alertas.length ? 25 : 0));
+      (captura && captura.alarma ? 25 : 0) +
+      (modalidades && modalidades.alarma ? 20 : 0) +
+      (anomalias && anomalias.anomalias.length ? 15 : 0) +
+      (adiciones && adiciones.alertas.length ? 20 : 0) +
+      (oferenteUnico && oferenteUnico.alarma ? 10 : 0) +
+      (pliegosSastre && pliegosSastre.alarma ? 10 : 0));
     return {
       entidad: nombreEntidad,
-      captura, modalidades, anomalias, adiciones,
+      captura, modalidades, anomalias, adiciones, oferenteUnico, pliegosSastre,
       alertas, scoreRiesgo,
       veredicto: scoreRiesgo >= 70 ? "ALTO RIESGO INSTITUCIONAL"
         : scoreRiesgo >= 40 ? "RIESGO MEDIO · investigar"
         : scoreRiesgo >= 20 ? "RIESGO BAJO"
         : "SIN INDICIOS FORENSES",
+      avisoParcial: fetchContratosError
+        ? "SECOP 1 (histórico de contratos) no respondió a tiempo — captura de mercado, anomalías de adjudicación y adiciones pueden estar incompletas. Oferente único y pliego sastre sí se evaluaron (usan SECOP 2)."
+        : null,
     };
   }
 
@@ -419,6 +526,8 @@ LICITA.forensics = (function () {
     analizarProveedor,
     detectarAnomaliasAdjudicacion,
     detectarAdicionesExcesivas,
+    detectarOferenteUnico,
+    detectarPliegosSastre,
     analizarModalidades,
     detectarPlazosExpres,
     topProveedoresDepartamento,

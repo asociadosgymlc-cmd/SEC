@@ -288,7 +288,11 @@ LICITA.secop = (function () {
     return expr.includes("undefined") ? "" : expr;
   }
 
-  const FETCH_TIMEOUT_MS = 15000;
+  // 30s: sin App Token, SECOP responde con quota agresiva y las consultas
+  // LIKE por nombre de entidad en datasets grandes (contratos SECOP 1) a
+  // veces superan los 15s que había antes (verificado en vivo con
+  // entidades grandes en Análisis Forense).
+  const FETCH_TIMEOUT_MS = 30000;
 
   async function fetchSoda(endpoint, params) {
     const ctrl = new AbortController();
