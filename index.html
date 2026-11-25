@@ -181,6 +181,39 @@
       </div>
     </section>
 
+    <!-- Mapa en vivo · gancho para visitantes, antes de iniciar sesión -->
+    <section id="landingMapa" class="py-16 lg:py-20 bg-white border-y border-slate-100">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10">
+        <div class="text-center max-w-2xl mx-auto reveal">
+          <span class="inline-flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky-800 text-xs font-semibold px-3.5 py-1.5 rounded-full">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            En vivo · datos.gov.co
+          </span>
+          <h2 class="text-3xl lg:text-5xl font-extrabold tracking-tight text-slate-900 mt-4">Mira dónde está la plata,<br>ahora mismo.</h2>
+          <p class="text-slate-600 mt-4 text-lg">Procesos de contratación pública de los últimos 30 días, por departamento. Haz clic para ver el municipio exacto.</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-10 reveal">
+          <div class="lg:col-span-2 bg-slate-50 border border-slate-200 rounded-3xl p-4 lg:p-5">
+            <div id="landingMapaSvgWrap" class="w-full" style="aspect-ratio: 1/1.15;">
+              <div class="flex items-center justify-center h-full"><div class="licita-spinner"></div></div>
+            </div>
+            <div id="landingMapaLeyenda" class="flex items-center justify-center gap-2 mt-3 text-[11px] text-slate-500"></div>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-3xl p-5 flex flex-col">
+            <h3 id="landingMapaTitulo" class="text-sm font-bold text-slate-900">Selecciona un departamento</h3>
+            <p id="landingMapaSub" class="text-xs text-slate-500 mt-1">Verás el número de procesos y su valor.</p>
+            <div id="landingMapaCTA" class="hidden mt-4 bg-white border border-sky-200 rounded-2xl p-4 text-center">
+              <p class="text-sm font-semibold text-slate-900">Desbloquea el detalle por municipio</p>
+              <p class="text-xs text-slate-500 mt-1">Regístrate gratis para ver el ranking de municipios, guardar alertas y analizar pliegos con IA.</p>
+              <button class="btn-shine mt-3 w-full bg-gradient-to-r from-sky-600 to-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm" data-go-register>
+                Empezar gratis
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Marco de referencia (marquesina) -->
     <section class="border-y border-slate-100 bg-white py-8 overflow-hidden">
       <p class="text-center text-[11px] uppercase tracking-widest font-semibold text-slate-400 mb-5">Análisis fundamentado en el marco normativo colombiano</p>
@@ -686,6 +719,9 @@
 
       <!-- ===== Dashboard ===== -->
       <section id="dashboard-section" class="p-8">
+        <!-- Mapa de oportunidades por departamento · primero, para que llame la atención -->
+        <div id="mapWidget" class="hidden mb-6"></div>
+
         <!-- Pulso del mercado · feed en vivo desde SECOP 2 -->
         <div id="pulseWidget" class="hidden mb-6"></div>
 
@@ -693,9 +729,6 @@
         <div id="dailyBriefBanner" class="hidden mb-6"></div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="statsGrid"></div>
-
-        <!-- Mapa de oportunidades por departamento -->
-        <div id="mapWidget" class="hidden mb-6"></div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">

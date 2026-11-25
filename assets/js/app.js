@@ -1637,6 +1637,7 @@
   function initLandingFX() {
     if (landingFXReady) return;
     landingFXReady = true;
+    initLandingMapaOnce();
 
     // Reveal al hacer scroll
     if ("IntersectionObserver" in window) {
@@ -4622,6 +4623,44 @@
         '</td><td class="py-1.5 pr-3">' + r.d.total +
         '</td><td class="py-1.5">' + formatCOP(Math.round(r.d.valor || 0)) + '</td></tr>';
     }).join("");
+  }
+
+  /* ------------------- Mapa en vivo · Landing pública ------------------ */
+  var landingMapaReady = false;
+  async function initLandingMapaOnce() {
+    if (landingMapaReady) return;
+    if (!LICITA.mapa || !window.topojson) return;
+    landingMapaReady = true;
+
+    var wrap = $("#landingMapaSvgWrap");
+    try {
+      var desde30 = new Date();
+      desde30.setDate(desde30.getDate() - 30);
+      var topology = await LICITA.mapa.loadTopology("assets/geo/colombia-departamentos.json");
+      var rows = await SECOP.aggregate("procesos", {
+        groupBy: "departamento",
+        filters: { estado: "Presentación de oferta", fechaDesde: desde30.toISOString().slice(0, 10) },
+        limit: 60,
+      });
+      var dataByCode = {};
+      rows.forEach(function (r) {
+        var code = LICITA.mapa.matchDeptName(r.grupo);
+        if (code) dataByCode[code] = r;
+      });
+      var result = LICITA.mapa.render(wrap, topology, dataByCode, {
+        metrica: "total",
+        width: 420,
+        height: 500,
+        onSelect: function (code, nombre, datum) {
+          $("#landingMapaTitulo").textContent = nombre;
+          $("#landingMapaSub").textContent = datum.total.toLocaleString("es-CO") + " proceso(s) · " + formatCOP(Math.round(datum.valor || 0)) + " en los últimos 30 días.";
+          $("#landingMapaCTA").classList.remove("hidden");
+        },
+      });
+      LICITA.mapa.renderLegend($("#landingMapaLeyenda"), result.values);
+    } catch (e) {
+      wrap.innerHTML = '<div class="flex items-center justify-center h-full text-sm text-slate-400 text-center p-4">No se pudo cargar el mapa en vivo ahora. Intenta de nuevo en un momento.</div>';
+    }
   }
 
   /* ------------------------------ init -------------------------------- */
