@@ -4649,8 +4649,8 @@
       });
       var result = LICITA.mapa.render(wrap, topology, dataByCode, {
         metrica: "total",
-        width: 420,
-        height: 500,
+        width: 140,
+        height: 160,
         onSelect: function (code, nombre, datum) {
           $("#landingMapaTitulo").textContent = nombre;
           $("#landingMapaSub").textContent = datum.total.toLocaleString("es-CO") + " proceso(s) · " + formatCOP(Math.round(datum.valor || 0)) + " en los últimos 30 días.";

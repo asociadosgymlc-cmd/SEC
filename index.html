@@ -84,6 +84,30 @@
       </div>
     </header>
 
+    <!-- Mapa en vivo · barra compacta, antes que todo lo demás -->
+    <section id="landingMapa" class="bg-slate-900 border-b border-slate-800">
+      <div class="max-w-7xl mx-auto px-6 lg:px-10 py-4 grid grid-cols-1 lg:grid-cols-[180px_1fr_minmax(220px,320px)] gap-4 items-center">
+        <div id="landingMapaSvgWrap" class="w-[140px] h-[160px] mx-auto lg:mx-0 flex-shrink-0">
+          <div class="flex items-center justify-center h-full"><div class="licita-spinner"></div></div>
+        </div>
+        <div class="text-center lg:text-left">
+          <span class="inline-flex items-center gap-2 bg-white/10 text-sky-200 text-[11px] font-semibold px-2.5 py-1 rounded-full">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            En vivo · SECOP II, datos.gov.co
+          </span>
+          <h2 class="text-white font-bold text-lg mt-1.5">Mira dónde está la plata, ahora mismo.</h2>
+          <p id="landingMapaSub" class="text-sky-200/70 text-xs mt-0.5">Haz clic en un departamento del mapa — últimos 30 días.</p>
+          <div id="landingMapaLeyenda" class="flex items-center justify-center lg:justify-start gap-2 mt-2 text-[10px] text-sky-200/60"></div>
+        </div>
+        <div id="landingMapaCTA" class="hidden bg-white rounded-2xl p-3.5 text-center lg:text-left">
+          <p id="landingMapaTitulo" class="text-sm font-bold text-slate-900">Departamento</p>
+          <button class="btn-shine mt-2 w-full bg-gradient-to-r from-sky-600 to-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-sm" data-go-register>
+            Ver detalle por municipio · gratis
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- Hero -->
     <section id="hero" class="relative overflow-hidden mesh-bg">
       <div class="blob absolute top-10 -right-24 w-[28rem] h-[28rem] bg-sky-300/30 rounded-full blur-3xl"></div>
@@ -175,39 +199,6 @@
             <div class="layer-up floaty-slow absolute -bottom-5 -right-4 bg-white rounded-2xl shadow-xl shadow-amber-200/50 border border-slate-100 px-3.5 py-2.5 flex items-center gap-2" style="animation-delay:-2s">
               <div class="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center"><svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
               <div><p class="text-[10px] text-slate-400 font-medium leading-none">Score IA</p><p class="text-xs font-bold text-slate-800 leading-tight mt-0.5">Oportunidad 84</p></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Mapa en vivo · gancho para visitantes, antes de iniciar sesión -->
-    <section id="landingMapa" class="py-16 lg:py-20 bg-white border-y border-slate-100">
-      <div class="max-w-7xl mx-auto px-6 lg:px-10">
-        <div class="text-center max-w-2xl mx-auto reveal">
-          <span class="inline-flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky-800 text-xs font-semibold px-3.5 py-1.5 rounded-full">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            En vivo · datos.gov.co
-          </span>
-          <h2 class="text-3xl lg:text-5xl font-extrabold tracking-tight text-slate-900 mt-4">Mira dónde está la plata,<br>ahora mismo.</h2>
-          <p class="text-slate-600 mt-4 text-lg">Procesos de contratación pública de los últimos 30 días, por departamento. Haz clic para ver el municipio exacto.</p>
-        </div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-10 reveal">
-          <div class="lg:col-span-2 bg-slate-50 border border-slate-200 rounded-3xl p-4 lg:p-5">
-            <div id="landingMapaSvgWrap" class="w-full" style="aspect-ratio: 1/1.15;">
-              <div class="flex items-center justify-center h-full"><div class="licita-spinner"></div></div>
-            </div>
-            <div id="landingMapaLeyenda" class="flex items-center justify-center gap-2 mt-3 text-[11px] text-slate-500"></div>
-          </div>
-          <div class="bg-slate-50 border border-slate-200 rounded-3xl p-5 flex flex-col">
-            <h3 id="landingMapaTitulo" class="text-sm font-bold text-slate-900">Selecciona un departamento</h3>
-            <p id="landingMapaSub" class="text-xs text-slate-500 mt-1">Verás el número de procesos y su valor.</p>
-            <div id="landingMapaCTA" class="hidden mt-4 bg-white border border-sky-200 rounded-2xl p-4 text-center">
-              <p class="text-sm font-semibold text-slate-900">Desbloquea el detalle por municipio</p>
-              <p class="text-xs text-slate-500 mt-1">Regístrate gratis para ver el ranking de municipios, guardar alertas y analizar pliegos con IA.</p>
-              <button class="btn-shine mt-3 w-full bg-gradient-to-r from-sky-600 to-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm" data-go-register>
-                Empezar gratis
-              </button>
             </div>
           </div>
         </div>
