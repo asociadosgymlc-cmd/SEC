@@ -127,6 +127,7 @@
     secop: { title: "Buscar en SECOP 2", sub: "Procesos publicados en vivo · Colombia Compra Eficiente" },
     paa: { title: "Plan Anual de Adquisiciones", sub: "Anticipa lo que las entidades planean comprar este año" },
     forense: { title: "Análisis Forense", sub: "HHI, adiciones art. 40 Ley 80, adjudicaciones anómalas · datos.gov.co" },
+    mapa: { title: "Mapa Nacional", sub: "Procesos y valor por departamento y municipio, en vivo desde SECOP II" },
     alertas: { title: "Alertas inteligentes", sub: "Búsquedas guardadas que te avisan de procesos nuevos" },
     historial: { title: "Historial", sub: "Tus análisis guardados" },
     marco: { title: "Marco Normativo", sub: "Normas y criterios que aplica el motor" },
@@ -157,6 +158,7 @@
     if (name === "analisis") renderQuotaBanner();
     if (name === "paa") initPaaOnce();
     if (name === "forense") initForenseOnce();
+    if (name === "mapa") initMapaOnce();
     if (name === "formacion") showCursosCatalog();  if (name === "relatoria") { if (LICITA.relatoria) LICITA.relatoria.init(); };  if (name === "relatoria") { if (LICITA.relatoria) LICITA.relatoria.init(); };
     if (name === "alertas") renderAlerts();
     if (name === "dashboard") { renderPulse(); renderMap(); }
@@ -4440,6 +4442,166 @@
       html += '</ul></div>';
     }
     return html;
+  }
+
+  /* ------------------------ Mapa Nacional (UI) ------------------------- */
+  var mapaInited = false;
+  var mapaTooltipEl = null;
+
+  function initMapaOnce() {
+    if (mapaInited) return;
+    if (!LICITA.mapa || !window.topojson) {
+      $("#mapaSvgWrap").innerHTML =
+        '<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-800">' +
+        'El módulo del mapa no cargó. Recarga la página con Ctrl+Shift+R.</div>';
+      return;
+    }
+    mapaInited = true;
+
+    var tipoSel = $("#mapaTipo");
+    (SECOP.TIPOS_CONTRATO || []).forEach(function (t) {
+      var o = document.createElement("option");
+      o.value = t; o.textContent = t;
+      tipoSel.appendChild(o);
+    });
+
+    if (!$("#mapaDesde").value) $("#mapaDesde").value = mapaDefaultDesde();
+    $("#mapaRefrescar").addEventListener("click", runMapa);
+    $("#mapaVerTabla").addEventListener("click", function () {
+      var wrap = $("#mapaTablaWrap");
+      wrap.classList.toggle("hidden");
+      $("#mapaVerTabla").textContent = wrap.classList.contains("hidden") ? "Ver tabla completa" : "Ocultar tabla";
+    });
+
+    mapaTooltipEl = document.createElement("div");
+    mapaTooltipEl.id = "mapaTooltip";
+    mapaTooltipEl.className = "hidden fixed z-50 bg-slate-900 text-white text-xs rounded-lg px-3 py-2 pointer-events-none shadow-lg";
+    document.body.appendChild(mapaTooltipEl);
+
+    runMapa();
+  }
+
+  function mapaDefaultDesde() {
+    var d = new Date();
+    d.setDate(d.getDate() - 90);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function mapaFilters() {
+    var f = {};
+    var tipo = $("#mapaTipo").value;
+    var desde = $("#mapaDesde").value;
+    if (tipo) f.tipoContrato = tipo;
+    // p6dx-8zbt es un log histórico: estado_resumen='Presentación de oferta'
+    // por sí solo trae ~7 millones de filas de TODOS los años (verificado en
+    // vivo), no "lo abierto hoy". Por eso SIEMPRE acotamos por fecha, con un
+    // valor por defecto visible en el campo (no oculto en el código) para
+    // que el usuario sepa y pueda ajustarlo.
+    f.fechaDesde = desde || mapaDefaultDesde();
+    f.estado = $("#mapaDataset").value === "paa" ? "Borrador" : "Presentación de oferta";
+    return f;
+  }
+
+  async function runMapa() {
+    var estado = $("#mapaEstado");
+    var wrap = $("#mapaSvgWrap");
+    estado.textContent = "Consultando SECOP en vivo…";
+    wrap.innerHTML = '<div class="flex items-center justify-center h-full"><div class="licita-spinner"></div></div>';
+    $("#mapaMunicipios").innerHTML = '<p class="text-xs text-slate-400">Selecciona un departamento en el mapa.</p>';
+    $("#mapaDetalleTitulo").textContent = "Selecciona un departamento";
+    $("#mapaVerTabla").classList.add("hidden");
+    $("#mapaTablaWrap").classList.add("hidden");
+
+    try {
+      var dsKey = $("#mapaDataset").value === "paa" ? "paa" : "procesos";
+      var metrica = $("#mapaMetrica").value || "total";
+      var topology = await LICITA.mapa.loadTopology("assets/geo/colombia-departamentos.json");
+      var rows = await SECOP.aggregate(dsKey, { groupBy: "departamento", filters: mapaFilters(), limit: 60 });
+
+      var dataByCode = {};
+      rows.forEach(function (r) {
+        var code = LICITA.mapa.matchDeptName(r.grupo);
+        if (!code) return; // no se pudo mapear el nombre a un DIVIPOLA conocido
+        dataByCode[code] = r;
+      });
+
+      var result = LICITA.mapa.render(wrap, topology, dataByCode, {
+        metrica: metrica,
+        width: 480,
+        height: 560,
+        onSelect: function (code, nombre, datum) { seleccionarDepartamento(code, nombre, datum, dsKey); },
+        onHover: function (code, nombre, datum, evt) { mostrarTooltipMapa(nombre, datum, evt); },
+        onHoverEnd: ocultarTooltipMapa,
+      });
+      LICITA.mapa.renderLegend($("#mapaLeyenda"), result.values);
+      renderTablaDepartamentos(dataByCode);
+      $("#mapaVerTabla").classList.remove("hidden");
+
+      var totalProcesos = rows.reduce(function (s, r) { return s + r.total; }, 0);
+      estado.textContent = totalProcesos.toLocaleString("es-CO") + " procesos encontrados en " + Object.keys(dataByCode).length + " departamentos.";
+    } catch (e) {
+      estado.textContent = "";
+      wrap.innerHTML = '<div class="flex items-center justify-center h-full text-sm text-rose-700 p-4 text-center">No se pudo cargar el mapa: ' + escapeHtml(e.message || String(e)) + "</div>";
+    }
+  }
+
+  function mostrarTooltipMapa(nombre, datum, evt) {
+    if (!mapaTooltipEl) return;
+    var html = "<b>" + escapeHtml(nombre) + "</b>";
+    if (datum) {
+      html += "<br>" + datum.total + " proceso(s)";
+      if (datum.valor) html += "<br>" + formatCOP(Math.round(datum.valor));
+    } else {
+      html += "<br>Sin procesos en el filtro actual";
+    }
+    mapaTooltipEl.innerHTML = html;
+    mapaTooltipEl.classList.remove("hidden");
+    mapaTooltipEl.style.left = (evt.clientX + 14) + "px";
+    mapaTooltipEl.style.top = (evt.clientY + 10) + "px";
+  }
+  function ocultarTooltipMapa() {
+    if (mapaTooltipEl) mapaTooltipEl.classList.add("hidden");
+  }
+
+  async function seleccionarDepartamento(code, nombre, datum, dsKey) {
+    $("#mapaDetalleTitulo").textContent = nombre;
+    $("#mapaDetalleSub").textContent = datum.total + " proceso(s) · " + formatCOP(Math.round(datum.valor || 0));
+    var box = $("#mapaMunicipios");
+    box.innerHTML = '<div class="flex items-center justify-center py-6"><div class="licita-spinner"></div></div>';
+    try {
+      var rows = await SECOP.aggregate(dsKey, {
+        groupBy: "ciudad",
+        filters: Object.assign({}, mapaFilters(), { departamento: nombre }),
+        limit: 25,
+      });
+      if (!rows.length) {
+        box.innerHTML = '<p class="text-xs text-slate-400">Sin municipios con datos para este filtro.</p>';
+        return;
+      }
+      box.innerHTML = rows.map(function (r) {
+        return '<div class="flex items-center justify-between text-xs border-b border-slate-100 py-1.5">' +
+          '<span class="text-slate-700 truncate pr-2">' + escapeHtml(r.grupo || "—") + '</span>' +
+          '<span class="font-semibold text-slate-900 whitespace-nowrap">' + r.total + '</span></div>';
+      }).join("");
+    } catch (e) {
+      box.innerHTML = '<p class="text-xs text-rose-700">No se pudo cargar el detalle: ' + escapeHtml(e.message || String(e)) + '</p>';
+    }
+  }
+
+  function renderTablaDepartamentos(dataByCode) {
+    var body = $("#mapaTablaBody");
+    var rows = Object.keys(dataByCode).map(function (code) {
+      return { code: code, nombre: LICITA.mapa.DIVIPOLA[code], d: dataByCode[code] };
+    }).sort(function (a, b) { return (b.d.total || 0) - (a.d.total || 0); });
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="3" class="py-3 text-slate-400">Sin datos.</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(function (r) {
+      return '<tr class="border-b border-slate-100"><td class="py-1.5 pr-3">' + escapeHtml(r.nombre) +
+        '</td><td class="py-1.5 pr-3">' + r.d.total +
+        '</td><td class="py-1.5">' + formatCOP(Math.round(r.d.valor || 0)) + '</td></tr>';
+    }).join("");
   }
 
   /* ------------------------------ init -------------------------------- */

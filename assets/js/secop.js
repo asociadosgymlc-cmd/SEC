@@ -282,7 +282,10 @@ LICITA.secop = (function () {
   async function aggregate(dsKey, opts) {
     const ds = DATASETS[dsKey];
     const f = ds.f;
-    const groupField = opts.groupBy === "departamento" ? f.departamento : f.entidad;
+    const groupField =
+      opts.groupBy === "departamento" ? f.departamento :
+      opts.groupBy === "ciudad" ? f.ciudad :
+      f.entidad;
     const valueField = f.valor || "1";
     const params = new URLSearchParams();
     params.set("$select", groupField + " AS grupo, count(*) AS total, sum(" + valueField + ") AS valor");

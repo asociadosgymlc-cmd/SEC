@@ -616,6 +616,10 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
           Análisis Forense
         </a>
+        <a href="#" data-section="mapa" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+          Mapa Nacional
+        </a>
         <a href="#" data-section="formacion" class="nav-link">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
           Formación
@@ -1383,6 +1387,79 @@
         <div id="forResultado" class="space-y-4"></div>
       </section>
 
+      <!-- ===== Mapa Nacional ===== -->
+      <section id="mapa-section" class="p-6 lg:p-8 hidden">
+        <div class="bg-gradient-to-r from-sky-700 to-blue-800 rounded-2xl p-5 mb-6 text-white">
+          <h2 class="text-2xl font-extrabold flex items-center gap-2">🗺️ Mapa Nacional de Oportunidades</h2>
+          <p class="text-sm text-sky-100 mt-1">
+            Procesos y valor por departamento, en vivo desde SECOP II (<code>datos.gov.co</code>).
+            Haz clic en un departamento para ver el detalle por municipio.
+          </p>
+          <p class="text-[11px] text-sky-200/80 mt-2">
+            ⚠ El dataset público de SECOP II puede repetir registros por proceso (una fila por cada
+            cambio de estado); usa estas cifras como indicador de actividad relativa entre zonas, no
+            como conteo exacto de procesos únicos.
+          </p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 mb-6 space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label class="text-xs font-semibold text-slate-600">Dataset</label>
+              <select id="mapaDataset" class="field mt-1">
+                <option value="procesos">Procesos vigentes · SECOP 2</option>
+                <option value="paa">En planeación (Borrador) · SECOP 2</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-600">Tipo de contrato</label>
+              <select id="mapaTipo" class="field mt-1"><option value="">Todos</option></select>
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-600">Desde</label>
+              <input id="mapaDesde" type="date" class="field mt-1" />
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-600">Medir por</label>
+              <select id="mapaMetrica" class="field mt-1">
+                <option value="total">Número de procesos</option>
+                <option value="valor">Valor total (COP)</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="mapaRefrescar" class="bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">Actualizar mapa</button>
+            <span id="mapaEstado" class="text-xs text-slate-500"></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-4">
+            <div id="mapaSvgWrap" class="w-full" style="aspect-ratio: 1/1.15;"></div>
+            <div id="mapaLeyenda" class="flex items-center justify-center gap-2 mt-3 text-[11px] text-slate-500"></div>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 id="mapaDetalleTitulo" class="text-sm font-bold text-slate-900">Selecciona un departamento</h3>
+              <button id="mapaVerTabla" class="text-xs font-medium text-sky-700 hover:underline hidden">Ver tabla completa</button>
+            </div>
+            <p id="mapaDetalleSub" class="text-xs text-slate-500 mb-3">También disponible como tabla para lectores de pantalla.</p>
+            <div id="mapaMunicipios" class="space-y-1.5 max-h-[420px] overflow-y-auto"></div>
+          </div>
+        </div>
+
+        <div id="mapaTablaWrap" class="hidden mt-5 bg-white border border-slate-200 rounded-2xl p-4 overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead><tr class="text-left text-slate-500 border-b border-slate-200">
+              <th class="py-2 pr-3">Departamento</th><th class="py-2 pr-3">Procesos</th><th class="py-2">Valor total (COP)</th>
+            </tr></thead>
+            <tbody id="mapaTablaBody"></tbody>
+          </table>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-3">
+          Límites departamentales: <a href="https://github.com/jacasta2/colombian_map" target="_blank" rel="noopener" class="underline">jacasta2/colombian_map</a> (MIT), con códigos DIVIPOLA del DANE.
+        </p>
+      </section>
+
       <!-- ===== Formación / Cursos ===== -->
       <section id="formacion-section" class="p-8 hidden">
         <div id="cursosCatalog">
@@ -1699,6 +1776,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
   <script>
     if (window.pdfjsLib) {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -1713,6 +1791,7 @@
   <script src="assets/js/analyzer.js?v=20260725"></script>
   <script src="assets/js/parsers.js?v=20260725"></script>
   <script src="assets/js/secop.js?v=20260725"></script>
+  <script src="assets/js/mapa.js?v=20260725"></script>
   <script src="assets/js/cursos.js?v=20260725"></script>
   <script src="assets/js/intel.js?v=20260725"></script>
   <script src="assets/js/empresa.js?v=20260725"></script>
