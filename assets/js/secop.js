@@ -128,6 +128,42 @@ LICITA.secop = (function () {
       estados: [],
       modalidades: [],
     },
+
+    // SECOP II · Contratos electrónicos (jbjy-vk9h) — el período vigente
+    // (desde ~2021), a diferencia de "contratos" (SECOP 1, histórico viejo).
+    // Columnas verificadas en vivo el 2026-11-25 (ver modules/secop_client.py
+    // para el mismo saneamiento del lado Python).
+    contratos_secop2: {
+      key: "contratos_secop2",
+      label: "Contratos · SECOP 2",
+      sub: "Contratos electrónicos vigentes — quién ganó, cuánto y cuándo",
+      endpoint: BASE + "jbjy-vk9h.json",
+      f: {
+        id: "id_contrato",
+        objeto: "descripcion_del_proceso",
+        nombre: "descripcion_del_proceso",
+        entidad: "nombre_entidad",
+        nitEntidad: "nit_entidad",
+        departamento: "departamento",
+        ciudad: "ciudad",
+        tipoContrato: "tipo_de_contrato",
+        estado: "estado_contrato",
+        valor: "valor_del_contrato",
+        proveedor: "proveedor_adjudicado",
+        nitProveedor: "documento_proveedor",
+        fecha: "fecha_de_firma",
+        url: "urlproceso",
+      },
+      ordenDefault: "fecha_de_firma DESC",
+      ordenOptions: [
+        { v: "fecha_de_firma DESC", t: "Más recientes" },
+        { v: "fecha_de_firma ASC", t: "Más antiguos" },
+        { v: "valor_del_contrato DESC", t: "Mayor valor" },
+        { v: "valor_del_contrato ASC", t: "Menor valor" },
+      ],
+      estados: [],
+      modalidades: [],
+    },
   };
 
   const DEPARTAMENTOS = [
@@ -162,6 +198,13 @@ LICITA.secop = (function () {
       "municipio_entrega",
       "numero_de_proceso",
       "numero_del_contrato",
+    ],
+    contratos_secop2: [
+      "descripcion_del_proceso",
+      "nombre_entidad",
+      "proveedor_adjudicado",
+      "departamento",
+      "ciudad",
     ],
     paa: [
       "descripci_n_del_procedimiento",
@@ -219,6 +262,14 @@ LICITA.secop = (function () {
     if (filters.tipoContrato && f.tipoContrato) c.push(likeAny(f.tipoContrato, filters.tipoContrato));
     if (filters.estado && f.estado) c.push(f.estado + "='" + esc(filters.estado) + "'");
     if (filters.proveedor && f.proveedor) c.push(likeAny(f.proveedor, filters.proveedor));
+    if (filters.nitProveedor && f.nitProveedor) {
+      // El NIT puede venir con puntos/guion/dígito de verificación
+      // ("900.123.456-7"); comparamos solo contra los dígitos base con
+      // "empieza por", porque documento_proveedor en SECOP normalmente no
+      // trae el dígito de verificación.
+      var nitClean = String(filters.nitProveedor).replace(/[^0-9]/g, "");
+      if (nitClean) c.push(f.nitProveedor + " like '" + esc(nitClean) + "%'");
+    }
     if (filters.precioMin != null && filters.precioMin !== "" && f.valor)
       c.push(f.valor + " >= '" + Number(filters.precioMin) + "'");
     if (filters.precioMax != null && filters.precioMax !== "" && f.valor)

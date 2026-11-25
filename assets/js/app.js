@@ -1921,6 +1921,8 @@
     if (empForm) empForm.addEventListener("submit", submitProfile);
     const empAdd = $("#empAddContrato");
     if (empAdd) empAdd.addEventListener("click", addContrato);
+    const empBuscar = $("#empBuscarSecop");
+    if (empBuscar) empBuscar.addEventListener("click", buscarMisContratosSecop);
 
     // Multi-empresa
     const empSel = $("#empSelector");
@@ -3408,6 +3410,67 @@
     saveCurrentProfile(cur);
     renderContratos(cur);
   }
+
+  async function buscarMisContratosSecop() {
+    const nit = ($("#emp-nit").value || "").trim();
+    const box = $("#empSecopResultados");
+    if (!nit) {
+      toast("Primero escribe tu NIT arriba, en Identificación.", "err");
+      return;
+    }
+    box.classList.remove("hidden");
+    box.innerHTML = '<div class="flex items-center justify-center py-6"><div class="licita-spinner"></div></div>';
+    try {
+      const rows = await SECOP.search("contratos_secop2", {
+        nitProveedor: nit,
+        limite: 20,
+        orden: "fecha_de_firma DESC",
+      });
+      if (!rows.length) {
+        box.innerHTML = '<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">' +
+          'No encontramos contratos en SECOP II con ese NIT. Puede ser que el NIT no tenga adjudicaciones registradas ' +
+          'en este dataset (vigente desde ~2021) o que esté escrito distinto en SECOP.</div>';
+        return;
+      }
+      box.innerHTML =
+        '<p class="text-xs font-semibold text-slate-600 mb-1">' + rows.length + ' contrato(s) encontrado(s) — importa los que quieras usar como experiencia:</p>' +
+        rows.map((p, i) => {
+          const n = SECOP.normalize("contratos_secop2", p);
+          const payload = escapeHtml(JSON.stringify({
+            entidad: n.entidad || "",
+            objeto: (n.objeto || "").slice(0, 300),
+            valor: n.valor || 0,
+            anio: n.fecha ? new Date(n.fecha).getFullYear() : null,
+          }));
+          return '<div class="border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-3">' +
+            '<div class="min-w-0">' +
+            '<p class="text-xs font-semibold text-slate-900 truncate">' + escapeHtml(n.entidad || "Entidad no informada") + '</p>' +
+            '<p class="text-[11px] text-slate-500 mt-0.5 leading-snug">' + escapeHtml((n.objeto || "").slice(0, 140)) + '</p>' +
+            '<p class="text-[11px] text-slate-400 mt-0.5">' + formatCOP(n.valor) + (n.fecha ? " · " + new Date(n.fecha).getFullYear() : "") + '</p>' +
+            '</div>' +
+            '<button type="button" class="flex-shrink-0 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 px-2.5 py-1.5 rounded-lg" data-importar-contrato=\'' + payload + "'>Importar</button>" +
+            '</div>';
+        }).join("");
+      box.querySelectorAll("[data-importar-contrato]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const data = JSON.parse(btn.dataset.importarContrato);
+          const cur = currentProfile();
+          cur.experiencia = cur.experiencia || [];
+          cur.experiencia.unshift(data);
+          saveCurrentProfile(cur);
+          renderContratos(cur);
+          refreshCompletion();
+          btn.textContent = "Importado ✓";
+          btn.disabled = true;
+          btn.classList.add("opacity-50");
+          toast("Contrato importado a tu experiencia", "ok");
+        });
+      });
+    } catch (e) {
+      box.innerHTML = '<div class="bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-800">No se pudo consultar SECOP: ' + escapeHtml(e.message || String(e)) + '</div>';
+    }
+  }
+
   function refreshCompletion() {
     const p = currentProfile();
     const pct = profileCompletion(p);
