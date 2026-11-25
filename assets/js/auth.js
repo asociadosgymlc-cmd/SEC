@@ -16,9 +16,12 @@ LICITA.auth = (function () {
   const LS_USERS = "licita.users.v1";
   const LS_SESSION = "licita.session.v1";
 
-  // SHA-256 de "licita2026" — credencial por defecto del administrador.
+  // Hash SHA-256 de la credencial inicial del administrador. La contraseña
+  // en claro NUNCA se documenta en el repositorio: se entrega una sola vez
+  // al propietario por un canal privado al desplegar, y debe cambiarse de
+  // inmediato desde Clientes → Cambiar clave.
   const DEFAULT_ADMIN_HASH =
-    "88f124b3b784959b8cc5b6136515711510ea644af046f3a11c93e64977e89bcf";
+    "8231e13f12fca42b1b6871b58809038358d8099b89088aee8569195fd742fc05";
 
   let current = null;
   let users = [];

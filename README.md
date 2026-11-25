@@ -14,13 +14,18 @@ LICITA gestiona usuarios con dos roles:
 - **Cliente** — accede al dashboard, al análisis, a su historial y al
   marco normativo. Solo ve sus propios análisis.
 
-**Credenciales del administrador (por defecto):**
+**Credenciales del administrador:**
 
-| Usuario | Contraseña    |
-|---------|---------------|
-| `admin` | `licita2026`  |
+El usuario inicial es `admin`. La contraseña inicial **no se documenta aquí**:
+se entrega una sola vez, por un canal privado, a quien despliega la
+plataforma. Si no la tienes o sospechas que se expuso, cambia el hash en
+`DEFAULT_ADMIN_HASH` (`assets/js/auth.js`) antes de publicar el sitio.
 
-> ⚠️ Cambia esta contraseña en `Clientes → Cambiar clave` apenas entres.
+> ⚠️ Cambia esta contraseña en `Clientes → Cambiar clave` apenas entres. Como
+> la app no tiene backend, esa contraseña solo protege lo guardado en el
+> navegador de cada quien — si ya usaste el sitio antes de esta rotación,
+> debes cambiarla manualmente desde tu propia sesión; este cambio de código
+> solo afecta a quien entre por primera vez desde este commit en adelante.
 
 Para registrar a un cliente: inicia sesión como admin → **Clientes → Nuevo
 cliente**. La plataforma generará una contraseña aleatoria que puedes
