@@ -61,37 +61,51 @@ DATASETS = {
     "tvec_ordenes":     "rgxm-mmea",     # Órdenes de compra TVEC
 }
 
-# Columnas mínimas útiles para IA (evita traer todo el ancho de tabla)
+# Columnas mínimas útiles para IA (evita traer todo el ancho de tabla).
+#
+# datos.gov.co renombra/retira columnas sin avisar. Verificado en vivo el
+# 2026-11-25 contra jbjy-vk9h y p6dx-8zbt: varias columnas que este cliente
+# asumía ya no existen. Se usa alias SoQL ("real AS nombre_estable") para
+# que el DataFrame conserve los nombres que usa secop_embeddings.py, aunque
+# la columna real de datos.gov.co haya cambiado.
+#
+# Cambios encontrados en jbjy-vk9h (contratos):
+#   - fecha_de_firma_del_contrato -> fecha_de_firma
+#   - nombre_del_proveedor        -> proveedor_adjudicado
+#   - objeto_del_contrato         -> descripcion_del_proceso
+#   - valor_total_de_adiciones    -> RETIRADA, sin reemplazo (se elimina)
 COLS_CONTRATOS = [
     "nombre_entidad",
     "nit_entidad",
     "departamento",
     "modalidad_de_contratacion",
     "tipo_de_contrato",
-    "objeto_del_contrato",
+    "descripcion_del_proceso AS objeto_del_contrato",
     "valor_del_contrato",
-    "valor_total_de_adiciones",
-    "fecha_de_firma_del_contrato",
+    "fecha_de_firma AS fecha_de_firma_del_contrato",
     "fecha_de_inicio_del_contrato",
     "fecha_de_fin_del_contrato",
-    "nombre_del_proveedor",
+    "proveedor_adjudicado AS nombre_del_proveedor",
     "documento_proveedor",
     "estado_contrato",
     "urlproceso",
 ]
 
+# Cambios encontrados en p6dx-8zbt (procesos):
+#   - nombre_entidad     -> entidad
+#   - objeto_del_contrato -> descripci_n_del_procedimiento
+#   - fecha_de_recepcion_de -> RETIRADA, sin reemplazo (se elimina)
 COLS_PROCESOS = [
     "id_del_proceso",
-    "nombre_entidad",
+    "entidad AS nombre_entidad",
     "nit_entidad",
     "departamento_entidad",
     "modalidad_de_contratacion",
     "tipo_de_contrato",
-    "objeto_del_contrato",
+    "descripci_n_del_procedimiento AS objeto_del_contrato",
     "precio_base",
     "estado_del_procedimiento",
     "fecha_de_publicacion_del",
-    "fecha_de_recepcion_de",
     "urlproceso",
 ]
 
@@ -167,8 +181,8 @@ class SecopClient:
         return self.consultar(
             dataset_key="contratos_secop2",
             select=columnas or COLS_CONTRATOS,
-            where=f"fecha_de_firma_del_contrato >= '{fecha_iso}T00:00:00.000'",
-            order="fecha_de_firma_del_contrato DESC",
+            where=f"fecha_de_firma >= '{fecha_iso}T00:00:00.000'",
+            order="fecha_de_firma DESC",
             limit=limite,
         )
 
@@ -182,7 +196,7 @@ class SecopClient:
             dataset_key="contratos_secop2",
             select=COLS_CONTRATOS,
             where=f"UPPER(nombre_entidad) LIKE '%{entidad_like.upper()}%'",
-            order="fecha_de_firma_del_contrato DESC",
+            order="fecha_de_firma DESC",
             limit=limite,
         )
 
@@ -226,7 +240,7 @@ class SecopClient:
                 dataset_key="contratos_secop2",
                 select=columnas or COLS_CONTRATOS,
                 where=where,
-                order="fecha_de_firma_del_contrato DESC",
+                order="fecha_de_firma DESC",
                 limit=chunk_size,
                 offset=offset,
             )
@@ -309,7 +323,7 @@ if __name__ == "__main__":  # pragma: no cover
     token = os.getenv("SOCRATA_APP_TOKEN")
     with SecopClient(app_token=token) as cli:
         df = cli.contratos_desde(args.desde, limite=args.limite)
-        df = cli.normalizar_montos(df, ["valor_del_contrato", "valor_total_de_adiciones"])
+        df = cli.normalizar_montos(df, ["valor_del_contrato"])
         df = cli.normalizar_fechas(df, ["fecha_de_firma_del_contrato"])
         df.to_csv(args.salida, index=False)
         print(f"OK · {len(df)} contratos → {args.salida}")
