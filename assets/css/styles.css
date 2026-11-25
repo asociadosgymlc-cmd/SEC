@@ -248,10 +248,14 @@ html.dark .dep-cell { border-color: #334155; }
 .marquee-track { display: flex; width: max-content; animation: marquee 28s linear infinite; }
 .marquee-mask:hover .marquee-track { animation-play-state: paused; }
 
+/* ---- Engranajes animados (landing, banda antes del footer) ---- */
+@keyframes gearSpinCW { to { transform: rotate(calc(360deg * var(--dir, 1))); } }
+.gear-spin { animation: gearSpinCW var(--dur, 18s) linear infinite; }
+
 /* ---- Respeta usuarios con movimiento reducido ---- */
 @media (prefers-reduced-motion: reduce) {
   .reveal, .reveal-scale { opacity: 1 !important; transform: none !important; }
-  .floaty, .floaty-slow, .blob, .mesh-bg, .mesh-dark, .text-gradient, .marquee-track { animation: none !important; }
+  .floaty, .floaty-slow, .blob, .mesh-bg, .mesh-dark, .text-gradient, .marquee-track, .gear-spin { animation: none !important; }
   .tilt { transform: none !important; }
   html { scroll-behavior: auto; }
 }
