@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Tratamiento de Datos · LICITA</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div class="max-w-3xl mx-auto px-6 py-10">
+    <a href="index.html" class="text-sm text-sky-700 hover:underline">← Volver a LICITA</a>
+
+    <div class="bg-amber-50 border border-amber-300 rounded-xl p-4 mt-6 text-sm text-amber-900">
+      <b>⚠ BORRADOR — pendiente de revisión legal final.</b> Este documento es un
+      primer borrador generado como punto de partida para cumplir la Ley 1581 de
+      2012 (Habeas Data) y el Decreto 1377 de 2013. No debe tratarse como
+      vinculante ni publicarse a clientes reales sin que un abogado revise y
+      apruebe el texto, complete los datos marcados como <code>[COMPLETAR]</code>
+      y lo adapte al tratamiento de datos real de la plataforma.
+    </div>
+
+    <h1 class="text-2xl font-extrabold text-slate-900 mt-8">Política de Tratamiento de Datos Personales</h1>
+    <p class="text-sm text-slate-500 mt-1">Última actualización: <span id="fecha"></span></p>
+
+    <div class="prose prose-sm mt-6 space-y-5 text-sm leading-relaxed">
+      <section>
+        <h2 class="font-bold text-slate-900">1. Responsable del tratamiento</h2>
+        <p><b>Asociados GYM LC</b>, NIT <code>[COMPLETAR]</code>, con domicilio en
+        <code>[COMPLETAR]</code>, Colombia, correo de contacto
+        <a href="mailto:asociadosgym.lc@gmail.com" class="text-sky-700">asociadosgym.lc@gmail.com</a>,
+        es responsable del tratamiento de los datos personales que usted
+        entrega al usar la plataforma LICITA.</p>
+      </section>
+
+      <section>
+        <h2 class="font-bold text-slate-900">2. Datos que tratamos</h2>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>Datos de cuenta: nombre, usuario, correo electrónico, empresa/organización.</li>
+          <li>Datos del perfil de empresa (si usted los diligencia en "Mi empresa"):
+          NIT, razón social, indicadores financieros (patrimonio, capital de
+          trabajo, liquidez, endeudamiento), experiencia contractual.</li>
+          <li>Documentos que usted carga para análisis (pliegos en PDF/DOCX/TXT) y
+          el texto de los análisis generados.</li>
+          <li>Registros de uso de la plataforma (historial de análisis, alertas
+          guardadas, actividad para efectos de monitoreo si usted es cliente de
+          una firma administrada por un tercero en LICITA).</li>
+        </ul>
+        <p class="mt-2"><b>Nota técnica importante:</b> en la versión actual de
+        LICITA estos datos se almacenan en el navegador del usuario
+        (<code>localStorage</code>), no en un servidor central. Esto significa
+        que [COMPLETAR: confirmar con el equipo técnico el estado exacto al
+        momento de publicar — si ya existe backend, describir dónde y cómo se
+        almacena; si sigue siendo client-side, decirlo expresamente aquí].</p>
+      </section>
+
+      <section>
+        <h2 class="font-bold text-slate-900">3. Finalidad del tratamiento</h2>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>Prestar el servicio: autenticación, análisis de pliegos, generación
+          de observaciones, búsqueda en SECOP, análisis forense y demás
+          funcionalidades de la plataforma.</li>
+          <li>Gestionar la relación contractual con el cliente (soporte, facturación
+          si aplica, comunicaciones sobre el servicio).</li>
+          <li>Mejorar la plataforma (no se usan los documentos cargados por los
+          clientes para entrenar modelos de terceros ni se comparten con fines
+          comerciales distintos a la prestación del servicio) <code>[CONFIRMAR]</code>.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="font-bold text-slate-900">4. Derechos del titular</h2>
+        <p>Usted tiene derecho a conocer, actualizar, rectificar y suprimir sus
+        datos, a solicitar prueba de la autorización otorgada, a ser informado
+        sobre el uso que se les ha dado, a revocar la autorización y/o solicitar
+        la supresión del dato, y a presentar quejas ante la Superintendencia de
+        Industria y Comercio por infracciones a la Ley 1581 de 2012.</p>
+        <p class="mt-2">Para ejercer estos derechos, escriba a
+        <a href="mailto:asociadosgym.lc@gmail.com" class="text-sky-700">asociadosgym.lc@gmail.com</a>.</p>
+      </section>
+
+      <section>
+        <h2 class="font-bold text-slate-900">5. Transferencia y transmisión de datos</h2>
+        <p>LICITA no vende ni transfiere sus datos personales a terceros con
+        fines comerciales. La plataforma consulta datos públicos y abiertos de
+        <code>datos.gov.co</code> (SECOP I y II) para mostrarle información de
+        contratación pública — esas consultas no envían sus datos personales a
+        ese sistema, son solicitudes de lectura sobre información que ya es
+        pública. Algunas librerías de la interfaz (lectura de PDF/Word, estilos,
+        mapas) se cargan desde redes de distribución de contenido (CDN) de
+        terceros (Tailwind, cdnjs); esas cargas no incluyen sus datos
+        personales.</p>
+      </section>
+
+      <section>
+        <h2 class="font-bold text-slate-900">6. Vigencia</h2>
+        <p>Esta política rige desde su fecha de publicación y mientras exista la
+        finalidad para la cual se recolectaron los datos.</p>
+      </section>
+    </div>
+  </div>
+  <script>document.getElementById('fecha').textContent = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });</script>
+</body>
+</html>
