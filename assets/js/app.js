@@ -4274,9 +4274,18 @@
       '<div><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Mapa de oportunidades</p><h3 class="text-base font-bold text-slate-900">Procesos abiertos por departamento</h3></div></div>' +
       '<p class="text-sm text-slate-500 mt-3">Consultando datos en vivo…</p></div>';
     try {
+      // p6dx-8zbt es un log histórico: estado solo, sin acotar fecha, trae
+      // ~7 millones de filas de todos los años (verificado en vivo), no lo
+      // "abierto hoy". Acotamos a los últimos 30 días para que el titular
+      // sea representativo de la actividad reciente real.
+      const desde30 = new Date();
+      desde30.setDate(desde30.getDate() - 30);
       const data = await SECOP.aggregate("procesos", {
         groupBy: "departamento",
-        filters: { estado: "Presentación de oferta" },
+        filters: {
+          estado: "Presentación de oferta",
+          fechaDesde: desde30.toISOString().slice(0, 10),
+        },
         limit: 50,
       });
       mapState.data = data;
@@ -4299,6 +4308,15 @@
       .trim();
   }
 
+  // SECOP a veces reporta el departamento con un nombre que no comparte
+  // subcadena con el nombre oficial (ej. "Distrito Capital de Bogotá" en
+  // vez de "Bogotá D.C."), así que la coincidencia por substring sola los
+  // deja en 0 aunque sí tengan procesos (verificado en vivo).
+  const DEP_ALIASES = {
+    "BOGOTADC": ["BOGOTA"],
+    "SANANDRESYPROVIDENCIA": ["SANANDRES", "PROVIDENCIA"],
+  };
+
   function paintMap(rows) {
     const valid = rows.filter((r) => r.grupo && r.grupo !== "—" && r.total > 0);
     const max = Math.max(1, ...valid.map((r) => r.total));
@@ -4308,9 +4326,11 @@
 
     const cells = SECOP.DEPARTAMENTOS.map((dep) => {
       const depN = normDep(dep);
+      const aliasTokens = DEP_ALIASES[depN];
       const r = valid.find((x) => {
         const xN = normDep(x.grupo);
-        return xN === depN || xN.includes(depN) || depN.includes(xN);
+        if (xN === depN || xN.includes(depN) || depN.includes(xN)) return true;
+        return aliasTokens ? aliasTokens.some((t) => xN.includes(t)) : false;
       });
       const t = r ? r.total : 0;
       const v = r ? r.valor : 0;
@@ -4332,7 +4352,7 @@
       '<div class="flex items-center gap-3">' +
       '<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-md shadow-blue-200"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg></div>' +
       '<div><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Mapa de oportunidades · SECOP 2</p>' +
-      '<h3 class="text-base font-bold text-slate-900">' + totalProcesos.toLocaleString("es-CO") + " procesos abiertos hoy · " + formatCOP(Math.round(totalValor)) + "</h3></div></div>" +
+      '<h3 class="text-base font-bold text-slate-900">' + totalProcesos.toLocaleString("es-CO") + " procesos en los últimos 30 días · " + formatCOP(Math.round(totalValor)) + "</h3></div></div>" +
       '<div class="flex gap-2 flex-wrap">' +
       top.map((t, i) => {
         const labels = ["🥇", "🥈", "🥉"];
